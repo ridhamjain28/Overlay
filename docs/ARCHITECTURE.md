@@ -1,6 +1,6 @@
 # How Overlay works (a beginner's guide)
 
-This page explains the code in plain words. You don't need to know Electron yet. For the story of _how_ each Overlay feature was added (and why), read [`BUILD-LOG.md`](BUILD-LOG.md).
+This page explains the code in plain words. You don't need to know Electron yet.
 
 ## 1. The big picture
 
@@ -77,7 +77,7 @@ resources/               native helpers and downloaded binaries (not in git)
 scripts/                 build and download scripts (install-native-deps.js is NEW)
 hinglish-asr/            NEW: optional Python server for Hinglish speech
 test/                    unit tests; test/overlay/ holds the Overlay tests
-docs/                    this guide and the build log
+docs/                    this guide
 ```
 
 ## 7. How to run and test

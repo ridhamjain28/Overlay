@@ -10,7 +10,7 @@ By default everything runs locally: Whisper for speech, and [Ollama](https://oll
 > Based on OpenWhispr (MIT) by Gizmo Labs Inc. and contributors.
 > Upstream: https://github.com/OpenWhispr/openwhispr (commit `1e9f243`). See `LICENSE` and `NOTICE`.
 
-New to the code? Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (a beginner's tour) and [`docs/BUILD-LOG.md`](docs/BUILD-LOG.md) (how and why each piece was built).
+New to the code? Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (a beginner's tour of the code).
 
 ---
 

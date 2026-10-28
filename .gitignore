@@ -340,3 +340,7 @@ hinglish-asr/__pycache__/
 # Patches and build output
 *.patch
 dist/
+
+# Personal build notes (kept outside git)
+BUILD-LOG.md
+docs/BUILD-LOG.md
