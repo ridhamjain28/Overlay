@@ -16,7 +16,7 @@
 //   Windows — the exe name ("Code.exe", "idea64.exe") + window class
 //   Linux   — the WM_CLASS ("code", "md.obsidian.obsidian", "jetbrains-idea")
 // Evidence per app, and the apps deliberately excluded:
-// docs/superpowers/specs/2026-09-10-agent-paste-plain-text-design.md, Appendix A–C.
+// the upstream OpenWhispr agent-paste plain-text design spec (Appendix A–C).
 
 const MARKDOWN_TARGET_SIGNATURES = [
   // Markdown-native note editors — the file is markdown.

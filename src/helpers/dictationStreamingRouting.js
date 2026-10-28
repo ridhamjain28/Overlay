@@ -14,7 +14,7 @@ const ORUKEET_LANGUAGES = new Set(
 );
 
 // Existing default retained during the opt-in group-score rollout. Scores are
-// not calibrated probabilities; see docs/orukeet-streaming-language.md for
+// not calibrated probabilities; see the upstream OpenWhispr docs for
 // the expanded evaluation and the separate three/six-second behavior.
 const ORUKEET_LANGUAGE_FALLBACK_MIN_CONFIDENCE = 0.9;
 const ORUKEET_LANGUAGE_FALLBACK_MIN_AUDIO_SECONDS = 3;

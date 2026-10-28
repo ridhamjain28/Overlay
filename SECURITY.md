@@ -52,12 +52,6 @@ Out of scope:
 - **Context isolation** — The Electron renderer runs with context isolation
   enabled and a restricted preload bridge.
 
-## Automated Scanning
-
-[`.oss-scanner/`](.oss-scanner/) holds the build image and threat model for Anthropic's
-[OSS Scanner](https://github.com/anthropics/oss-scanner), which sends its model-generated
-vulnerability reports for both the desktop and mobile apps to security@openwhispr.com.
-
 ## Disclosure Policy
 
 We follow coordinated disclosure. Once a fix is released, we will credit

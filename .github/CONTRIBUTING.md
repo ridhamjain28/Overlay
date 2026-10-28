@@ -54,11 +54,6 @@ Platform-specific setup, local Whisper notes, and packaging details are
 in [`README.md`](../README.md) and
 [`LOCAL_WHISPER_SETUP.md`](../LOCAL_WHISPER_SETUP.md).
 
-The Expo mobile application is maintained separately in
-[`openwhispr-mobile`](../openwhispr-mobile/) with its own dependencies, lockfile, and
-development commands. Follow its
-[`CONTRIBUTING.md`](../openwhispr-mobile/CONTRIBUTING.md) when changing mobile code.
-
 ### CI scope and required checks
 
 PR checks follow the files changed:
