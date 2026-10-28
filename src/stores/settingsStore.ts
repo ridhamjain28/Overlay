@@ -78,6 +78,8 @@ const isBrowser = typeof window !== "undefined" && typeof localStorage !== "unde
 // Overlay defaults: a local Ollama server and a small tool-capable model.
 export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
 export const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
+// Used instead when the default isn't pulled in Ollama but this one is.
+export const OVERLAY_FALLBACK_MODEL = "qwen3:4b-instruct";
 
 const DEFAULT_CLOUD_TRANSCRIPTION_PROVIDER = "openai";
 
@@ -3337,6 +3339,31 @@ export async function reconcileLocalModelSelections(): Promise<void> {
 }
 
 /**
+ * Overlay: if a scope still uses the default local model but Ollama doesn't
+ * have it while it does have the fallback, switch that scope to the fallback.
+ * `installed` is the list of Ollama model names (null = Ollama not reachable,
+ * in which case nothing changes). Returns the scopes that were switched.
+ */
+export function applyOverlayModelFallback(installed: string[] | null | undefined): string[] {
+  if (!Array.isArray(installed) || installed.length === 0) return [];
+  const names = new Set(installed);
+  if (names.has(OVERLAY_DEFAULT_MODEL) || !names.has(OVERLAY_FALLBACK_MODEL)) return [];
+  const state = useSettingsStore.getState();
+  const switched: string[] = [];
+  for (const scopeId of OVERLAY_TEXT_SCOPES) {
+    const keys = (INFERENCE_SCOPES as Record<string, { storeKeys: Record<string, string> }>)[
+      scopeId
+    ]?.storeKeys;
+    if (!keys) continue;
+    const s = state as unknown as Record<string, unknown>;
+    if (s[keys.mode] !== "self-hosted" || s[keys.model] !== OVERLAY_DEFAULT_MODEL) continue;
+    setResolvedLLMConfig(scopeId as InferenceScope, { model: OVERLAY_FALLBACK_MODEL });
+    switched.push(scopeId);
+  }
+  return switched;
+}
+
+/**
  * Repoints any scope still selecting a cloud model the registry no longer ships
  * (e.g. a retired Groq id) at that provider's current default — otherwise every
  * request 404s with an error the user can't act on. Custom, OpenRouter and
@@ -3857,6 +3884,15 @@ export async function initializeSettings(): Promise<void> {
     }
 
     reconcileRetiredCloudModelSelections();
+
+    try {
+      const switched = applyOverlayModelFallback(await window.electronAPI.overlayOllamaModels?.());
+      if (switched.length) {
+        logger.info("Using the fallback local model", { scopes: switched }, "overlay");
+      }
+    } catch {
+      // Ollama not running: keep the configured model.
+    }
 
     try {
       await reconcileLocalModelSelections();

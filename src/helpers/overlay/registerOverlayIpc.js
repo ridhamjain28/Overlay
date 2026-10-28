@@ -1,6 +1,7 @@
 // Overlay: main-process IPC for the parts that need secrets or OS access.
 //
 //   overlay-answer-sources-status  -> which answer sources are usable now
+//   overlay-ollama-models          -> model names pulled in the local Ollama
 //   overlay-answer-stream-start    -> stream an answer from OpenClaw or Gemini
 //   overlay-answer-stream-cancel   -> stop that stream
 //   overlay-system-action          -> run one allowlisted laptop action
@@ -11,7 +12,12 @@
 const path = require("path");
 const fs = require("fs");
 const { execFile } = require("child_process");
-const { streamOpenClaw, streamGemini, getAnswerSourcesStatus } = require("./answerSources");
+const {
+  streamOpenClaw,
+  streamGemini,
+  getAnswerSourcesStatus,
+  listOllamaModels,
+} = require("./answerSources");
 const { createSystemActions } = require("./systemActions");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
 
@@ -48,6 +54,8 @@ function registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugL
       filePath: path.join(app.getPath("userData"), "overlay-search-usage.json"),
     })
   );
+
+  ipcMain.handle("overlay-ollama-models", async () => listOllamaModels());
 
   ipcMain.handle("overlay-answer-sources-status", async () => {
     try {

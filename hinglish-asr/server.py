@@ -8,7 +8,7 @@ model "MSpider3/whisper-hindi2hinglish-swift-ct2".
     POST http://127.0.0.1:8765/v1/audio/transcriptions   (multipart "file")
     GET  http://127.0.0.1:8765/health
 
-In Overlay: Settings -> Transcription -> Self-hosted, URL http://127.0.0.1:8765/v1
+In Overlay: Settings -> Speech-to-Text -> Self-hosted, URL http://127.0.0.1:8765/v1
 
 Environment variables (all optional):
     HINGLISH_ASR_MODEL     model id or local folder (default above)

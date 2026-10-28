@@ -3287,6 +3287,7 @@ declare global {
       productHelpBasics: () => Promise<import("../services/help/productHelp").HelpBasics>;
 
       // Overlay: answer sources and allowlisted laptop actions (see src/helpers/overlay/)
+      overlayOllamaModels?: () => Promise<string[] | null>;
       overlayAnswerSourcesStatus?: () => Promise<
         import("../services/overlay/answerRouter").AnswerSourcesStatus
       >;

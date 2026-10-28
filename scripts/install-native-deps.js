@@ -14,12 +14,10 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const npx = process.platform === "win32" ? "npx.cmd" : "npx";
 
-function run(cmd, args, cwd = root) {
-  const result = spawnSync(cmd, args, {
-    cwd,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
+// `shell` is only needed for npx.cmd on Windows. Running node itself through a
+// shell would break on paths with spaces such as "C:\Program Files\nodejs".
+function run(cmd, args, cwd = root, shell = process.platform === "win32") {
+  const result = spawnSync(cmd, args, { cwd, stdio: "inherit", shell });
   return result.status === 0;
 }
 
@@ -65,7 +63,8 @@ if (!fs.existsSync(prebuildBin)) {
 const ok = run(
   process.execPath,
   [prebuildBin, "--runtime", "electron", "--target", version, "--arch", "x64", "--download", url],
-  moduleDir
+  moduleDir,
+  false
 );
 if (!ok) {
   console.error("[overlay] Prebuilt download failed.");

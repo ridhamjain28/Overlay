@@ -328,3 +328,85 @@ The Hinglish speech model (`MSpider3/whisper-hindi2hinglish-swift-ct2`) was
 already in your Hugging Face cache, so it wasn't downloaded again.
 
 ---
+
+## Stage 11: Close the gaps a review found
+
+**What:** I checked the code against your requirements again and found two
+things that weren't true yet:
+
+- **The fallback model wasn't wired up.** The README said Overlay falls back
+  to `qwen3:4b-instruct`, but nothing did that. Now, at startup, the app asks
+  Ollama which models you have (`GET /api/tags`). If the default
+  `qwen3.5:4b-q4_K_M` is missing and the fallback is there, it switches only
+  the settings that still use the default. A model you picked yourself is
+  never changed. See `applyOverlayModelFallback` in
+  `src/stores/settingsStore.ts` and `test/overlay/modelFallback.test.js`.
+- **The context-length note was wrong.** Through the OpenAI-style API
+  (`/v1`), the app can't set the context size. Ollama decides it. On your
+  laptop it was 16384. To pin it to 8192, set `OLLAMA_CONTEXT_LENGTH=8192`
+  for Ollama. The README now says exactly that.
+
+**Why:** a README that promises something the code doesn't do is a bug, and
+an interviewer may well ask about it.
+
+---
+
+## Stage 12: Fix `npm ci` on Windows
+
+**What:** `npm ci` failed with `'C:\Program' is not recognized`. Our
+`scripts/install-native-deps.js` started `node.exe` with `shell: true`, so
+Windows split the path `C:\Program Files\nodejs\node.exe` at the space. A
+shell is only needed for `npx.cmd`, so `node` now runs without one. After
+the fix, `npm ci` installed 915 packages and the prebuilt `better-sqlite3`.
+
+**Lesson:** on Windows, avoid `shell: true` unless you really need it.
+Paths with spaces break it.
+
+---
+
+## Stage 13: Start the real app (hidden smoke test)
+
+**What:** `npm run build:renderer`, then the app was started minimized for
+about 35 seconds with a fresh profile, then closed. The log showed:
+
+- the Overlay first-run defaults applied (local Whisper, local Ollama,
+  `qwen3.5:4b-q4_K_M`, thinking off)
+- your RTX 5060 and ffmpeg detected
+- no crash
+
+**Finding: Windows Smart App Control.** Your PC has Smart App Control on.
+It blocked `windows-key-listener.exe`, the small helper the app compiles on
+your PC to watch modifier-only hotkeys (like Right Ctrl alone) and
+hold-to-talk. Normal key combinations still go through Electron. I didn't
+change any Windows security setting. The README explains your options.
+
+---
+
+## Stage 14: Real speech tests
+
+**Local Whisper:** `npm run download:whisper-cpp` fetched `whisper-server`.
+With the `ggml-base.en` model, it transcribed a spoken English test clip
+correctly in 0.78 s. This build runs on the CPU. The CUDA version was not
+tested.
+
+**Hinglish server:** `hinglish-asr\start.bat` made its own Python 3.11 venv,
+loaded `MSpider3/whisper-hindi2hinglish-swift-ct2` on the GPU (float16) and
+transcribed Hindi word clips as Roman-script Hinglish ("Bhaarat, Delhi,
+ganga..."). The first request took ~18 s to warm up, and later ones took
+0.16 s. It used about 330 MiB of GPU memory. An empty upload correctly gets
+an error 400.
+
+**Ollama again:** with thinking off, the answer came back in 0.1 s. A tool
+call `open_app Chrome` took 0.7 s and `volume_down` took 0.5 s. A Hinglish
+question was answered in Roman-script Hinglish. All 37 Overlay tests pass on
+your laptop, and the typecheck is clean.
+
+---
+
+## Stage 15: Tidy and commit
+
+**What:** deleted the `logs\` folder (scratch scripts, test audio, and the
+196 KB `predev.log`) and the test profile in `%APPDATA%\Overlay-staging`.
+`.gitignore` already covers logs, `.env` files, `node_modules` and `dist`.
+Everything was committed locally. Nothing was pushed: you review it first
+and push it yourself.

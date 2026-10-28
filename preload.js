@@ -1185,6 +1185,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Overlay: answer sources (OpenClaw / Gemini) and allowlisted laptop actions.
   // Secrets stay in main; only answer text crosses this bridge.
   overlayAnswerSourcesStatus: () => ipcRenderer.invoke("overlay-answer-sources-status"),
+  overlayOllamaModels: () => ipcRenderer.invoke("overlay-ollama-models"),
   overlayAnswerStreamStart: (requestId, payload) =>
     ipcRenderer.send("overlay-answer-stream-start", requestId, payload),
   overlayAnswerStreamCancel: (requestId) =>

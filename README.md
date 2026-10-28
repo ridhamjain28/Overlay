@@ -28,11 +28,16 @@ npm ci
 ollama pull qwen3.5:4b-q4_K_M      # default answer model (~3.3 GB)
 ollama pull qwen3:4b-instruct      # fallback if the default is unavailable
 
-# 3. Run in development mode
+# 3. Fetch the local Whisper engine (once)
+npm run download:whisper-cpp     # whisper-server; `npm run dev` fetches the other helpers itself
+
+# 4. Run in development mode
 npm run dev
 ```
 
-`npm ci` also prepares the native SQLite module for Electron (`scripts/install-native-deps.js`). If that step fails on your machine, run `npm run predev` once, or set `OVERLAY_SKIP_NATIVE_REBUILD=1` to skip it and fix it later.
+`npm ci` also prepares the native SQLite module for Electron (`scripts/install-native-deps.js`). If no matching prebuilt exists and there are no C++ build tools, it downloads the official better-sqlite3 prebuilt for Electron 43 instead. Set `OVERLAY_SKIP_NATIVE_REBUILD=1` to skip this step.
+
+**Windows Smart App Control.** If Smart App Control is on, Windows may block helper programs that `npm run dev` compiles on your PC, because they are unsigned. On the test laptop it blocked `resources\bin\windows-key-listener.exe` (see Event Viewer → Applications and Services Logs → Microsoft → Windows → CodeIntegrity → Operational). Without it, modifier-only hotkeys (e.g. Right Ctrl alone) and hold-to-talk don't work. Normal key combinations in tap-to-toggle mode (e.g. Ctrl+Shift+Space) are registered through Electron instead. This path wasn't tested with a real key press. The downloaded `whisper-server` was not blocked. Overlay does not change Smart App Control; decide for yourself whether to use a signed build or a different hotkey.
 
 The first start opens a short setup: microphone permission → language → **dictation hotkey** → **assistant hotkey** → local speech model download. No account and no sign-in are needed.
 
@@ -55,7 +60,9 @@ Windows SmartScreen may warn about an unsigned app; that is expected for a perso
 | Fallback answer model      | `qwen3:4b-instruct`                         | Ollama                                              | `ollama pull qwen3:4b-instruct`                           |
 | Hinglish speech (optional) | `MSpider3/whisper-hindi2hinglish-swift-ct2` | `hinglish-asr/` server on `127.0.0.1:8765`          | `hinglish-asr\start.bat`                                  |
 
-Overlay turns Qwen's "thinking" off (`reasoning_effort: "none"`) so answers come back fast, and the context is kept around 8k tokens to fit an 8 GB GPU.
+Overlay turns Qwen's "thinking" off (`reasoning_effort: "none"`) so answers come back fast. If `qwen3.5:4b-q4_K_M` isn't pulled but `qwen3:4b-instruct` is, Overlay switches to the fallback by itself when it starts.
+
+**Context size** is set by Ollama, not by Overlay (Ollama's OpenAI-style API has no per-request context option). Ollama's docs say it picks the default from your VRAM, so check current behaviour there. On the RTX 5060 8 GB test laptop, `ollama ps` showed a 16384-token context and 3.4 GB of VRAM for the default model. To pin about 8k, set the environment variable `OLLAMA_CONTEXT_LENGTH=8192` for Ollama (or use the context slider in the Ollama app), then restart Ollama.
 
 **GPU speech:** in **Settings → Speech-to-Text**, download the CUDA acceleration pack. After that Whisper uses the GPU automatically (set `WHISPER_CUDA_ENABLED=false` to force CPU). Support for the newest cards (RTX 50-series) depends on the pack and has not been verified yet; if it does not work on your card, set `WHISPER_CUDA_ENABLED=false` to use the CPU.
 

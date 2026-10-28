@@ -45,3 +45,23 @@ test("an existing profile is never overwritten by the first-run defaults", async
   assert.equal(s.chatAgentMode, "providers");
   assert.equal(s.chatAgentProvider, "openai");
 });
+
+test("the fallback model is used only when the default is missing from Ollama", async (t) => {
+  installBrowserGlobals(t, { initialStorage: { _overlayDefaultsApplied: undefined } });
+  const vite = await createRendererServer(t, { cachePrefix: "overlay-model-fallback-test-" });
+  const store = await vite.ssrLoadModule("/stores/settingsStore.ts");
+  const { useSettingsStore, applyOverlayModelFallback } = store;
+
+  // Ollama not running, or the default is installed: nothing changes.
+  assert.deepEqual(applyOverlayModelFallback(null), []);
+  assert.deepEqual(applyOverlayModelFallback(["qwen3.5:4b-q4_K_M", "qwen3:4b-instruct"]), []);
+  // Neither model installed: nothing to switch to.
+  assert.deepEqual(applyOverlayModelFallback(["qwen2.5:7b"]), []);
+  assert.equal(useSettingsStore.getState().chatAgentModel, "qwen3.5:4b-q4_K_M");
+
+  // Only the fallback is installed: every default-model scope switches.
+  const switched = applyOverlayModelFallback(["qwen3:4b-instruct"]);
+  assert.ok(switched.includes("chatIntelligence"));
+  assert.equal(useSettingsStore.getState().chatAgentModel, "qwen3:4b-instruct");
+  assert.equal(useSettingsStore.getState().cleanupModel, "qwen3:4b-instruct");
+});

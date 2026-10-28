@@ -268,6 +268,31 @@ async function getAnswerSourcesStatus({ env = process.env, fetchImpl = fetch } =
   };
 }
 
+/**
+ * Names of the models pulled in the local Ollama (e.g. "qwen3.5:4b-q4_K_M"),
+ * or null when Ollama isn't reachable. Used to fall back to a smaller model.
+ */
+async function listOllamaModels({
+  baseUrl = "http://localhost:11434",
+  fetchImpl = fetch,
+  timeoutMs = PROBE_TIMEOUT_MS,
+} = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`${baseUrl}/api/tags`, { signal: controller.signal });
+    if (!response.ok) return null;
+    const body = await response.json();
+    return Array.isArray(body?.models)
+      ? body.models.map((m) => m?.name || m?.model).filter(Boolean)
+      : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function _resetProbeCache() {
   probeCache.at = 0;
   probeCache.value = null;
@@ -284,5 +309,6 @@ module.exports = {
   streamGemini,
   probeOpenClaw,
   getAnswerSourcesStatus,
+  listOllamaModels,
   _resetProbeCache,
 };
