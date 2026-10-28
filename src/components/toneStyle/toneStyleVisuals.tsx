@@ -28,7 +28,7 @@ function Bubble({ text, selected }: { text: string; selected: boolean }) {
     <div
       className={cn(
         "relative max-w-[92%] rounded-2xl px-2.5 py-2 text-[15px] leading-[21px] text-white",
-        selected ? "bg-primary" : "bg-[#2f8cf7]"
+        selected ? "bg-primary" : "bg-[#6b5a5c]"
       )}
     >
       {text}
@@ -38,7 +38,7 @@ function Bubble({ text, selected }: { text: string; selected: boolean }) {
         viewBox="0 0 13 9"
         className={cn(
           "absolute -end-[9px] bottom-[5px] h-[9px] w-[13px] rtl:-scale-x-100",
-          selected ? "fill-primary" : "fill-[#2f8cf7]"
+          selected ? "fill-primary" : "fill-[#6b5a5c]"
         )}
       >
         <path d="M0 0H4C4 4 7 7 13 8C9 8.6 4 8.4 0 7.8Z" />

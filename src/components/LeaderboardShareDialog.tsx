@@ -27,9 +27,9 @@ function createLeaderboardCard(
   if (!context) throw new Error("Canvas is unavailable");
 
   const gradient = context.createLinearGradient(0, 0, 1200, 630);
-  gradient.addColorStop(0, "#111827");
-  gradient.addColorStop(0.55, "#172554");
-  gradient.addColorStop(1, "#312e81");
+  gradient.addColorStop(0, "#1a1617");
+  gradient.addColorStop(0.55, "#4a0d17");
+  gradient.addColorStop(1, "#800020");
   context.fillStyle = gradient;
   context.fillRect(0, 0, 1200, 630);
 
@@ -41,7 +41,7 @@ function createLeaderboardCard(
   context.arc(80, 650, 230, 0, Math.PI * 2);
   context.fill();
 
-  context.fillStyle = "#a5b4fc";
+  context.fillStyle = "#f0b8c2";
   context.font = "600 24px Inter, system-ui, sans-serif";
   context.fillText(cardTitle.toLocaleUpperCase(locale), 72, 74);
   context.fillStyle = "#ffffff";
@@ -115,8 +115,8 @@ export default function LeaderboardShareDialog({
           <DialogDescription>{t("insights.leaderboard.shareDescription")}</DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 p-5 text-white">
-          <p className="text-[10px] font-semibold tracking-[0.18em] text-indigo-200">
+        <div className="rounded-xl bg-gradient-to-br from-[#1a1617] via-[#4a0d17] to-[#800020] p-5 text-white">
+          <p className="text-[10px] font-semibold tracking-[0.18em] text-rose-200">
             {`OpenWhispr ${t("insights.leaderboard.title")}`.toLocaleUpperCase(i18n.language)}
           </p>
           <p className="mt-1 text-xs text-slate-300">

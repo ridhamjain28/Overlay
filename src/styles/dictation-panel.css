@@ -307,10 +307,10 @@
 }
 
 .processing-signal-glow {
-  --signal-bright: #38bdf8;
-  --signal-core: #2563eb;
-  --signal-deep: #6366f1;
-  --signal-head: #eaf6ff;
+  --signal-bright: #f08a9b;
+  --signal-core: #b8324e;
+  --signal-deep: #800020;
+  --signal-head: #ffeef1;
   --signal-halo-opacity: 0.8;
   --signal-comet-opacity: 0.95;
   position: absolute;
@@ -321,12 +321,12 @@
   transition: opacity 220ms ease-out;
 }
 
-/* Agent Mode keeps the identical glow in its purple identity. */
+/* Agent Mode keeps the identical glow in a warm gold so it reads apart from dictation. */
 .processing-signal-glow[data-agent="true"] {
-  --signal-bright: #a78bfa;
-  --signal-core: #8787ff;
-  --signal-deep: #7c3aed;
-  --signal-head: #f2edff;
+  --signal-bright: #f3c677;
+  --signal-core: #c98b3a;
+  --signal-deep: #9e2a3f;
+  --signal-head: #fff6e6;
 }
 
 :root:not(.dark) .processing-signal-glow {

@@ -9,15 +9,15 @@ const WAVE_MIN_PX = 2;
 const WAVE_QUIET_NORM = 0.14;
 const WAVE_QUIET_OPACITY = 0.35;
 
-// The gradient's periwinkle end, shown uniformly by every quiet bar.
-export const WAVE_QUIET_COLOR = "rgb(143,170,255)";
+// The gradient's rose end, shown uniformly by every quiet bar.
+export const WAVE_QUIET_COLOR = "rgb(224,122,140)";
 
-// Periwinkle (#8FAAFF) → orange (#FFA23E) across the strip, fixed per bar.
+// Rose (#E07A8C) → amber (#FFA23E) across the strip, fixed per bar.
 export function waveBarColor(index: number, count: number): string {
   const t = count > 1 ? index / (count - 1) : 0;
-  const r = Math.round(143 + 112 * t);
-  const g = Math.round(170 - 8 * t);
-  const b = Math.round(255 - 193 * t);
+  const r = Math.round(224 + 31 * t);
+  const g = Math.round(122 + 40 * t);
+  const b = Math.round(140 - 78 * t);
   return `rgb(${r},${g},${b})`;
 }
 

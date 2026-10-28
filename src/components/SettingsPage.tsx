@@ -2808,10 +2808,7 @@ export default function SettingsPage({
                             key={i}
                             className="flex items-start gap-1 text-[10px] text-muted-foreground leading-tight"
                           >
-                            <Check
-                              size={9}
-                              className="mt-[2px] text-purple-500 dark:text-purple-400 shrink-0"
-                            />
+                            <Check size={9} className="mt-[2px] text-accent shrink-0" />
                             {feature}
                           </li>
                         ))}

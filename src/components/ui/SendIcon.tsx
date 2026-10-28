@@ -32,9 +32,9 @@ export function SendIcon({ size = 24, className }: SendIconProps) {
           y2="47.0156"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#5B81E4" />
-          <stop offset="0.528846" stopColor="#154BD4" />
-          <stop offset="0.908654" stopColor="#163992" />
+          <stop stopColor="#B8324E" />
+          <stop offset="0.528846" stopColor="#800020" />
+          <stop offset="0.908654" stopColor="#5A0B14" />
         </linearGradient>
       </defs>
     </svg>

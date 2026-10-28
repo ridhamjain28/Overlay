@@ -234,7 +234,7 @@ test("Live Transcript hands visual border ownership to the shared panel", async 
   assert.doesNotMatch(standalone, /data-integrated-with-panel/);
 });
 
-test("Agent Mode uses the supplied mark, a purple perimeter glow, and a neutral waveform", async () => {
+test("Agent Mode uses the supplied mark, a gold perimeter glow, and a neutral waveform", async () => {
   const agentRecording = await renderPill("recording", true, "right", {
     agentMode: true,
   });
@@ -245,12 +245,12 @@ test("Agent Mode uses the supplied mark, a purple perimeter glow, and a neutral 
   assert.match(AGENT_MODE_PATH, /^M6\.14226 /);
   assert.match(styles, /--color-agent-brand:/);
   assert.doesNotMatch(styles, /\.voice-pill-control\[data-agent-mode="true"\]\s*\{/);
-  // The agent glow is the same Signal treatment re-palettes to the agent's
-  // purple around the brand color.
+  // The agent glow is the same Signal treatment re-paletted to the agent's
+  // warm gold around the brand color.
   assert.match(styles, /\.processing-signal-glow\[data-agent="true"\]\s*\{/);
-  assert.match(styles, /--signal-core: #8787ff/);
+  assert.match(styles, /--signal-core: #c98b3a/);
   assert.doesNotMatch(styles, /agent-waveform-background|agent-waveform-highlight/);
-  // Listening stays glow-free; the purple Signal glow is reserved for the
+  // Listening stays glow-free; the gold Signal glow is reserved for the
   // post-recording thinking state so "hearing you" and "working" read apart.
   assert.match(agentRecording, /class="processing-signal-glow" data-agent="true"/);
   assert.doesNotMatch(agentRecording, /data-active/);
@@ -265,7 +265,7 @@ test("Agent Mode uses the supplied mark, a purple perimeter glow, and a neutral 
   assert.doesNotMatch(normalRecording, /agent-waveform-background/);
 });
 
-test("Agent thinking keeps the purple glow on the same persistent pill root", async () => {
+test("Agent thinking keeps the gold glow on the same persistent pill root", async () => {
   const agentThinking = await renderPill("thinking", false, "right", {
     agentMode: true,
   });

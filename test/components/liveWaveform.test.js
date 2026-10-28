@@ -5,15 +5,15 @@ const { renderStatic } = require("../helpers/harness/reactSsr");
 const loadMath = () => import("../../src/components/ui/liveWaveformMath.ts");
 const loadComponent = () => import("../../src/components/ui/LiveWaveform.tsx");
 
-test("bar color is fixed per index: a gradient from periwinkle to orange", async () => {
+test("bar color is fixed per index: a gradient from rose to amber", async () => {
   const { waveBarColor, WAVE_QUIET_COLOR } = await loadMath();
 
-  assert.equal(waveBarColor(0, 40), "rgb(143,170,255)");
+  assert.equal(waveBarColor(0, 40), "rgb(224,122,140)");
   assert.equal(waveBarColor(39, 40), "rgb(255,162,62)");
   // A single bar must not divide by zero.
-  assert.equal(waveBarColor(0, 1), "rgb(143,170,255)");
-  // The quiet layer is the gradient's periwinkle end, uniform across the strip.
-  assert.equal(WAVE_QUIET_COLOR, "rgb(143,170,255)");
+  assert.equal(waveBarColor(0, 1), "rgb(224,122,140)");
+  // The quiet layer is the gradient's rose end, uniform across the strip.
+  assert.equal(WAVE_QUIET_COLOR, "rgb(224,122,140)");
 });
 
 test("per-sample visuals keep the old height/alpha curve as scaleY + layer opacity", async () => {
@@ -44,7 +44,7 @@ test("bars render with static colors and compositor-only animated properties", a
   assert.equal(html.split("height:20px").length - 1, 5);
 
   // At rest every bar shows only the uniform quiet periwinkle at 0.35 alpha…
-  assert.equal(html.split("background-color:rgb(143,170,255);opacity:0.35").length - 1, 5);
+  assert.equal(html.split("background-color:rgb(224,122,140);opacity:0.35").length - 1, 5);
   // …while each bar's gradient-hued active layer is fully faded out.
   assert.equal(html.split('opacity:0"').length - 1, 5);
   assert.ok(html.includes('background-color:rgb(255,162,62);opacity:0"'));

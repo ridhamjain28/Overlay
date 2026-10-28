@@ -50,7 +50,10 @@ function draw(canvas: HTMLCanvasElement) {
   if (!ctx) return;
 
   const styles = getComputedStyle(canvas);
-  const base = toRgb(ctx, styles.getPropertyValue("--color-accent").trim());
+  const hero =
+    styles.getPropertyValue("--onboarding-hero").trim() ||
+    styles.getPropertyValue("--color-accent").trim();
+  const base = toRgb(ctx, hero);
   // The lower overlay ends on the page colour itself (near-black in dark mode,
   // white in light mode). Pure black left a dotted seam against #141414.
   const surface = toRgb(ctx, styles.getPropertyValue("--onboarding-surface").trim());

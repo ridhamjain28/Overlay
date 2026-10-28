@@ -122,7 +122,7 @@ export default function ControlPanelSidebar({
 
       {showUpgradeBanner && (
         <div className="px-2 pb-2">
-          <div className="relative rounded-xl border border-[#6c50e9]/25 dark:border-[#6c50e9]/40 bg-card bg-gradient-to-b from-[#6c50e9]/15 via-[#6c50e9]/5 to-transparent dark:from-[#6c50e9]/30 dark:via-[#6c50e9]/10 p-3">
+          <div className="relative rounded-xl border border-[#800020]/25 dark:border-[#800020]/40 bg-card bg-gradient-to-b from-[#800020]/15 via-[#800020]/5 to-transparent dark:from-[#800020]/30 dark:via-[#800020]/10 p-3">
             <button
               onClick={() => {
                 setUpgradeDismissed(true);

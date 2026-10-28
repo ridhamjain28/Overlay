@@ -7,49 +7,49 @@
 @theme {
   /* OpenWhispr Theme — registers color tokens with Tailwind v4.
      These are the light-mode defaults; .dark overrides them below. */
-  /* Midpoint of the brand glass gradient (#5588F0 → #3466E2) so tints, rings and links match it. */
-  --color-primary: #4577e9;
+  /* Overlay maroon brand (#6B0F1A → #800020). Tints, rings and links derive from it. */
+  --color-primary: #800020;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f5f5f5;
-  --color-secondary-foreground: #171717;
-  --color-muted: #f5f5f5;
-  --color-muted-foreground: #525252;
-  --color-accent: oklch(0.55 0.22 285);
+  --color-secondary: #f4eee8;
+  --color-secondary-foreground: #2a1f20;
+  --color-muted: #f4eee8;
+  --color-muted-foreground: #5c5150;
+  --color-accent: #9e2a3f;
   --color-accent-foreground: #ffffff;
   /* Agent Mode identity, sourced from the supplied sparkle/leaf mark. */
-  --color-agent-brand: #8787ff;
+  --color-agent-brand: #b03a52;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e5e5e5;
-  --color-input: #f9f6f1;
-  --color-ring: #4577e9;
-  --color-background: #ffffff;
-  --color-foreground: #171717;
+  --color-border: #e6ddd3;
+  --color-input: #f7f2ec;
+  --color-ring: #800020;
+  --color-background: #fbf8f4;
+  --color-foreground: #1f1a1a;
   --color-card: #ffffff;
-  --color-card-foreground: #171717;
+  --color-card-foreground: #1f1a1a;
   --color-popover: #ffffff;
-  --color-popover-foreground: #171717;
-  --color-link: #4577e9;
+  --color-popover-foreground: #1f1a1a;
+  --color-link: #8a1c2e;
   --color-success: #16a34a;
   --color-success-foreground: #ffffff;
   --color-warning: #d97706;
   --color-warning-foreground: #ffffff;
-  --color-info: #4577e9;
+  --color-info: #7a2433;
   --color-info-foreground: #ffffff;
 
   /* Surface hierarchy — light mode equivalents */
-  --color-surface-0: #ffffff;
-  --color-surface-1: #fafafa;
+  --color-surface-0: #fbf8f4;
+  --color-surface-1: #f8f3ee;
   --color-surface-2: #ffffff;
-  --color-surface-3: #f5f5f5;
-  --color-surface-raised: #f0f0f0;
+  --color-surface-3: #f3ece5;
+  --color-surface-raised: #ede4da;
   /* Main-window backdrop behind the sidebar and the inset content container. */
-  --color-surface-window: #f7f7f7;
+  --color-surface-window: #f5efe8;
 
   /* Border states — light mode equivalents */
-  --color-border-subtle: #e5e5e5;
-  --color-border-hover: #d4d4d4;
-  --color-border-active: #4577e9;
+  --color-border-subtle: #e6ddd3;
+  --color-border-hover: #d6c7b8;
+  --color-border-active: #800020;
 }
 
 :root {
@@ -91,7 +91,7 @@
   --color-brand-primary: #2b1f14;
   --color-brand-accent: #4b2e2b;
   --color-brand-highlight: #c0a77d;
-  --color-brand-link: #2e3659;
+  --color-brand-link: #8a1c2e;
   --color-pattern: #e7e5e4;
 
   /* Model picker premium effects (light mode) */
@@ -106,14 +106,14 @@
   --shadow-chat-card:
     inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.5),
     0 28px 64px -24px rgba(15, 23, 42, 0.3), 0 2px 10px rgba(15, 23, 42, 0.06);
-  /* Same rim on brand-blue surfaces (mic/send buttons): the app icon's glass.
+  /* Same rim on brand-maroon surfaces (mic/send buttons): the app icon's glass.
      Softer than --shadow-glass because it sits on colour. */
   --shadow-brand-glass:
     inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.16),
     inset 0 -1px 1px rgba(0, 0, 0, 0.12);
   /* The fill under that rim: Button default, mic/send circles, the onboarding brand tile. */
-  --gradient-brand-glass: linear-gradient(180deg, #5588f0 0%, #3466e2 100%);
-  /* Today's upcoming-events card: a brand-blue band lit at both ends, crossed by two soft
+  --gradient-brand-glass: linear-gradient(180deg, #9a1f36 0%, #6b0f1a 100%);
+  /* Today's upcoming-events card: a brand-maroon band lit at both ends, crossed by two soft
      diagonal highlights, as in the Home design. */
   --gradient-calendar-today:
     linear-gradient(
@@ -125,54 +125,54 @@
       rgb(255 255 255 / 0.08) 64%,
       transparent 72%
     ),
-    linear-gradient(90deg, #58a7fe 0%, #1a7bff 22%, #1f80ff 55%, #2a88ff 72%, #62afff 100%);
+    linear-gradient(90deg, #a8344a 0%, #800020 22%, #7a1424 55%, #8a1c2e 72%, #b0485c 100%);
   /* The brand tile floats over the onboarding hero, so it adds a soft coloured lift. */
-  --shadow-brand-tile: var(--shadow-brand-glass), 0 10px 24px -8px rgb(52 102 226 / 0.45);
+  --shadow-brand-tile: var(--shadow-brand-glass), 0 10px 24px -8px rgb(107 15 26 / 0.45);
 }
 
 .dark {
   /* Dark mode — charcoal surfaces with clear elevation hierarchy
      Base L=0.22 (charcoal) with 0.05 steps between layers.
      Hue 260 (neutral blue) with minimal chroma for sophistication. */
-  --color-background: oklch(0.22 0.006 260);
-  --color-foreground: oklch(0.93 0 0);
-  --color-card: oklch(0.27 0.008 260);
-  --color-card-foreground: oklch(0.93 0 0);
-  --color-popover: oklch(0.29 0.009 260);
-  --color-popover-foreground: oklch(0.93 0 0);
-  --color-primary: oklch(0.65 0.2 260);
-  --color-primary-foreground: oklch(0.99 0 0);
-  --color-secondary: oklch(0.28 0.007 260);
-  --color-secondary-foreground: oklch(0.9 0 0);
-  --color-muted: oklch(0.24 0.006 260);
-  --color-muted-foreground: oklch(0.65 0 0);
-  --color-accent: oklch(0.68 0.18 285);
-  --color-accent-foreground: oklch(0.99 0 0);
+  --color-background: #1a1617;
+  --color-foreground: #f1ebe6;
+  --color-card: #231e1f;
+  --color-card-foreground: #f1ebe6;
+  --color-popover: #262021;
+  --color-popover-foreground: #f1ebe6;
+  --color-primary: #b8324e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #2a2425;
+  --color-secondary-foreground: #ebe3dd;
+  --color-muted: #211c1d;
+  --color-muted-foreground: #b3a8a4;
+  --color-accent: #c4475f;
+  --color-accent-foreground: #ffffff;
   --color-destructive: oklch(0.62 0.22 25);
   --color-destructive-foreground: oklch(0.99 0 0);
-  --color-border: oklch(0.35 0.007 260);
-  --color-input: oklch(0.19 0.005 260);
-  --color-ring: oklch(0.65 0.2 260);
+  --color-border: #3a3233;
+  --color-input: #151213;
+  --color-ring: #d2566e;
   --color-success: oklch(0.7 0.18 145);
   --color-success-foreground: oklch(0.99 0 0);
   --color-warning: oklch(0.75 0.15 70);
   --color-warning-foreground: oklch(0.15 0 0);
-  --color-info: oklch(0.68 0.18 240);
-  --color-info-foreground: oklch(0.99 0 0);
+  --color-info: #e07a8c;
+  --color-info-foreground: #1a1617;
 
   /* Surface hierarchy — charcoal depth system (0.22 → 0.33) */
-  --color-surface-0: oklch(0.22 0.006 260);
-  --color-surface-1: oklch(0.25 0.007 260);
-  --color-surface-2: oklch(0.27 0.008 260);
-  --color-surface-3: oklch(0.3 0.009 260);
-  --color-surface-raised: oklch(0.33 0.01 260);
-  --color-surface-window: oklch(0.19 0.005 260);
+  --color-surface-0: #1a1617;
+  --color-surface-1: #1e191a;
+  --color-surface-2: #231e1f;
+  --color-surface-3: #2a2425;
+  --color-surface-raised: #312a2b;
+  --color-surface-window: #151213;
 
   /* Border states */
-  --color-border-subtle: oklch(0.33 0.006 260);
-  --color-border-hover: oklch(0.42 0.01 260);
-  --color-border-active: oklch(0.5 0.15 260);
-  --color-link: oklch(0.67 0.1 250);
+  --color-border-subtle: #332c2d;
+  --color-border-hover: #4a4041;
+  --color-border-active: #b8324e;
+  --color-link: #e07a8c;
 
   /* Card depth shadows — softer for charcoal, with top highlight for premium depth */
   --shadow-card: 0 1px 3px oklch(0 0 0 / 0.2), inset 0 1px 0 oklch(1 0 0 / 0.03);
@@ -183,7 +183,7 @@
   /* Premium effects */
   --shadow-metallic-dark: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 8px rgba(0, 0, 0, 0.2);
   --shadow-selected-glow:
-    inset 0 0 0 1px oklch(0.65 0.2 260 / 0.2), 0 0 16px -4px oklch(0.65 0.2 260 / 0.2);
+    inset 0 0 0 1px oklch(0.65 0.17 15 / 0.2), 0 0 16px -4px oklch(0.65 0.17 15 / 0.2);
   --shadow-card-hover-subtle: 0 2px 8px -2px rgba(0, 0, 0, 0.12);
 
   /* Liquid-glass edge — faint rim on charcoal, deeper lift */
@@ -323,32 +323,33 @@ body:has(.onboarding-canvas) {
   font-optical-sizing: auto;
 
   /* Onboarding design tokens from the Figma library, except the accent: that is
-     the app's one brand blue, so both themes resolve it through --color-primary. */
+     the app's one brand maroon, so both themes resolve it through --color-primary. */
   --onboarding-accent: var(--color-primary);
   --onboarding-accent-foreground: #ffffff;
   /* Hover on a filled accent means "darker" on light and "lighter" on dark, so the
      mix target is a token rather than a literal `black` in the utility class. */
   --onboarding-accent-hover: color-mix(in srgb, var(--onboarding-accent) 88%, black);
-  --onboarding-text-primary: #000000;
-  --onboarding-text-secondary: #656565;
-  --onboarding-text-tertiary: #969393;
-  --onboarding-control-border: #e3e3e3;
+  --onboarding-text-primary: #1f1a1a;
+  --onboarding-text-secondary: #5f5553;
+  --onboarding-text-tertiary: #7d7270;
+  --onboarding-control-border: #e3d9ce;
   /* The page/card fill everything else sits on. Split from surface-secondary so
      the dark theme can move the base without dragging the filled greys with it. */
-  --onboarding-surface: #ffffff;
+  --onboarding-hero: #9e2a3f;
+  --onboarding-surface: #fbf8f4;
   /* light/surface-secondary and light/surface-tertiary: the two filled greys the
      onboarding frames use (capture surfaces and the inline hint pills). */
-  --onboarding-surface-secondary: #f7f7f7;
-  --onboarding-surface-tertiary: #e6e6e6;
+  --onboarding-surface-secondary: #f4eee8;
+  --onboarding-surface-tertiary: #e8dfd6;
   /* Hover step above the base surface (ghost rows, outline buttons) and above
      surface-tertiary (the neutral "Enable" pill). */
-  --onboarding-surface-hover: #fafafa;
+  --onboarding-surface-hover: #f7f2ec;
   --onboarding-surface-tertiary-hover: #d4d4d4;
   /* The row hover slab, which is a fill painted *behind* a row's content rather
      than a control's own background — so it needs more separation from the base
      surface than surface-hover gives a bordered button, and it gets its own token
      instead of leaning on that one. */
-  --onboarding-row-hover: #f5f5f5;
+  --onboarding-row-hover: #f3ece5;
   /* Inverted HUD: keycaps and the dictation pill preview, which are near-black on
      light and have to lift off the background rather than sink into it on dark. */
   --onboarding-inverse-surface: #0a0a0a;
@@ -386,16 +387,18 @@ body.dark:has(.onboarding-canvas) {
      different component. */
   --onboarding-accent-foreground: #ffffff;
   --onboarding-accent-hover: color-mix(in srgb, var(--onboarding-accent) 88%, white);
-  --onboarding-text-primary: #f5f5f5;
-  --onboarding-text-secondary: #a1a1a1;
-  --onboarding-text-tertiary: #7c7c7c;
-  --onboarding-control-border: #2e2e2e;
-  --onboarding-surface: #141414;
-  --onboarding-surface-secondary: #1c1c1c;
-  --onboarding-surface-tertiary: #292929;
-  --onboarding-surface-hover: #202020;
+  --onboarding-text-primary: #f1ebe6;
+  --onboarding-text-secondary: #b3a8a4;
+  --onboarding-text-tertiary: #8f8481;
+  --onboarding-control-border: #352d2e;
+  /* Deeper wine for the dithered hero band so it does not glow pink on dark. */
+  --onboarding-hero: #7a1a2c;
+  --onboarding-surface: #161213;
+  --onboarding-surface-secondary: #1f1a1b;
+  --onboarding-surface-tertiary: #2c2526;
+  --onboarding-surface-hover: #231d1e;
   --onboarding-surface-tertiary-hover: #363636;
-  --onboarding-row-hover: #202020;
+  --onboarding-row-hover: #231d1e;
   /* The HUD inverts: on dark it is the one thing that gets *lighter* than the
      page, or the keycaps disappear into it. */
   --onboarding-inverse-surface: #f5f5f5;
@@ -1106,8 +1109,8 @@ a:hover {
   height: 1px;
   background: linear-gradient(
     90deg,
-    oklch(0.65 0.2 260 / 0.5),
-    oklch(0.7 0.18 280 / 0.3),
+    oklch(0.65 0.17 15 / 0.5),
+    oklch(0.7 0.17 15 / 0.3),
     transparent 80%
   );
   pointer-events: none;
@@ -1126,8 +1129,8 @@ a:hover {
 
 /* Toast — opaque dark HUD surface, same in light & dark mode */
 .toast-surface {
-  background: oklch(0.15 0.006 260);
-  border: 1px solid oklch(0.25 0.006 260);
+  background: oklch(0.15 0.006 20);
+  border: 1px solid oklch(0.25 0.006 20);
   box-shadow:
     inset 0 1px 0 oklch(1 0 0 / 0.04),
     0 8px 24px -4px oklch(0 0 0 / 0.5),
@@ -1184,11 +1187,11 @@ a:hover {
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 6px oklch(0.65 0.2 260 / 0.4);
+    box-shadow: 0 0 6px oklch(0.65 0.17 15 / 0.4);
     opacity: 0.8;
   }
   50% {
-    box-shadow: 0 0 8px oklch(0.65 0.2 260 / 0.6);
+    box-shadow: 0 0 8px oklch(0.65 0.17 15 / 0.6);
     opacity: 1;
   }
 }
@@ -1375,7 +1378,7 @@ a:hover {
 .referral-mesh-bg::before {
   width: 300px;
   height: 300px;
-  background: oklch(0.65 0.2 260);
+  background: #800020;
   opacity: 0.04;
   top: -80px;
   right: -60px;
@@ -1445,11 +1448,11 @@ a:hover {
   border-radius: inherit;
   background: conic-gradient(
     from 180deg at 50% 50%,
-    oklch(0.65 0.2 260 / 0.2),
+    oklch(0.65 0.17 15 / 0.2),
     oklch(0.55 0.2 320 / 0.1),
     oklch(0.6 0.18 180 / 0.15),
     oklch(0.55 0.2 100 / 0.1),
-    oklch(0.65 0.2 260 / 0.2)
+    oklch(0.65 0.17 15 / 0.2)
   );
   z-index: -1;
   opacity: 0;
@@ -1473,7 +1476,7 @@ a:hover {
   left: 0;
   right: 0;
   height: 2px;
-  background: oklch(0.65 0.2 260 / 0.4);
+  background: oklch(0.65 0.17 15 / 0.4);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
@@ -1614,7 +1617,7 @@ a:hover {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      oklch(0.65 0.2 260 / 0.04) 50%,
+      oklch(0.65 0.17 15 / 0.04) 50%,
       transparent 100%
     );
     background-position: -100% 0;
@@ -1661,10 +1664,10 @@ a:hover {
 .thinking-shimmer-text {
   background: linear-gradient(
     90deg,
-    oklch(0.65 0.01 260) 0%,
-    oklch(0.85 0.02 240) 40%,
-    oklch(0.65 0.01 260) 60%,
-    oklch(0.78 0.015 250) 100%
+    oklch(0.65 0.01 20) 0%,
+    oklch(0.85 0.03 20) 40%,
+    oklch(0.65 0.01 20) 60%,
+    oklch(0.78 0.02 20) 100%
   );
   background-size: 200% 100%;
   animation: thinking-shimmer 2s ease-in-out infinite;
@@ -1804,7 +1807,7 @@ a:hover {
 }
 
 .rich-text-editor-content ::selection {
-  background: oklch(0.62 0.22 260 / 0.15);
+  background: rgb(128 0 32 / 0.16);
 }
 
 /* Task list (checkboxes) */
@@ -1881,7 +1884,7 @@ a:hover {
    wins over the dark header background below. */
 .rich-text-editor-content .selectedCell,
 .dark .rich-text-editor-content .selectedCell {
-  background: oklch(0.62 0.22 260 / 0.15);
+  background: rgb(128 0 32 / 0.16);
 }
 
 /* Tiptap draws the gap cursor (e.g. above a table that starts the note) in black. */

@@ -304,7 +304,7 @@ export default function SetupChoiceStep({
             <div className="relative z-10 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 {/* Frame 48: 40px mark on the brand gradient. */}
-                <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-b from-[#4079ed] to-[#244587] text-white">
+                <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-b from-[#9a1f36] to-[#6b0f1a] text-white">
                   <BrandMark className="size-6" />
                 </span>
                 {/* Frame 49: the "Recommended" chip. Figma has white text on a
