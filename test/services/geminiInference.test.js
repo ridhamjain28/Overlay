@@ -55,7 +55,7 @@ test("Gemini cleanup uses native instructions and metadata-only logs", async (t)
   });
   assert.equal(
     requests[0].contents[0].parts[0].text,
-    "<transcript>\nprivate transcript\n</transcript>\n\nOutput only the cleaned transcript."
+    "<transcript>\nprivate transcript\n</transcript>\n\nOutput only the cleaned transcript, without the <transcript> tags."
   );
   assert.equal(JSON.stringify(logs).includes("private transcript"), false);
   assert.deepEqual(

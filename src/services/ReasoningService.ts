@@ -15,6 +15,7 @@ import { assertValidCleanupOutput } from "../utils/cleanupOutput";
 import { getSettings, isCloudCleanupMode } from "../stores/settingsStore";
 import { wrapCleanupTranscript } from "../config/prompts";
 import { stripThinkingTags } from "../helpers/stripThinking.js";
+import { stripTranscriptTags } from "../helpers/stripTranscriptTags.js";
 import {
   getLlmRequestTimeoutSeconds,
   getLlmStreamingFirstByteTimeoutSeconds,
@@ -545,13 +546,15 @@ class ReasoningService extends BaseReasoningService {
 
     const startTime = Date.now();
     try {
-      const result = await handler.call({
+      const rawResult = await handler.call({
         text,
         model: trimmedModel,
         agentName,
         config: dispatchConfig,
         ctx: this.providerContext,
       });
+      // Never paste the <transcript> wrapper tags the cleanup prompt uses.
+      const result = stripTranscriptTags(rawResult);
 
       if (validateCleanup) assertValidCleanupOutput(text, result);
 

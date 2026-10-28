@@ -33,7 +33,7 @@ export function getDefaultPromptText(kind: PromptKind, uiLanguage?: string): str
 // transcript, where models weight instructions most. Mirrors api/reason.ts
 // in openwhispr-api.
 export function wrapCleanupTranscript(text: string): string {
-  return `<transcript>\n${text}\n</transcript>\n\nOutput only the cleaned transcript.`;
+  return `<transcript>\n${text}\n</transcript>\n\nOutput only the cleaned transcript, without the <transcript> tags.`;
 }
 
 // Appended to the dictation-agent prompt only when a screenshot is attached.
