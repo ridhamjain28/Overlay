@@ -201,10 +201,11 @@ export function createOnboardingResumeState(): OnboardingResumeState {
 export function createOnboardingSession(): OnboardingSession {
   return {
     version: ONBOARDING_FLOW_VERSION,
-    currentStepId: "auth",
+    // Overlay has no accounts: start straight on the local, guest route.
+    currentStepId: "permissions",
     history: [],
-    authPath: null,
-    setupMode: null,
+    authPath: "guest",
+    setupMode: "local",
     selfHostedRequested: false,
     screenContextRequested: false,
     permissionGuide: null,
@@ -231,20 +232,24 @@ export function getOnboardingRoute(context: OnboardingRouteContext): OnboardingS
 
   const setupChoice = context.skipSetupChoice ? [] : (["setup-choice"] as OnboardingStepId[]);
 
-  const route =
-    context.authPath === "guest"
-      ? // Guests still need the permission grants and a hotkey they have seen:
-        // finalizeOnboarding registers dictationHotkey either way, and skipping
-        // these steps shipped users who neither granted the mic nor knew their
-        // trigger key.
-        (["auth", "permissions", "dictation-hotkey", "setup-choice"] as OnboardingStepId[])
-      : [
-          ...ACCOUNT_ROUTE,
-          ...(context.agentAllowed
-            ? (["assistant-hotkey", "assistant-demo"] as OnboardingStepId[])
-            : []),
-          ...setupChoice,
-        ];
+  // Overlay: no account step and no cloud choice. Grant permissions, pick a
+  // language (Hinglish lives here), learn both hotkeys, then download a local
+  // Whisper model. The assistant already points at local Ollama by default.
+  if (context.authPath === "guest") {
+    return [
+      "permissions",
+      "languages",
+      "dictation-hotkey",
+      ...(context.agentAllowed ? (["assistant-hotkey"] as OnboardingStepId[]) : []),
+      "local-dictation",
+    ];
+  }
+
+  const route: OnboardingStepId[] = [
+    ...ACCOUNT_ROUTE,
+    ...(context.agentAllowed ? (["assistant-hotkey", "assistant-demo"] as OnboardingStepId[]) : []),
+    ...setupChoice,
+  ];
 
   if (context.requiredModelsPending && context.authPath === "account") {
     route.splice(route.indexOf("auth") + 1, 0, "required-models");

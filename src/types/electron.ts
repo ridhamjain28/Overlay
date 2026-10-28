@@ -3286,6 +3286,33 @@ declare global {
       cancelProductHelp: (id: string) => void;
       productHelpBasics: () => Promise<import("../services/help/productHelp").HelpBasics>;
 
+      // Overlay: answer sources and allowlisted laptop actions (see src/helpers/overlay/)
+      overlayAnswerSourcesStatus?: () => Promise<
+        import("../services/overlay/answerRouter").AnswerSourcesStatus
+      >;
+      overlayAnswerStreamStart?: (
+        requestId: string,
+        payload: {
+          source: "openclaw" | "gemini";
+          messages: Array<{ role: string; content: unknown }>;
+          user?: string;
+        }
+      ) => void;
+      overlayAnswerStreamCancel?: (requestId: string) => void;
+      onOverlayAnswerStreamChunk?: (
+        callback: (payload: { requestId: string; text: string }) => void
+      ) => () => void;
+      onOverlayAnswerStreamError?: (
+        callback: (payload: { requestId: string; error: string }) => void
+      ) => () => void;
+      onOverlayAnswerStreamEnd?: (callback: (payload: { requestId: string }) => void) => () => void;
+      overlaySystemAction?: (request: {
+        action: string;
+        app?: string;
+        url?: string;
+        level?: number;
+      }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
+
       // Agent cloud tools
       agentOpenNote?: (noteId: number) => Promise<{ success: boolean; error?: string }>;
       agentWebSearch?: (

@@ -27,6 +27,15 @@ export const webSearchTool: ToolDefinition = {
 
     try {
       const raw = await window.electronAPI.agentWebSearch!(query, numResults);
+      // Overlay: the handler never throws; it reports a missing key or a
+      // failed provider as { success: false, error }.
+      if (raw && raw.success === false) {
+        return {
+          success: false,
+          data: null,
+          displayText: raw.error || "Web search is not available",
+        };
+      }
 
       const results = Array.isArray(raw?.results)
         ? raw.results.map(

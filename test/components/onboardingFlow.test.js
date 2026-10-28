@@ -56,18 +56,22 @@ test("onboarding permission checks use the resolved macOS feature gate", () => {
   );
 });
 
-test("guest flow keeps permissions and the hotkey before setup choice", async () => {
+test("Overlay's guest flow is permissions, language, both hotkeys and local setup", async () => {
   const { getOnboardingRoute } = await load();
-  // finalizeOnboarding registers the dictation hotkey on every path, so guests
-  // must still grant the mic and see the key they are getting.
+  // Overlay has no accounts: the guest route skips auth and the setup choice
+  // and always finishes on the local speech model.
   assert.deepEqual(getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true }), [
-    "auth",
     "permissions",
+    "languages",
     "dictation-hotkey",
-    "setup-choice",
+    "assistant-hotkey",
+    "local-dictation",
   ]);
+  assert.deepEqual(
+    getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: false }),
+    ["permissions", "languages", "dictation-hotkey", "local-dictation"]
+  );
 });
-
 test("policy removes assistant states", async () => {
   const { getOnboardingRoute } = await load();
   const route = getOnboardingRoute({ authPath: "account", setupMode: null, agentAllowed: false });
@@ -78,10 +82,6 @@ test("policy removes assistant states", async () => {
 
 test("setup choice appends the selected two-stage route", async () => {
   const { getOnboardingRoute } = await load();
-  assert.deepEqual(
-    getOnboardingRoute({ authPath: "guest", setupMode: "byok", agentAllowed: true }),
-    ["auth", "permissions", "dictation-hotkey", "setup-choice", "byok-dictation", "byok-assistant"]
-  );
   assert.deepEqual(
     getOnboardingRoute({ authPath: "account", setupMode: "local", agentAllowed: false }).slice(-2),
     ["setup-choice", "local-dictation"]
@@ -356,11 +356,10 @@ test("an off-route assistant step clamps to its neighbour, not the end of the ro
 test("route helpers recover from ineligible steps", async () => {
   const { getNextOnboardingStep, getOnboardingRoute, reconcileStepWithRoute } = await load();
   const route = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
-  assert.equal(reconcileStepWithRoute("assistant-demo", route), "setup-choice");
-  assert.equal(getNextOnboardingStep("auth", route), "permissions");
-  assert.equal(getNextOnboardingStep("setup-choice", route), null);
+  assert.equal(reconcileStepWithRoute("assistant-demo", route), "assistant-hotkey");
+  assert.equal(getNextOnboardingStep("permissions", route), "languages");
+  assert.equal(getNextOnboardingStep("local-dictation", route), null);
 });
-
 test("progress counts every step the user is shown, once each", async () => {
   const { getOnboardingProgress, getOnboardingRoute } = await load();
   const route = getOnboardingRoute({ authPath: "account", setupMode: null, agentAllowed: true });
@@ -398,22 +397,15 @@ test("progress total tracks the conditional parts of the route", async () => {
 
 test("progress counts only the guest steps that draw a footer", async () => {
   const { getOnboardingProgress, getOnboardingRoute } = await load();
-  // auth and permissions are compact, so the pre-plan guest route counts
-  // dictation-hotkey and setup-choice: a two-dot row.
+  // permissions is compact, so Overlay's guest route counts the other four.
   const guest = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
-  assert.deepEqual(getOnboardingProgress("setup-choice", guest), { index: 1, total: 2 });
-
-  const guestByok = getOnboardingRoute({
-    authPath: "guest",
-    setupMode: "byok",
-    agentAllowed: true,
-  });
-  assert.deepEqual(getOnboardingProgress("setup-choice", guestByok), { index: 1, total: 4 });
+  assert.equal(getOnboardingProgress("permissions", guest), null);
+  assert.deepEqual(getOnboardingProgress("languages", guest), { index: 0, total: 4 });
+  assert.deepEqual(getOnboardingProgress("local-dictation", guest), { index: 3, total: 4 });
 
   // An off-route step has no position to report.
-  assert.equal(getOnboardingProgress("notes", guestByok), null);
+  assert.equal(getOnboardingProgress("notes", guest), null);
 });
-
 test("required models insert a blocking step right after auth — account path only", async () => {
   const { getOnboardingRoute } = await load();
   const route = getOnboardingRoute({

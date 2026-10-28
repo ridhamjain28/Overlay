@@ -3951,6 +3951,7 @@
       "linear_create_issueStatus": "Preparazione di una issue di Linear...",
       "linear_commentStatus": "Preparazione di un commento di Linear...",
       "web_searchStatus": "Ricerca sul web...",
+      "system_actionStatus": "Lo faccio sul tuo PC...",
       "copy_to_clipboardStatus": "Copia negli appunti...",
       "get_calendar_eventsStatus": "Controllo del calendario...",
       "get_calendar_availabilityStatus": "Controllo della disponibilità...",

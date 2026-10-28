@@ -62,15 +62,12 @@ test("a model too small for tools never promises integrations a surface doesn't 
   assert.equal(entry.name, "Tools (web search, calendar, searching or changing notes)");
 });
 
-test("signed out, web search and connectors say to sign in", async () => {
+test("signed out, only connectors say to sign in (Overlay web search needs no account)", async () => {
   const { resolveUnavailableCapabilities } = await load();
   const unavailable = resolveUnavailableCapabilities(input({ isSignedIn: false }));
   assert.deepEqual(
     unavailable.map((item) => [item.name.split(" ")[0], item.reason]),
-    [
-      ["Web", "signedOut"],
-      ["Integrations", "signedOut"],
-    ]
+    [["Integrations", "signedOut"]]
   );
 });
 
@@ -145,7 +142,7 @@ test("a surface without connectors never names them", async () => {
   );
   assert.deepEqual(
     unavailable.map((item) => item.name),
-    ["Web search"]
+    []
   );
 });
 
@@ -154,10 +151,7 @@ test("every connector entry is one that sends for the user, and nothing else is"
   const signedOut = resolveUnavailableCapabilities(input({ isSignedIn: false }));
   assert.deepEqual(
     signedOut.map((item) => [item.name, item.delivers === true]),
-    [
-      ["Web search", false],
-      ["Integrations (Email, Slack, Linear, GitHub)", true],
-    ]
+    [["Integrations (Email, Slack, Linear, GitHub)", true]]
   );
   const notConnected = resolveUnavailableCapabilities(
     input({

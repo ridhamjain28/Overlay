@@ -1,0 +1,8 @@
+faster-whisper>=1.1.0
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+# For CUDA on Windows, faster-whisper needs cuBLAS + cuDNN 9 DLLs. These pip
+# wheels provide them (start.bat adds them to PATH):
+nvidia-cublas-cu12; platform_system == "Windows"
+nvidia-cudnn-cu12>=9,<10; platform_system == "Windows"

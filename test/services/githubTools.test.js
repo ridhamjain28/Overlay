@@ -336,10 +336,7 @@ test("a repository main may not have seen all of is a name to check, not an inst
   assert.match(unlisted.data.guidance, /couldn't read every repository/);
   assert.match(unlisted.data.guidance, /check the repository name/);
   assert.equal("installUrl" in unlisted.data, false);
-  assert.equal(
-    unlisted.displayText,
-    "Couldn't confirm the OpenWhispr GitHub App is installed there."
-  );
+  assert.equal(unlisted.displayText, "Couldn't confirm the Overlay GitHub App is installed there.");
   assert.match(missing.data.guidance, /install the OpenWhispr GitHub App/);
   assert.equal(missing.data.installUrl, GITHUB.manageUrl);
 });

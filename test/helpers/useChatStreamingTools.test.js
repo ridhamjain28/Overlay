@@ -869,10 +869,8 @@ test("signed out, the model is told to point the user at signing in", async (t) 
   });
   await captured.sendToAI("What's new in AI today?", []);
   const prompt = systemPromptOf(sentMessages[0]);
-  assert.match(
-    prompt,
-    /- Web search: needs the user to sign in to OpenWhispr in Settings → Profile\./
-  );
+  // Overlay: web search runs on the user's own keys, so it never asks to sign in.
+  assert.doesNotMatch(prompt, /- Web search: needs the user to sign in/);
   assert.match(
     prompt,
     /- Integrations \(Email, Slack, Linear, GitHub\): needs the user to sign in/

@@ -820,7 +820,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       settingsStore.setCloudTranscriptionForAllScopes({ useLocalWhisper: true });
       // Same policy-shortened-route case as BYOK: no local LLM was downloaded,
       // so cleanup must not silently fall back to a cloud default.
-      if (!route.includes("local-assistant")) {
+      // Overlay: the guest route has no local-assistant step on purpose, because
+      // cleanup/agent run on Ollama (self-hosted defaults), so keep cleanup on.
+      if (!route.includes("local-assistant") && session.authPath !== "guest") {
         settingsStore.updateCleanupSettings({ useCleanupModel: false });
       }
     } else if (currentStepId === "local-assistant") {
@@ -849,6 +851,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     platform,
     registerHotkey,
     route,
+    session.authPath,
     session.setupMode,
     setAccessibilitySkipped,
     setDictationHotkeyConfirmed,

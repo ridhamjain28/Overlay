@@ -1,6 +1,17 @@
 const { OrukeetStreaming, MANAGED_STREAM_OPTIONS } = require("./orukeetStreaming");
 const { connectManagedOrukeet } = require("./orukeetCloudSession");
-const { ipcMain, app, shell, BrowserWindow, systemPreferences, net, session } = require("electron");
+const {
+  ipcMain,
+  app,
+  shell,
+  dialog,
+  BrowserWindow,
+  systemPreferences,
+  net,
+  session,
+} = require("electron");
+const { runWebSearch } = require("./overlay/webSearch");
+const { registerOverlayIpc } = require("./overlay/registerOverlayIpc");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -6573,7 +6584,7 @@ class IPCHandlers {
       process.env.AUTH_URL ||
       process.env.VITE_AUTH_URL ||
       runtimeEnv.VITE_AUTH_URL ||
-      "https://auth.openwhispr.com";
+      "http://127.0.0.1:9"; // Overlay: no account server
 
     const getSessionCookiesFromWindow = async (win) => {
       const scopedUrls = [getAuthUrl(), getApiUrl()].filter(Boolean);
@@ -11022,43 +11033,15 @@ class IPCHandlers {
       }
     });
 
-    ipcMain.handle("agent-web-search", async (event, query, numResults = 5) => {
-      try {
-        const apiUrl = getApiUrl();
-        if (!apiUrl) throw new Error("OpenWhispr API URL not configured");
-
-        const authHeader = await getAuthHeader(event);
-        if (!Object.keys(authHeader).length) throw new Error("Not authenticated");
-
-        debugLogger.debug("Agent web search request", { query, numResults }, "cloud-api");
-
-        const response = await proxyFetch(`${apiUrl}/api/agent/web-search`, {
-          method: "POST",
-          headers: withPolicyHeaders({
-            "Content-Type": "application/json",
-            ...authHeader,
-          }),
-          body: JSON.stringify({ query, numResults }),
-        });
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            return { success: false, error: "Session expired", code: "AUTH_EXPIRED" };
-          }
-          if (response.status === 503) {
-            return { success: false, error: "Request timed out", code: "SERVER_ERROR" };
-          }
-          const error = await readPolicyResponseError(response, `API error: ${response.status}`);
-          return toPolicyFailure(error);
-        }
-
-        const data = await response.json();
-        return { success: true, ...data };
-      } catch (error) {
-        debugLogger.error("Agent web search error:", error);
-        return toPolicyFailure(error);
-      }
+    // Overlay: web search runs on the user's own keys (Gemini with Google
+    // Search grounding, then Tavily, then SearxNG). No account, no OpenWhispr
+    // server. See src/helpers/overlay/webSearch.js.
+    ipcMain.handle("agent-web-search", async (_event, query, numResults = 5) => {
+      debugLogger.debug("Agent web search request", { numResults }, "overlay");
+      return runWebSearch(query, numResults, { logger: debugLogger });
     });
+
+    registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugLogger });
 
     ipcMain.handle(
       "cloud-streaming-usage",

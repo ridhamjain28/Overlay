@@ -325,3 +325,18 @@ src/assets/fonts/yowza/*.otf
 
 # Local scratch output from the Superpowers Claude Code plugin (SDD fix reports etc.).
 .superpowers/
+
+# --- Overlay ---
+# Local secrets (keys live in %APPDATA%\Overlay\.env, never in the repo)
+.env
+.env.*
+!.env.example
+# Scratch and logs
+logs/
+*.log
+# Hinglish ASR server
+hinglish-asr/.venv/
+hinglish-asr/__pycache__/
+# Patches and build output
+*.patch
+dist/

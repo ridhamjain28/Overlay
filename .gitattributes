@@ -1,1 +1,3 @@
-openwhispr-mobile/patches/*.patch -whitespace
+# Windows batch files must keep CRLF line endings
+*.bat text eol=crlf
+*.patch -whitespace

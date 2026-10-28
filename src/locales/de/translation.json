@@ -4123,6 +4123,7 @@
       "linear_create_issueStatus": "Linear-Issue wird vorbereitet...",
       "linear_commentStatus": "Linear-Kommentar wird vorbereitet...",
       "web_searchStatus": "Websuche...",
+      "system_actionStatus": "Wird auf deinem PC ausgeführt...",
       "copy_to_clipboardStatus": "In Zwischenablage kopieren...",
       "get_calendar_eventsStatus": "Kalender wird geprüft...",
       "get_calendar_availabilityStatus": "Verfügbarkeit wird geprüft...",

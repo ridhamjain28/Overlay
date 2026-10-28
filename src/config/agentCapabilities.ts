@@ -83,9 +83,8 @@ export function resolveUnavailableCapabilities(
 
   const unavailable: UnavailableCapability[] = [];
 
-  if (!input.isSignedIn) {
-    unavailable.push({ name: "Web search", reason: "signedOut", where: locations.account });
-  } else if (!input.webSearch.allowed) {
+  // Overlay: web search needs no account (it runs on the user's own keys).
+  if (!input.webSearch.allowed) {
     unavailable.push({
       name: "Web search",
       reason: input.webSearch.blockedByOrg ? "policyOff" : "policyLoading",

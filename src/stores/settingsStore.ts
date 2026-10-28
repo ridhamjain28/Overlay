@@ -75,6 +75,10 @@ let _ReasoningService: typeof import("../services/ReasoningService").default | n
 // store with partial window stubs that don't define it.
 const isBrowser = typeof window !== "undefined" && typeof localStorage !== "undefined";
 
+// Overlay defaults: a local Ollama server and a small tool-capable model.
+export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
+export const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
+
 const DEFAULT_CLOUD_TRANSCRIPTION_PROVIDER = "openai";
 
 export const TRANSCRIPTION_POLICY_PROVIDER_IDS = [
@@ -403,6 +407,31 @@ function deriveLegacyReasoningMode(
   if (provider && localLlmProviderIds.has(provider)) return "local";
   return "providers";
 }
+
+// Overlay: decided before any migration writes, so only a truly empty profile
+// (no saved modes, models or legacy keys) gets Overlay's local-first defaults.
+const OVERLAY_PROFILE_MARKER_KEYS = [
+  "onboardingCompleted",
+  "_providerSettingsMigrated",
+  "_llmScopeKeysMigrated",
+  "transcriptionMode",
+  "useLocalWhisper",
+  "cloudTranscriptionMode",
+  "reasoningMode",
+  "cloudReasoningMode",
+  "reasoningProvider",
+  "reasoningModel",
+  "cleanupMode",
+  "cleanupModel",
+  "chatAgentMode",
+  "chatAgentModel",
+  "dictationAgentMode",
+  "dictationAgentModel",
+];
+const isFreshOverlayProfile =
+  isBrowser &&
+  localStorage.getItem("_overlayDefaultsApplied") !== "1" &&
+  OVERLAY_PROFILE_MARKER_KEYS.every((key) => localStorage.getItem(key) === null);
 
 function migrateProviderSettings() {
   if (!isBrowser) return;
@@ -866,8 +895,9 @@ function migrateRetiredCloudModels() {
       .map(({ storeKeys }) => storeKeys)
       .filter(({ mode }) => {
         const storedMode = localStorage.getItem(mode);
-        // An unset mode loads as the default, openwhispr.
-        return !storedMode || usesCloudModelCatalog(storedMode);
+        // Overlay: an unset mode loads as the default, self-hosted (Ollama),
+        // whose model ids are free-form and must not be swept.
+        return !!storedMode && usesCloudModelCatalog(storedMode);
       })
   );
   if (swept.length === 0) return;
@@ -896,6 +926,51 @@ function migrateRetiredCloudModels() {
 
 migrateRetiredCloudModels();
 
+// Overlay: on a brand-new profile, the one-time OpenWhispr migrations above
+// derive "openwhispr" (cloud) modes from absent legacy keys. Before the first
+// onboarding finishes, replace them with Overlay's local-first defaults:
+// local Whisper for speech-to-text and the local Ollama server for every
+// text scope. Runs once; later changes in Settings are never overwritten.
+export const OVERLAY_DEFAULTS_FLAG = "_overlayDefaultsApplied";
+const OVERLAY_TEXT_SCOPES = [
+  "dictationCleanup",
+  "dictationAgent",
+  "chatIntelligence",
+  "noteFormatting",
+  "dictationTranslation",
+] as const;
+
+function applyOverlayFirstRunDefaults() {
+  if (!isBrowser) return;
+  if (localStorage.getItem(OVERLAY_DEFAULTS_FLAG) === "1") return;
+  if (isFreshOverlayProfile) {
+    for (const [key, value] of [
+      ["transcriptionMode", "local"],
+      ["useLocalWhisper", "true"],
+      ["meetingTranscriptionMode", "local"],
+      ["meetingUseLocalWhisper", "true"],
+      ["uploadTranscriptionMode", "local"],
+      ["uploadUseLocalWhisper", "true"],
+    ]) {
+      localStorage.setItem(key, value);
+    }
+    for (const scopeId of OVERLAY_TEXT_SCOPES) {
+      const keys = (INFERENCE_SCOPES as Record<string, { storeKeys: Record<string, string> }>)[
+        scopeId
+      ]?.storeKeys;
+      if (!keys) continue;
+      localStorage.setItem(keys.mode, "self-hosted");
+      localStorage.setItem(keys.cloudMode, "byok");
+      localStorage.setItem(keys.remoteUrl, OVERLAY_DEFAULT_OLLAMA_URL);
+      localStorage.setItem(keys.model, OVERLAY_DEFAULT_MODEL);
+      localStorage.setItem(keys.disableThinking, "true");
+    }
+  }
+  localStorage.setItem(OVERLAY_DEFAULTS_FLAG, "1");
+}
+
+applyOverlayFirstRunDefaults();
+
 export interface SettingsState
   extends
     TranscriptionSettings,
@@ -908,6 +983,8 @@ export interface SettingsState
     ThemeSettings,
     ChatAgentSettings {
   isSignedIn: boolean;
+  answerSource: string;
+  setAnswerSource: (value: string) => void;
   audioCuesEnabled: boolean;
   pauseMediaOnDictation: boolean;
   floatingIconAutoHide: boolean;
@@ -1531,8 +1608,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   uiLanguage: normalizeUiLanguage(
     isBrowser ? localStorage.getItem("uiLanguage") || i18n.language : null
   ),
-  useLocalWhisper: readBoolean("useLocalWhisper", false),
-  whisperModel: readString("whisperModel", "base"),
+  useLocalWhisper: readBoolean("useLocalWhisper", true),
+  // Overlay: "small" is multilingual and handles Hindi/Hinglish far better than "base".
+  whisperModel: readString("whisperModel", "small"),
   localTranscriptionProvider: readLocalProvider("localTranscriptionProvider"),
   parakeetModel: readString("parakeetModel", ""),
   cohereModel: readString("cohereModel", DEFAULT_COHERE_MODEL),
@@ -1575,7 +1653,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   autoGenerateNoteTitle: readBoolean("autoGenerateNoteTitle", true),
   useCleanupModel: readBoolean("useCleanupModel", true),
   useDictationAgent: readBoolean("useDictationAgent", true),
-  cleanupModel: readString("cleanupModel", ""),
+  cleanupModel: readString("cleanupModel", OVERLAY_DEFAULT_MODEL),
   cleanupProvider: readString("cleanupProvider", "openai"),
 
   // Secrets hydrate from main process in initializeSettings, never from localStorage.
@@ -1735,11 +1813,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   noteFilesEnabled: readBoolean("noteFilesEnabled", false),
   noteFilesPath: readString("noteFilesPath", ""),
   isSignedIn: readBoolean("isSignedIn", false),
+  // Overlay: which source answers ("auto" | "local" | "openclaw" | "gemini").
+  answerSource: readString("answerSource", "auto"),
+  setAnswerSource: createStringSetter("answerSource"),
 
   transcriptionMode: (() => {
-    const v = readString("transcriptionMode", "openwhispr");
+    // Overlay: speech-to-text runs locally (whisper.cpp, CUDA when available) by default.
+    const v = readString("transcriptionMode", "local");
     if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    return "local" as InferenceMode;
   })(),
   remoteTranscriptionType: (() => {
     const v = readString("remoteTranscriptionType", "lan");
@@ -1748,7 +1830,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   remoteTranscriptionUrl: readString("remoteTranscriptionUrl", ""),
   remoteTranscriptionModel: readString("remoteTranscriptionModel", ""),
   cleanupMode: (() => {
-    const v = readString("cleanupMode", "openwhispr");
+    // Overlay: answer with the local Ollama server by default.
+    const v = readString("cleanupMode", "self-hosted");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1757,17 +1840,17 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "self-hosted" as InferenceMode;
   })(),
-  cleanupRemoteUrl: readString("cleanupRemoteUrl", ""),
+  cleanupRemoteUrl: readString("cleanupRemoteUrl", OVERLAY_DEFAULT_OLLAMA_URL),
   keepLocalModelLoaded: readBoolean("keepLocalModelLoaded", false),
 
   meetingTranscriptionMode: (() => {
-    const v = readString("meetingTranscriptionMode", "openwhispr");
+    const v = readString("meetingTranscriptionMode", "local");
     if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    return "local" as InferenceMode;
   })(),
-  meetingUseLocalWhisper: readBoolean("meetingUseLocalWhisper", false),
+  meetingUseLocalWhisper: readBoolean("meetingUseLocalWhisper", true),
   meetingWhisperModel: readString("meetingWhisperModel", ""),
   meetingLocalTranscriptionProvider: readScopedLocalProvider("meetingLocalTranscriptionProvider"),
   meetingParakeetModel: readString("meetingParakeetModel", ""),
@@ -1783,11 +1866,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   meetingRemoteTranscriptionUrl: readString("meetingRemoteTranscriptionUrl", ""),
 
   uploadTranscriptionMode: (() => {
-    const v = readString("uploadTranscriptionMode", "openwhispr");
+    const v = readString("uploadTranscriptionMode", "local");
     if (v === "openwhispr" || v === "providers" || v === "local" || v === "self-hosted") return v;
-    return "openwhispr" as InferenceMode;
+    return "local" as InferenceMode;
   })(),
-  uploadUseLocalWhisper: readBoolean("uploadUseLocalWhisper", false),
+  uploadUseLocalWhisper: readBoolean("uploadUseLocalWhisper", true),
   uploadWhisperModel: readString("uploadWhisperModel", ""),
   uploadLocalTranscriptionProvider: readScopedLocalProvider("uploadLocalTranscriptionProvider"),
   uploadParakeetModel: readString("uploadParakeetModel", ""),
@@ -1800,7 +1883,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   uploadRemoteTranscriptionModel: readString("uploadRemoteTranscriptionModel", ""),
 
   noteFormattingMode: (() => {
-    const v = readString("noteFormattingMode", "openwhispr");
+    const v = readString("noteFormattingMode", "self-hosted");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1809,17 +1892,17 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "self-hosted" as InferenceMode;
   })(),
   noteFormattingProvider: readString("noteFormattingProvider", ""),
   noteFormattingModel: readString("noteFormattingModel", ""),
   noteFormattingCloudMode: readString("noteFormattingCloudMode", ""),
   noteFormattingCloudBaseUrl: readString("noteFormattingCloudBaseUrl", ""),
-  noteFormattingRemoteUrl: readString("noteFormattingRemoteUrl", ""),
+  noteFormattingRemoteUrl: readString("noteFormattingRemoteUrl", OVERLAY_DEFAULT_OLLAMA_URL),
   noteFormattingCustomApiKey: readString("noteFormattingCustomApiKey", ""),
 
   translationMode: (() => {
-    const v = readString("translationMode", "openwhispr");
+    const v = readString("translationMode", "self-hosted");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1828,13 +1911,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "self-hosted" as InferenceMode;
   })(),
   translationProvider: readString("translationProvider", ""),
-  translationModel: readString("translationModel", ""),
+  translationModel: readString("translationModel", OVERLAY_DEFAULT_MODEL),
   translationCloudMode: readString("translationCloudMode", "openwhispr"),
   translationCloudBaseUrl: readString("translationCloudBaseUrl", ""),
-  translationRemoteUrl: readString("translationRemoteUrl", ""),
+  translationRemoteUrl: readString("translationRemoteUrl", OVERLAY_DEFAULT_OLLAMA_URL),
   translationCustomApiKey: readString("translationCustomApiKey", ""),
   translationDisableThinking: readBoolean("translationDisableThinking", true),
   translationReasoningEffort: readString("translationReasoningEffort", ""),
@@ -1932,11 +2015,12 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     set({ translationTargets: normalized });
   },
 
-  chatAgentModel: readString("chatAgentModel", "openai/gpt-oss-120b"),
+  chatAgentModel: readString("chatAgentModel", OVERLAY_DEFAULT_MODEL),
   chatAgentProvider: readString("chatAgentProvider", "groq"),
   chatAgentCloudMode: readString("chatAgentCloudMode", "openwhispr"),
   chatAgentMode: (() => {
-    const v = readString("chatAgentMode", "openwhispr");
+    // Overlay: answer with the local Ollama server by default.
+    const v = readString("chatAgentMode", "self-hosted");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1945,14 +2029,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "self-hosted" as InferenceMode;
   })(),
-  chatAgentRemoteUrl: readString("chatAgentRemoteUrl", ""),
+  chatAgentRemoteUrl: readString("chatAgentRemoteUrl", OVERLAY_DEFAULT_OLLAMA_URL),
   chatAgentCloudBaseUrl: readString("chatAgentCloudBaseUrl", ""),
   chatAgentCustomApiKey: readString("chatAgentCustomApiKey", ""),
 
   dictationAgentMode: (() => {
-    const v = readString("dictationAgentMode", "openwhispr");
+    // Overlay: answer with the local Ollama server by default.
+    const v = readString("dictationAgentMode", "self-hosted");
     if (
       v === "openwhispr" ||
       v === "providers" ||
@@ -1961,13 +2046,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       v === "enterprise"
     )
       return v;
-    return "openwhispr" as InferenceMode;
+    return "self-hosted" as InferenceMode;
   })(),
   dictationAgentProvider: readString("dictationAgentProvider", ""),
-  dictationAgentModel: readString("dictationAgentModel", ""),
+  dictationAgentModel: readString("dictationAgentModel", OVERLAY_DEFAULT_MODEL),
   dictationAgentCloudMode: readString("dictationAgentCloudMode", "openwhispr"),
   dictationAgentCloudBaseUrl: readString("dictationAgentCloudBaseUrl", ""),
-  dictationAgentRemoteUrl: readString("dictationAgentRemoteUrl", ""),
+  dictationAgentRemoteUrl: readString("dictationAgentRemoteUrl", OVERLAY_DEFAULT_OLLAMA_URL),
   dictationAgentCustomApiKey: readString("dictationAgentCustomApiKey", ""),
 
   voiceAgentScreenContext: readBoolean("voiceAgentScreenContext", false),

@@ -45,11 +45,11 @@ try {
 
 const VALID_CHANNELS = new Set(["development", "staging", "production"]);
 const DEFAULT_OAUTH_PROTOCOL_BY_CHANNEL = {
-  development: "openwhispr-dev",
-  staging: "openwhispr-staging",
-  production: "openwhispr",
+  development: "overlay-dev",
+  staging: "overlay-staging",
+  production: "overlay",
 };
-const BASE_WINDOWS_APP_ID = "com.gizmolabs.openwhispr";
+const BASE_WINDOWS_APP_ID = "com.ridhamjain.overlay";
 const DEFAULT_AUTH_BRIDGE_PORT = 5199;
 
 function isElectronBinaryExec() {
@@ -88,7 +88,7 @@ function configureChannelUserDataPath() {
     return;
   }
 
-  const isolatedPath = path.join(app.getPath("appData"), `OpenWhispr-${APP_CHANNEL}`);
+  const isolatedPath = path.join(app.getPath("appData"), `Overlay-${APP_CHANNEL}`);
   app.setPath("userData", isolatedPath);
 }
 
@@ -266,8 +266,8 @@ if (!gotSingleInstanceLock) {
 const isLiveWindow = (window) => window && !window.isDestroyed();
 
 // Ensure macOS menus use the proper casing for the app name
-if (process.platform === "darwin" && app.getName() !== "OpenWhispr") {
-  app.setName("OpenWhispr");
+if (process.platform === "darwin" && app.getName() !== "Overlay") {
+  app.setName("Overlay");
 }
 
 // Add global error handling for uncaught exceptions
@@ -960,7 +960,7 @@ function resolveAuthUrl() {
     process.env.AUTH_URL ||
     process.env.VITE_AUTH_URL ||
     runtimeEnv.VITE_AUTH_URL ||
-    "https://auth.openwhispr.com"
+    "http://127.0.0.1:9"
   );
 }
 
@@ -1146,7 +1146,7 @@ function startAuthBridgeServer() {
 
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(
-      "<html><body><h3>OpenWhispr sign-in complete.</h3><p>You can close this tab.</p></body></html>"
+      "<html><body><h3>Overlay sign-in complete.</h3><p>You can close this tab.</p></body></html>"
     );
   });
 

@@ -1975,6 +1975,7 @@
       "linear_create_issueStatus": "جارٍ تحضير مشكلة Linear...",
       "linear_commentStatus": "جارٍ تحضير تعليق Linear...",
       "web_searchStatus": "جاري البحث في الويب...",
+      "system_actionStatus": "جاري التنفيذ على جهازك...",
       "copy_to_clipboardStatus": "جاري النسخ إلى الحافظة...",
       "get_calendar_eventsStatus": "جاري التحقق من التقويم...",
       "get_calendar_availabilityStatus": "جاري التحقق من الأوقات المتاحة...",

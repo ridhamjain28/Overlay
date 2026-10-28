@@ -221,6 +221,15 @@
       "instruction": "LANGUAGE CONTEXT: The user's preferred language is Hindi. The transcribed text will be in Hindi. You MUST write your entire output in Hindi while maintaining proper Hindi grammar and punctuation. If the user mixes Hindi and English (Hinglish), preserve that natural code-switching."
     },
     {
+      "code": "hi-Latn",
+      "label": "Hinglish (Roman script)",
+      "flag": "\uD83C\uDDEE\uD83C\uDDF3",
+      "whisper": true,
+      "parakeet": false,
+      "assemblyai": false,
+      "instruction": "LANGUAGE CONTEXT: The user speaks Hinglish (Hindi mixed with English). You MUST write your entire output in Roman (Latin) script, the way Indians type Hinglish in chat, e.g. 'kal meeting 5 baje hai, please reminder set kar do'. Never use Devanagari: if the input contains Devanagari, transliterate it to Roman script. Keep English words in English. Do not translate the meaning into pure English or pure Hindi."
+    },
+    {
       "code": "hu",
       "label": "Hungarian",
       "flag": "\uD83C\uDDED\uD83C\uDDFA",

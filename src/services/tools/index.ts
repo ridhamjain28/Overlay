@@ -7,6 +7,7 @@ import { updateNoteTool } from "./updateNoteTool";
 import { listFoldersTool } from "./listFoldersTool";
 import { clipboardTool } from "./clipboardTool";
 import { webSearchTool } from "./webSearchTool";
+import { systemActionTool } from "./systemActionTool";
 import { calendarTool } from "./calendarTool";
 import { calendarAvailabilityTool } from "./calendarAvailabilityTool";
 import { createSnippetTool, createUpdateSnippetsTool, type SnippetActions } from "./snippetTool";
@@ -29,6 +30,8 @@ interface ToolRegistrySettings {
   /** Pins search_notes to a container (overview chat); the LLM cannot widen it. */
   searchScope?: ContainerScope;
   webSearchEnabled: boolean;
+  /** Overlay: offer the allowlisted system_action tool (default on). */
+  systemActionsEnabled?: boolean;
   /** Live dictionary and snippet access; enables the vocabulary tools. */
   vocabulary?: DictionaryActions & SnippetActions;
   /** Present only when connectors are available (signed in, paid, policy allows). */
@@ -57,8 +60,14 @@ export function createToolRegistry(settings: ToolRegistrySettings): ToolRegistry
     registry.register(createUpdateSnippetsTool(settings.vocabulary));
   }
 
-  if (settings.isSignedIn && settings.webSearchEnabled) {
+  // Overlay: web search runs on the user's own keys (no account needed).
+  if (settings.webSearchEnabled) {
     registry.register(webSearchTool);
+  }
+
+  // Overlay: allowlisted laptop actions (volume, media, open app/link, ...).
+  if (settings.systemActionsEnabled !== false) {
+    registry.register(systemActionTool);
   }
 
   if (settings.calendarConnected) {

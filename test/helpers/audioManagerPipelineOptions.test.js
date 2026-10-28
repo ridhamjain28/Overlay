@@ -49,7 +49,7 @@ test("combined cleanup options honor every eligibility guard and use the actual 
   const manager = createManager();
   useSettingsStore.setState(good);
   assert.deepEqual(manager.getPipelineCleanupOptions(useSettingsStore.getState()), {
-    agentName: "OpenWhispr",
+    agentName: "Overlay",
     customDictionary: ["Orukeet"],
     customPrompt: good.customPrompts.cleanup,
     language: "en",
@@ -60,7 +60,7 @@ test("combined cleanup options honor every eligibility guard and use the actual 
   assert.deepEqual(
     manager.getPipelineCleanupOptions(useSettingsStore.getState(), { appCategory: "email" }),
     {
-      agentName: "OpenWhispr",
+      agentName: "Overlay",
       customDictionary: ["Orukeet"],
       customPrompt: good.customPrompts.cleanup,
       tone: "excited",
@@ -195,7 +195,14 @@ async function loadTonedOrukeetStart(t, cachePrefix) {
     getKeyterms: () => [],
     onStateChange() {},
   });
-  return { window, manager, minted, sent, workletPort, classify: (app) => classifier.classify(app) };
+  return {
+    window,
+    manager,
+    minted,
+    sent,
+    workletPort,
+    classify: (app) => classifier.classify(app),
+  };
 }
 
 const tick = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

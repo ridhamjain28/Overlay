@@ -1,7 +1,8 @@
 {
-  "name": "open-whispr",
-  "version": "1.11.0",
-  "description": "A desktop dictation application using whisper.cpp for speech-to-text transcription",
+  "name": "overlay-assistant",
+  "productName": "Overlay",
+  "version": "0.1.0",
+  "description": "Overlay: local voice dictation and an always-on-top voice/typed assistant for Windows (Whisper + Ollama). Based on OpenWhispr.",
   "main": "main.js",
   "private": true,
   "engines": {
@@ -31,9 +32,8 @@
     "dev:renderer": "cd src && vite",
     "prebuild": "npm run compile:native && npm run download:whisper-cpp && npm run download:llama-server && npm run download:sherpa-onnx && npm run download:yt-dlp && npm run download:qdrant && npm run download:meeting-aec-helper && npm run download:whisper-vad-model && npm run download:embedding-model -- --for-build && npm run download:diarization-models -- --output-dir resources/bin/diarization-models && npm run download:brand-fonts",
     "build": "cd src && vite build && cd .. && electron-builder",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "node scripts/install-native-deps.js",
     "build:renderer": "cd src && vite build",
-    "compile:mac-icon": "node scripts/compile-macos-icon.js",
     "prebuild:mac": "npm run compile:native && npm run compile:mac-icon && npm run download:whisper-cpp && npm run download:llama-server && npm run download:sherpa-onnx && npm run download:yt-dlp && npm run download:qdrant && npm run download:meeting-aec-helper && npm run download:whisper-vad-model && npm run download:diarization-models -- --output-dir resources/bin/diarization-models && npm run download:brand-fonts",
     "build:mac": "npm run build:renderer && electron-builder --mac",
     "build:mac:arm64": "npm run build:renderer && electron-builder --mac --arm64",
@@ -91,8 +91,17 @@
     "desktop-app"
   ],
   "author": {
-    "name": "OpenWhispr Team",
-    "email": "support@openwhispr.com"
+    "name": "Ridham Jain"
+  },
+  "contributors": [
+    {
+      "name": "OpenWhispr Team (Gizmo Labs Inc.)",
+      "url": "https://github.com/OpenWhispr/openwhispr"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ridhamjain28/Overlay.git"
   },
   "license": "MIT",
   "devDependencies": {

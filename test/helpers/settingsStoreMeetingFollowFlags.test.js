@@ -182,23 +182,18 @@ test("Note Recording modes survive the follow-flag migration", async (t) => {
     assert.equal(countWrites("meetingTranscriptionMode"), 1);
   });
 
-  // migrateProviderSettings derives the modes even on empty storage, so the
-  // copy now persists the defaults. Same values the store read before.
-  await t.test(
-    "a fresh install gets the default modes from the copy and nothing else",
-    async () => {
-      const { state } = await load({});
-      assert.equal(storage.getItem("meetingTranscriptionMode"), "openwhispr");
-      assert.equal(storage.getItem("noteFormattingMode"), "openwhispr");
-      assert.equal(storage.getItem("meetingUseLocalWhisper"), null);
-      assert.equal(storage.getItem("meetingCloudTranscriptionMode"), null);
-      assert.equal(storage.getItem("noteFormattingCloudMode"), null);
-      assert.equal(storage.getItem("meetingFollowsTranscription"), "false", "latched empty");
-      assert.equal(state.meetingTranscriptionMode, "openwhispr");
-      assert.equal(countWrites("meetingTranscriptionMode"), 1, "the copy, nothing after it");
-      assert.equal(countWrites("noteFormattingMode"), 1);
-    }
-  );
+  // Overlay: a fresh install ends on the local-first defaults (local Whisper
+  // for Note Recording, local Ollama for note formatting) after the copy.
+  await t.test("a fresh install gets Overlay's local defaults after the copy", async () => {
+    const { state } = await load({});
+    assert.equal(storage.getItem("meetingTranscriptionMode"), "local");
+    assert.equal(storage.getItem("noteFormattingMode"), "self-hosted");
+    assert.equal(storage.getItem("meetingUseLocalWhisper"), "true");
+    assert.equal(storage.getItem("meetingCloudTranscriptionMode"), null);
+    assert.equal(storage.getItem("meetingFollowsTranscription"), "false", "latched empty");
+    assert.equal(state.meetingTranscriptionMode, "local");
+    assert.equal(state.noteFormattingMode, "self-hosted");
+  });
 
   await t.test("a profile that latched before the modes existed is re-derived", async () => {
     const { mod, state } = await load(LATCHED_LOCAL);
@@ -251,7 +246,8 @@ test("Note Recording modes survive the follow-flag migration", async (t) => {
     // A cloud reasoning snapshot is left absent, so note formatting keeps
     // following dictation cleanup. Same effective value here, no pin.
     assert.equal(storage.getItem("noteFormattingMode"), null);
-    assert.equal(state.noteFormattingMode, "openwhispr");
+    // Overlay: the store default for note formatting is self-hosted (Ollama).
+    assert.equal(state.noteFormattingMode, "self-hosted");
   });
 
   // groq has no streaming model, so Note Recording will refuse it — parity with
@@ -354,7 +350,7 @@ test("Note Recording modes survive the follow-flag migration", async (t) => {
     const { noteFormattingCloudMode, meetingUseLocalWhisper, ...seed } = LATCHED_LOCAL;
     const { state } = await load({ ...seed, noteFormattingProvider: "anthropic" });
     assert.equal(storage.getItem("noteFormattingMode"), null);
-    assert.equal(state.noteFormattingMode, "openwhispr", "store default, not derived");
+    assert.equal(state.noteFormattingMode, "self-hosted", "store default (Overlay), not derived");
     assert.equal(writes.includes("noteFormattingMode"), false);
   });
 

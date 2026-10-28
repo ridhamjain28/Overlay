@@ -61,6 +61,17 @@ const PERSISTED_KEYS = [
   "VERTEX_LOCATION",
   // Written by the Settings debug toggle (set-debug-logging)
   "OPENWHISPR_LOG_LEVEL",
+  // Overlay: answer sources and web search. Kept in the userData .env (never in
+  // the repo) and preserved whenever the app rewrites that file.
+  "OLLAMA_API_KEY",
+  "OPENCLAW_TOKEN",
+  "OPENCLAW_URL",
+  "OPENCLAW_MODEL",
+  "OVERLAY_ALLOW_REMOTE_OPENCLAW",
+  "TAVILY_API_KEY",
+  "SEARXNG_URL",
+  "OVERLAY_GEMINI_MODEL",
+  "OVERLAY_OLLAMA_SEARCH_DAILY_CAP",
 ];
 
 // Module-level so writes are serialized across all instances — hotkeyManager
@@ -107,6 +118,28 @@ class EnvironmentManager {
       await this._migrateToSecureStorage();
     }
     await this._loadAllSecrets();
+    await this._adoptPlaintextSecrets();
+  }
+
+  // Overlay: a key typed into the userData .env by hand (e.g. GEMINI_API_KEY)
+  // after the one-time migration would be dropped the next time the app
+  // rewrites .env. Move such keys into encrypted storage instead.
+  async _adoptPlaintextSecrets() {
+    if (!this._encryptionAvailable()) return;
+    for (const name of ["GEMINI_API_KEY"]) {
+      const value = (process.env[name] || "").trim();
+      if (!value || /^your_/i.test(value)) continue;
+      if (fs.existsSync(this._getSecretFilePath(name))) continue;
+      try {
+        await this._saveSecretKey(name, value);
+      } catch (error) {
+        debugLogger.warn(
+          "Could not store key securely",
+          { key: name, error: error.message },
+          "environment"
+        );
+      }
+    }
   }
 
   _getMigrationSentinelPath() {
@@ -234,7 +267,7 @@ class EnvironmentManager {
     // otherwise a partial-migration recovery can lose unencrypted secrets.
     const stripSecrets =
       this._encryptionAvailable() && fs.existsSync(this._getMigrationSentinelPath());
-    let envContent = "# OpenWhispr Environment Variables\n";
+    let envContent = "# Overlay environment variables (local only, never commit this file)\n";
     for (const key of PERSISTED_KEYS) {
       if (stripSecrets && SECRET_KEY_SET.has(key)) continue;
       if (process.env[key]) {

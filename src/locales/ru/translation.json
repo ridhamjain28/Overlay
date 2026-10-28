@@ -3995,6 +3995,7 @@
       "linear_create_issueStatus": "Подготовка задачи в Linear...",
       "linear_commentStatus": "Подготовка комментария в Linear...",
       "web_searchStatus": "Поиск в интернете...",
+      "system_actionStatus": "Выполняю на вашем ПК...",
       "copy_to_clipboardStatus": "Копирование в буфер обмена...",
       "get_calendar_eventsStatus": "Проверка календаря...",
       "get_calendar_availabilityStatus": "Проверка доступности...",

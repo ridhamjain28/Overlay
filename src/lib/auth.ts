@@ -10,7 +10,9 @@ import {
   prepareAuthRequest,
 } from "./authRequestContext";
 
-export const AUTH_URL = import.meta.env.VITE_AUTH_URL || "https://auth.openwhispr.com";
+// Overlay: no account server. Unless VITE_AUTH_URL is set, auth calls go to a
+// closed local port and fail fast, so nothing is ever sent to openwhispr.com.
+export const AUTH_URL = import.meta.env.VITE_AUTH_URL || "http://127.0.0.1:9";
 export const authClient = createAuthClient({
   baseURL: AUTH_URL,
   plugins: [ssoClient()],
@@ -176,7 +178,7 @@ export async function withSessionRefresh<T>(operation: () => Promise<T>): Promis
   }
 }
 
-const DESKTOP_OAUTH_CALLBACK_URL = "https://openwhispr.com/auth/desktop-callback";
+const DESKTOP_OAUTH_CALLBACK_URL = `${AUTH_URL}/auth/desktop-callback`;
 
 export async function signInWithSocial(provider: SocialProvider): Promise<{ error?: Error }> {
   try {
@@ -230,7 +232,7 @@ export async function requestPasswordReset(email: string): Promise<{ error?: Err
   try {
     const { error } = await authClient.requestPasswordReset({
       email: email.trim(),
-      redirectTo: "https://openwhispr.com/reset-password",
+      redirectTo: `${AUTH_URL}/reset-password`,
     });
     if (error) {
       return { error: toAuthActionError(error, "Failed to send reset email") };
@@ -284,7 +286,7 @@ export async function changePassword(params: {
   }
 }
 
-export const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "https://admin.openwhispr.com";
+export const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "http://127.0.0.1:9";
 
 /**
  * Open the enterprise admin console signed in: the desktop session lives in

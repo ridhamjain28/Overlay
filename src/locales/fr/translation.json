@@ -4123,6 +4123,7 @@
       "linear_create_issueStatus": "Préparation d'un ticket Linear...",
       "linear_commentStatus": "Préparation d'un commentaire Linear...",
       "web_searchStatus": "Recherche sur le web...",
+      "system_actionStatus": "Action en cours sur votre PC...",
       "copy_to_clipboardStatus": "Copie dans le presse-papiers...",
       "get_calendar_eventsStatus": "Vérification du calendrier...",
       "get_calendar_availabilityStatus": "Vérification des disponibilités...",

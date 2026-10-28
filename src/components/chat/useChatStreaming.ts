@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { estimateModelSizeB } from "../../utils/modelSize";
 import { useTranslation } from "react-i18next";
 import ReasoningService, { type AgentStreamChunk } from "../../services/ReasoningService";
 import { isEnterpriseProvider } from "../../models/ModelRegistry";
@@ -40,6 +41,21 @@ import { noteAttendeesContext, withoutAttendeesFence } from "../../utils/noteAtt
 import { FULL_TRANSCRIPT_MAX_TOKENS } from "../../utils/transcriptEvidence";
 import { createToolRegistry } from "../../services/tools";
 import {
+  classifyIntent,
+  getAnswerSourcesStatus,
+  normalizeAnswerSourceSetting,
+  planAnswerSources,
+  type AnswerSource,
+} from "../../services/overlay/answerRouter";
+import { remoteAnswerStream, withFallback } from "../../services/overlay/remoteAnswerStream";
+import {
+  WEB_CONTEXT_HEADER,
+  appendSources,
+  formatWebContext,
+  sourcesFrom,
+  type WebSource,
+} from "../../services/overlay/webContext";
+import {
   executeTool,
   type HoldDeliveryOptions,
   type ToolRegistry,
@@ -62,10 +78,9 @@ const STREAM_FLUSH_INTERVAL_MS = 32;
 
 const LOCAL_TOOL_MIN_PARAMS_B = 4;
 
-function estimateModelSizeB(modelId: string): number {
-  const match = modelId.match(/-([\d.]+)[bB]/);
-  return match ? parseFloat(match[1]) : 0;
-}
+// Reads the parameter count from a model tag: "qwen3.5:4b-q4_K_M" -> 4,
+// "qwen2.5:7b" -> 7, "llama-3.1-8b-instruct" -> 8. (Overlay fix: upstream only
+// matched "-4b", so Ollama tags like "name:4b" turned tools off.)
 
 // Main adds the note's identified speakers and its calendar event's
 // organizer (calendars often leave them out of the attendees), then drops
@@ -246,6 +261,8 @@ export function useChatStreaming({
   const userNameRef = useRef<string | null>(null);
   userNameRef.current = user?.name ?? null;
   const toolRegistryRef = useRef<{ key: string; registry: ToolRegistry } | null>(null);
+  // Overlay: stable `user` string per conversation for OpenClaw sessions.
+  const conversationUserRef = useRef<string>(`overlay-${crypto.randomUUID()}`);
   const toolActivityStartedAtRef = useRef<number | null>(null);
   const toolActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -587,6 +604,42 @@ export function useChatStreaming({
           }));
         }
 
+        // Overlay: decide the answer source and, for questions that need the
+        // web, fetch search results up front (Ollama web search → Gemini →
+        // Tavily → SearxNG) so even a small local model can answer with sources
+        // without having to call a tool itself.
+        let overlayPlan: AnswerSource[] = ["local"];
+        let overlaySources: WebSource[] = [];
+        if (!isCloudAgent) {
+          const sourceSetting = normalizeAnswerSourceSetting(settings.answerSource);
+          const intent = classifyIntent(userText);
+          if (sourceSetting !== "local") {
+            if (allMessages.length <= 1) {
+              conversationUserRef.current = `overlay-${crypto.randomUUID()}`;
+            }
+            overlayPlan = planAnswerSources(sourceSetting, intent, await getAnswerSourcesStatus());
+          }
+          if (
+            intent === "web" &&
+            overlayPlan[0] !== "gemini" &&
+            window.electronAPI?.agentWebSearch
+          ) {
+            try {
+              const search = await window.electronAPI.agentWebSearch(userText, 5);
+              const block = formatWebContext(search);
+              overlaySources = sourcesFrom(search);
+              if (block) systemPrompt = `${systemPrompt}\n\n${block}`;
+            } catch (error) {
+              logger.warn(
+                "Overlay pre-search failed",
+                { error: (error as Error).message },
+                "overlay"
+              );
+            }
+            if (cancelled() || !mountedRef.current) return;
+          }
+        }
+
         const llmMessages = [{ role: "system", content: systemPrompt }, ...history];
 
         const assistantId = crypto.randomUUID();
@@ -701,6 +754,46 @@ export function useChatStreaming({
               aiTools
             );
           }
+
+          // Overlay: answer sources. "auto" keeps quick chat on the local model
+          // and sends web/action requests to OpenClaw (when reachable), then
+          // Gemini with Google Search, then the local model as the last resort.
+          if (!isCloudAgent) {
+            const plan = overlayPlan;
+            if (plan[0] !== "local") {
+              const localStream = stream;
+              const remoteMessages = [
+                {
+                  role: "system",
+                  content:
+                    "You are Overlay, a desktop assistant. Answer directly and briefly; " +
+                    "give only the answer, no preamble." +
+                    (systemPrompt.includes(WEB_CONTEXT_HEADER)
+                      ? `\n\n${systemPrompt.slice(systemPrompt.indexOf(WEB_CONTEXT_HEADER))}`
+                      : ""),
+                },
+                ...history.map((m) => ({ role: m.role, content: m.content })),
+              ];
+              const user = conversationUserRef.current;
+              stream = withFallback(
+                plan.map((source: AnswerSource) => ({
+                  source,
+                  create:
+                    source === "local"
+                      ? () => localStream
+                      : () => remoteAnswerStream(source, remoteMessages, user),
+                })),
+                (source, error) =>
+                  logger.warn(
+                    "Answer source failed, trying next",
+                    { source, error: error.message },
+                    "overlay"
+                  )
+              );
+            }
+          }
+
+          if (overlaySources.length) stream = appendSources(stream, overlaySources);
 
           for await (const chunk of stream) {
             if (!mountedRef.current) {

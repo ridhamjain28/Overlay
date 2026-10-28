@@ -132,6 +132,10 @@ test("retired cloud model selections are repointed to the provider default", asy
   installBrowserGlobals(t, {
     initialStorage: {
       _llmScopeKeysMigrated: "1",
+      // Overlay: an unset mode is local-first, so name the cloud mode explicitly.
+      cleanupMode: "providers",
+      chatAgentMode: "providers",
+      noteFormattingMode: "providers",
       cleanupProvider: "groq",
       cleanupModel: "meta-llama/llama-4-scout-17b-16e-instruct",
       chatAgentProvider: "openai",

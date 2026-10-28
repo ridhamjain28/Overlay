@@ -28,6 +28,16 @@ test("retired groq model selections migrate to served replacements", async (t) =
 
   await t.test("groq scopes remap, other providers keep their model", async () => {
     storage.clear();
+    // Overlay: an unset mode is local-first, so name the cloud mode explicitly.
+    for (const mode of [
+      "cleanupMode",
+      "dictationAgentMode",
+      "chatAgentMode",
+      "noteFormattingMode",
+      "translationMode",
+    ]) {
+      storage.setItem(mode, "providers");
+    }
     storage.setItem("cleanupProvider", "groq");
     storage.setItem("cleanupModel", "llama-3.3-70b-versatile");
     storage.setItem("dictationAgentProvider", "groq");
@@ -45,6 +55,16 @@ test("retired groq model selections migrate to served replacements", async (t) =
 
   await t.test("compound selections remap under the rotated sentinel", async () => {
     storage.clear();
+    // Overlay: an unset mode is local-first, so name the cloud mode explicitly.
+    for (const mode of [
+      "cleanupMode",
+      "dictationAgentMode",
+      "chatAgentMode",
+      "noteFormattingMode",
+      "translationMode",
+    ]) {
+      storage.setItem(mode, "providers");
+    }
     // Set by every build since the August sweep, so only the rotated key reaches these.
     storage.setItem("_retiredGroqModelsMigrated", "1");
     storage.setItem("cleanupProvider", "groq");
@@ -71,6 +91,16 @@ test("retired groq model selections migrate to served replacements", async (t) =
 
   await t.test("migration is one-shot", async () => {
     storage.clear();
+    // Overlay: an unset mode is local-first, so name the cloud mode explicitly.
+    for (const mode of [
+      "cleanupMode",
+      "dictationAgentMode",
+      "chatAgentMode",
+      "noteFormattingMode",
+      "translationMode",
+    ]) {
+      storage.setItem(mode, "providers");
+    }
     storage.setItem("_retiredGroqModelsMigrated2", "1");
     storage.setItem("cleanupProvider", "groq");
     storage.setItem("cleanupModel", "llama-3.3-70b-versatile");

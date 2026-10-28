@@ -3951,6 +3951,7 @@
       "linear_create_issueStatus": "LinearのIssueを準備しています...",
       "linear_commentStatus": "Linearのコメントを準備しています...",
       "web_searchStatus": "ウェブを検索中...",
+      "system_actionStatus": "PCで実行中...",
       "copy_to_clipboardStatus": "クリップボードにコピー中...",
       "get_calendar_eventsStatus": "カレンダーを確認中...",
       "get_calendar_availabilityStatus": "空き時間を確認中...",

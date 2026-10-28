@@ -1182,6 +1182,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
   agentWebSearch: (query, numResults) => ipcRenderer.invoke("agent-web-search", query, numResults),
   agentOpenNote: (noteId) => ipcRenderer.invoke("agent-open-note", noteId),
 
+  // Overlay: answer sources (OpenClaw / Gemini) and allowlisted laptop actions.
+  // Secrets stay in main; only answer text crosses this bridge.
+  overlayAnswerSourcesStatus: () => ipcRenderer.invoke("overlay-answer-sources-status"),
+  overlayAnswerStreamStart: (requestId, payload) =>
+    ipcRenderer.send("overlay-answer-stream-start", requestId, payload),
+  overlayAnswerStreamCancel: (requestId) =>
+    ipcRenderer.send("overlay-answer-stream-cancel", requestId),
+  onOverlayAnswerStreamChunk: registerListener(
+    "overlay-answer-stream-chunk",
+    (callback) => (_event, payload) => callback(payload)
+  ),
+  onOverlayAnswerStreamError: registerListener(
+    "overlay-answer-stream-error",
+    (callback) => (_event, payload) => callback(payload)
+  ),
+  onOverlayAnswerStreamEnd: registerListener(
+    "overlay-answer-stream-end",
+    (callback) => (_event, payload) => callback(payload)
+  ),
+  overlaySystemAction: (request) => ipcRenderer.invoke("overlay-system-action", request),
+
   // Agent conversation persistence
   createAgentConversation: (title, noteId, spaceId, folderId) =>
     ipcRenderer.invoke("db-create-agent-conversation", title, noteId, spaceId, folderId),

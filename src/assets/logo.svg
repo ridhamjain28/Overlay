@@ -1,7 +1,7 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="1024" height="1024" rx="241" fill="#2056DF"/>
-<circle cx="512" cy="512" r="314" fill="#2056DF" stroke="white" stroke-width="74"/>
-<path d="M512 383V641" stroke="white" stroke-width="74" stroke-linecap="round"/>
-<path d="M627 457V568" stroke="white" stroke-width="74" stroke-linecap="round"/>
-<path d="M397 457V568" stroke="white" stroke-width="74" stroke-linecap="round"/>
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4338CA"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>
+<rect width="1024" height="1024" rx="230" fill="url(#g)"/>
+<rect x="232" y="262" width="436" height="346" rx="54" stroke="white" stroke-width="64"/>
+<rect x="340" y="400" width="484" height="394" rx="70" fill="white"/>
+<g fill="#5B3EE0"><rect x="392" y="552" width="44" height="90" rx="22"/><rect x="476" y="502" width="44" height="190" rx="22"/><rect x="560" y="532" width="44" height="130" rx="22"/><rect x="644" y="502" width="44" height="190" rx="22"/><rect x="728" y="552" width="44" height="90" rx="22"/></g>
 </svg>

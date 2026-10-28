@@ -4003,6 +4003,7 @@
       "linear_create_issueStatus": "Preparando una incidencia de Linear...",
       "linear_commentStatus": "Preparando un comentario de Linear...",
       "web_searchStatus": "Buscando en la web...",
+      "system_actionStatus": "Haciéndolo en tu PC...",
       "copy_to_clipboardStatus": "Copiando al portapapeles...",
       "get_calendar_eventsStatus": "Consultando calendario...",
       "get_calendar_availabilityStatus": "Consultando disponibilidad...",

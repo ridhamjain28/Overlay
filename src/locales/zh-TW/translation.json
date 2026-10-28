@@ -3951,6 +3951,7 @@
       "linear_create_issueStatus": "正在準備 Linear 議題...",
       "linear_commentStatus": "正在準備 Linear 留言...",
       "web_searchStatus": "正在搜尋網頁...",
+      "system_actionStatus": "正在你的電腦上執行...",
       "copy_to_clipboardStatus": "正在複製到剪貼簿...",
       "get_calendar_eventsStatus": "正在查看行事曆...",
       "get_calendar_availabilityStatus": "正在查看可用時段...",

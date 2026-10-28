@@ -21,7 +21,14 @@ function addTeardown(t, teardown) {
 function installBrowserGlobals(t, { initialStorage = {}, window: windowProps = {} } = {}) {
   const originalWindow = globalThis.window;
   const originalLocalStorage = globalThis.localStorage;
-  const values = new Map(Object.entries(initialStorage));
+  // Overlay: upstream tests describe OpenWhispr's own first-run behaviour, so
+  // mark Overlay's one-time local-first defaults as already applied. Tests that
+  // check Overlay's defaults pass { _overlayDefaultsApplied: undefined }.
+  const values = new Map(
+    Object.entries({ _overlayDefaultsApplied: "1", ...initialStorage }).filter(
+      ([, value]) => value !== undefined
+    )
+  );
   const storage = {
     getItem: (key) => (values.has(key) ? values.get(key) : null),
     setItem: (key, value) => values.set(key, String(value)),

@@ -4,6 +4,10 @@ const { autoUpdater } = require("electron-updater");
 // installs are updated by the package manager instead.
 const isUpdaterSupported = process.platform !== "linux" || Boolean(process.env.APPIMAGE);
 
+// Overlay: no automatic update checks. Overlay has no release feed yet; set
+// OVERLAY_ENABLE_UPDATES=1 once GitHub releases exist on ridhamjain28/Overlay.
+const OVERLAY_UPDATES_ENABLED = process.env.OVERLAY_ENABLE_UPDATES === "1";
+
 class UpdateManager {
   constructor() {
     this.updateAvailable = false;
@@ -27,14 +31,14 @@ class UpdateManager {
   }
 
   setupAutoUpdater() {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === "development" || !OVERLAY_UPDATES_ENABLED) {
       return;
     }
 
     autoUpdater.setFeedURL({
       provider: "github",
-      owner: "OpenWhispr",
-      repo: "openwhispr",
+      owner: "ridhamjain28",
+      repo: "Overlay",
       private: false,
     });
 
@@ -158,10 +162,12 @@ class UpdateManager {
 
   async checkForUpdates() {
     try {
-      if (process.env.NODE_ENV === "development") {
+      if (process.env.NODE_ENV === "development" || !OVERLAY_UPDATES_ENABLED) {
         return {
           updateAvailable: false,
-          message: "Update checks are disabled in development mode",
+          message: OVERLAY_UPDATES_ENABLED
+            ? "Update checks are disabled in development mode"
+            : "Automatic updates are turned off in Overlay",
         };
       }
 
@@ -339,7 +345,7 @@ class UpdateManager {
   }
 
   checkForUpdatesOnStartup() {
-    if (process.env.NODE_ENV !== "development" && isUpdaterSupported) {
+    if (process.env.NODE_ENV !== "development" && OVERLAY_UPDATES_ENABLED && isUpdaterSupported) {
       setTimeout(() => {
         this._autoCheckForUpdates("Startup");
       }, 3000);

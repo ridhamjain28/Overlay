@@ -60,23 +60,25 @@ test("the Voice Assistant scope is seeded from Chat once for profiles that never
       dictationAgentProvider: "groq",
       dictationAgentModel: "openai/gpt-oss-20b",
     });
-    assert.equal(state.dictationAgentMode, "openwhispr");
+    // Overlay: the store default mode is self-hosted (local Ollama).
+    assert.equal(state.dictationAgentMode, "self-hosted");
     assert.equal(state.dictationAgentProvider, "groq");
     assert.equal(state.dictationAgentModel, "openai/gpt-oss-20b");
   });
 
-  // The provider-settings and agent-mode migrations leave a fresh profile's Chat
-  // scope on the cloud default, so the copy is a no-op in effect.
-  await t.test("a fresh profile inherits the same cloud default Chat was migrated to", async () => {
+  // Overlay: a fresh profile gets the local Ollama defaults on both scopes,
+  // so the copy is a no-op in effect.
+  await t.test("a fresh profile starts both scopes on the local Ollama default", async () => {
     const state = await load({});
-    assert.equal(storage.getItem("chatAgentMode"), "openwhispr");
-    assert.equal(state.dictationAgentMode, "openwhispr");
-    assert.equal(state.dictationAgentProvider, "");
+    assert.equal(storage.getItem("chatAgentMode"), "self-hosted");
+    assert.equal(state.dictationAgentMode, "self-hosted");
+    assert.equal(state.dictationAgentRemoteUrl, "http://localhost:11434/v1");
+    assert.equal(state.dictationAgentModel, "qwen3.5:4b-q4_K_M");
   });
 
   await t.test("a seeded profile is not seeded again after Chat changes", async () => {
     const state = await load({ ...localChat, _dictationAgentSeeded: "1" });
-    assert.equal(state.dictationAgentMode, "openwhispr");
+    assert.equal(state.dictationAgentMode, "self-hosted");
     assert.equal(storage.getItem("dictationAgentMode"), null);
   });
 });

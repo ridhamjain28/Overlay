@@ -4,6 +4,8 @@ const assert = require("node:assert/strict");
 const Module = require("node:module");
 
 process.env.NODE_ENV = "test";
+// Overlay ships with updates off; these upstream tests cover the opt-in path.
+process.env.OVERLAY_ENABLE_UPDATES = "1";
 
 const updaterModulePath = require.resolve("../../src/updater.js");
 const originalLoad = Module._load;

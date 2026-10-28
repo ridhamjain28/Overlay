@@ -18,6 +18,7 @@ import { SettingsPanel, SettingsPanelRow, SettingsRow, SectionHeader } from "../
 import PermissionCard from "../ui/PermissionCard";
 import PromptStudio from "../ui/PromptStudio";
 import InferenceConfigEditor from "./InferenceConfigEditor";
+import AnswerSourceSettings from "./AnswerSourceSettings";
 
 export default function DictationAgentSettings() {
   const { t } = useTranslation();
@@ -169,6 +170,7 @@ export default function DictationAgentSettings() {
         </SettingsPanelRow>
       </SettingsPanel>
 
+      {useDictationAgent && <AnswerSourceSettings />}
       {useDictationAgent && <InferenceConfigEditor scope="dictationAgent" />}
 
       {/* Screen context is a voice-agent sub-feature: hidden when an org

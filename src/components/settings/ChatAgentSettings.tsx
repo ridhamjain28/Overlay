@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { SectionHeader } from "../ui/SettingsSection";
 import InferenceConfigEditor from "./InferenceConfigEditor";
+import AnswerSourceSettings from "./AnswerSourceSettings";
 
 export default function ChatAgentSettings() {
   const { t } = useTranslation();
@@ -10,6 +11,7 @@ export default function ChatAgentSettings() {
 
   return (
     <div className="space-y-6">
+      <AnswerSourceSettings />
       <InferenceConfigEditor scope="chatIntelligence" />
 
       <div>
