@@ -247,6 +247,9 @@
     ]
   },
   "nsis": {
+    "installerIcon": "src/assets/icon.ico",
+    "uninstallerIcon": "src/assets/icon.ico",
+    "installerHeaderIcon": "src/assets/icon.ico",
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,

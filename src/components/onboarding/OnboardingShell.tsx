@@ -1,3 +1,4 @@
+import { OverlayGlyph } from "../OverlayMark";
 import type { CSSProperties, ReactNode } from "react";
 import type { OnboardingProgressState } from "./flow";
 import { ArrowLeft, Copy, Minus, Square, X } from "../icons";
@@ -404,18 +405,5 @@ export function CompactOnboardingFrame({
 }
 
 export function BrandMark({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 1024 1024"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <circle cx="512" cy="512" r="314" stroke="currentColor" strokeWidth="74" />
-      <path d="M512 383V641" stroke="currentColor" strokeWidth="74" strokeLinecap="round" />
-      <path d="M627 457V568" stroke="currentColor" strokeWidth="74" strokeLinecap="round" />
-      <path d="M397 457V568" stroke="currentColor" strokeWidth="74" strokeLinecap="round" />
-    </svg>
-  );
+  return <OverlayGlyph className={className} />;
 }

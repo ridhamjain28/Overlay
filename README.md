@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/assets/logo.svg" alt="Overlay logo: a sound wave turning into a floating answer card" width="112" />
+</p>
+
 # Overlay
 
 **Overlay** is a private, local-first voice assistant for Windows. It does two jobs:
