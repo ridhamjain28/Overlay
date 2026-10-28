@@ -74,7 +74,7 @@ src/components/          React UI (chat, settings, onboarding)
 src/stores/              settings store (defaults, migrations)
 src/locales/             UI text in many languages
 resources/               native helpers and downloaded binaries (not in git)
-scripts/                 build and download scripts (install-native-deps.js is NEW)
+scripts/                 build and download scripts (setup.js and install-native-deps.js are NEW)
 hinglish-asr/            NEW: optional Python server for Hinglish speech
 test/                    unit tests; test/overlay/ holds the Overlay tests
 docs/                    this guide
@@ -83,7 +83,8 @@ docs/                    this guide
 ## 7. How to run and test
 
 ```powershell
-npm ci             # install (also prepares the SQLite module for Electron)
+npm run setup      # one-time setup: packages, Whisper engine, UI build, Ollama models, .env
+npm start          # launch the app
 npm run dev        # start with hot reload
 npm test           # all unit tests
 node --import tsx --test "test/overlay/*.test.js"   # only Overlay's tests

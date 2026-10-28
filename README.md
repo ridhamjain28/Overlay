@@ -16,22 +16,52 @@ New to the code? Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (a beginner
 
 ## Quick start (Windows)
 
-You need **Node.js 24**, **Git**, and **Ollama**. An NVIDIA GPU is optional but recommended.
+**Before you start, install:**
+
+- [Node.js 24](https://nodejs.org) (`winget install OpenJS.NodeJS`)
+- [Git](https://git-scm.com) (`winget install Git.Git`)
+- [Ollama](https://ollama.com/download) (`winget install Ollama.Ollama`). Leave it running.
+
+An NVIDIA GPU is optional but recommended. You need about 8 GB of free disk space for the models.
+
+**Then copy and paste:**
 
 ```powershell
-# 1. Get the code and install
 git clone https://github.com/ridhamjain28/Overlay.git
 cd Overlay
+npm run setup
+npm start
+```
+
+You can also double-click `setup.bat` instead of running `npm run setup`.
+
+`npm run setup` (`scripts/setup.js`) does everything once:
+
+1. Checks you have Node.js 24 or newer.
+2. Installs the packages (`npm ci`). It skips this when they are already installed.
+3. Downloads the local Whisper engine (`npm run download:whisper-cpp`).
+4. Builds the UI so that `npm start` works.
+5. Checks that Ollama is running, and starts it if it is installed but stopped. It then pulls `qwen3.5:4b-q4_K_M` (about 3.3 GB) and the fallback `qwen3:4b-instruct` (about 2.5 GB), but only if they are missing.
+6. Creates your settings files from `.env.example`: `%APPDATA%\Overlay-development\.env` (used when you run from source with `npm start` or `npm run dev`) and `%APPDATA%\Overlay\.env` (used by an installed build). Every key is left blank and commented out. An existing file is never touched.
+
+It is safe to run again. If something needs your action, it is listed at the end. Options:
+
+- `--skip-models`: don't check or pull models.
+- `--only-default-model`: don't pull the fallback model.
+- `--force-install`: reinstall the packages.
+- `--skip-install`, `--skip-whisper`, `--skip-build`: skip those steps.
+
+Pass an option like this: `npm run setup -- --skip-models`.
+
+`npm start` launches the app. `npm run dev` starts it with hot reload, for development. The first launch also fetches a few small helper programs.
+
+**Manual setup**, if you prefer:
+
+```powershell
 npm ci
-
-# 2. Pull the local models (once)
-ollama pull qwen3.5:4b-q4_K_M      # default answer model (~3.3 GB)
-ollama pull qwen3:4b-instruct      # fallback if the default is unavailable
-
-# 3. Fetch the local Whisper engine (once)
-npm run download:whisper-cpp     # whisper-server; `npm run dev` fetches the other helpers itself
-
-# 4. Run in development mode
+ollama pull qwen3.5:4b-q4_K_M
+ollama pull qwen3:4b-instruct
+npm run download:whisper-cpp
 npm run dev
 ```
 
@@ -77,7 +107,7 @@ You can mix and match. The **Answer source** setting (Settings → Language Mode
 
 The same page shows a status dot for each service and how many Ollama web searches you used today.
 
-**Where keys go.** Never put keys in the repository. Put them in your environment, or in the `.env` file in Overlay's data folder: `%APPDATA%\Overlay\.env` (installed app) or `%APPDATA%\Overlay-development\.env` (`npm run dev`). See `.env.example` for every name. Restart Overlay after editing.
+**Where keys go.** Never put keys in the repository. Put them in your environment, or in the `.env` file in Overlay's data folder: `%APPDATA%\Overlay-development\.env` when you run from source (`npm start` or `npm run dev`), or `%APPDATA%\Overlay\.env` for an installed build. See `.env.example` for every name. Restart Overlay after editing.
 
 Free tiers and quotas change often. **Check current limits** on each provider's site before relying on them.
 
