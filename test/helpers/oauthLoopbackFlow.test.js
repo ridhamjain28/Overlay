@@ -13,6 +13,9 @@ function loadLoopback() {
     if (request === "electron") {
       return { shell: { openExternal() {} } };
     }
+    // The flow opens URLs through externalUrlOpener, which on Windows launches
+    // explorer.exe directly; stub it so the test never opens a real browser.
+    if (request === "./externalUrlOpener") return { openExternalUrl: async () => {} };
     return originalLoad.call(this, request, parent, isMain);
   };
   try {

@@ -1286,9 +1286,13 @@ function loadLoopbackFlow() {
   const originalLoad = Module._load;
   Module._load = function loadWithElectronStub(request, parent, isMain) {
     if (request === "electron") return { shell: { openExternal: async () => {} } };
+    // The flow opens URLs through externalUrlOpener, which on Windows launches
+    // explorer.exe directly; stub it so the test never opens a real browser.
+    if (request === "./externalUrlOpener") return { openExternalUrl: async () => {} };
     return originalLoad.call(this, request, parent, isMain);
   };
   try {
+    delete require.cache[require.resolve("../../../src/helpers/oauthLoopbackFlow.js")];
     return require("../../../src/helpers/oauthLoopbackFlow.js");
   } finally {
     Module._load = originalLoad;

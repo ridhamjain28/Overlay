@@ -14,6 +14,11 @@ function loadEngine() {
     if (request === "electron") {
       return { shell: { openExternal: async (url) => openedUrls.push(url) } };
     }
+    // On Windows the real opener launches explorer.exe directly, which would open
+    // a real browser during tests; record the URL instead.
+    if (request === "./externalUrlOpener") {
+      return { openExternalUrl: async (url) => openedUrls.push(url) };
+    }
     if (request === "./debugLogger") {
       return { info() {}, warn() {}, debug() {}, error() {} };
     }
