@@ -4,6 +4,7 @@ import AudioManager from "../helpers/audioManager";
 import logger from "../utils/logger";
 import { playStartCue, playStopCue } from "../utils/dictationCues";
 import { getSettings } from "../stores/settingsStore";
+import { reconnectMessageKey } from "../utils/intentReconnect";
 import { expandSnippets } from "../utils/snippets";
 import { getRecordingErrorTitle, getRecordingErrorDescription } from "../utils/recordingErrors";
 import { providerErrorActions } from "../utils/describeProviderError";
@@ -1021,7 +1022,7 @@ export const useAudioRecording = (toast, options = {}) => {
                   if (res?.reconnectNeeded) {
                     toast({
                       title: t("dictationAgent.intents.reconnectNeededTitle"),
-                      description: t("dictationAgent.intents.reconnectNeededGcal"),
+                      description: t(reconnectMessageKey(res, "gcal")),
                     });
                   } else if (res?.success) {
                     toast({
@@ -1039,7 +1040,7 @@ export const useAudioRecording = (toast, options = {}) => {
                   if (res?.reconnectNeeded) {
                     toast({
                       title: t("dictationAgent.intents.reconnectNeededTitle"),
-                      description: t("dictationAgent.intents.reconnectNeededMcal"),
+                      description: t(reconnectMessageKey(res, "mcal")),
                     });
                   } else if (res?.success) {
                     toast({
@@ -1114,14 +1115,16 @@ export const useAudioRecording = (toast, options = {}) => {
                       {
                         label: t("dictationAgent.intents.addAction"),
                         onClick: async () => {
+                          const target =
+                            destination === "gcal" ? "gcal" : destination === "mcal" ? "mcal" : "ask";
                           const res = await window.electronAPI?.overlayCalendarEventCreate?.({
-                            target: destination === "gcal" ? "gcal" : destination === "mcal" ? "mcal" : "ask",
+                            target,
                             event: intent,
                           });
                           if (res?.reconnectNeeded) {
                             toast({
                               title: t("dictationAgent.intents.reconnectNeededTitle"),
-                              description: t("dictationAgent.intents.reconnectNeededGcal"),
+                              description: t(reconnectMessageKey(res, target)),
                             });
                           } else if (res?.success) {
                             toast({

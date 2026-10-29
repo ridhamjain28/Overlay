@@ -5,6 +5,7 @@ const { mightContainIntent } = require("../../src/helpers/intents/intentDetector
 const { buildPrompt, validate, extractIntent } = require("../../src/helpers/intents/intentExtractor.js");
 const { buildIcs } = require("../../src/helpers/intents/icsWriter.js");
 const intentTime = require("../../src/helpers/intents/intentTime.js");
+const { reconnectMessageKey } = require("../../src/utils/intentReconnect.js");
 const { ReminderScheduler } = require("../../src/helpers/intents/reminderScheduler.js");
 
 // 1. Intent Trigger Detection (regex gate)
@@ -302,6 +303,17 @@ test("extractor validation: without the dictation it still rounds to whole minut
   );
   assert.equal(result.start, "2026-10-29T14:00:00.000Z");
   assert.equal(result.end, "2026-10-29T14:30:00.000Z");
+});
+
+test("reconnect toast names the calendar that refused the event", () => {
+  const outlook = "dictationAgent.intents.reconnectNeededMcal";
+  const google = "dictationAgent.intents.reconnectNeededGcal";
+  assert.equal(reconnectMessageKey({ reconnectNeeded: true, provider: "microsoft" }, "ask"), outlook);
+  assert.equal(reconnectMessageKey({ reconnectNeeded: true, provider: "microsoft" }, "gcal"), outlook);
+  assert.equal(reconnectMessageKey({ reconnectNeeded: true, provider: "google" }, "mcal"), google);
+  assert.equal(reconnectMessageKey({ reconnectNeeded: true }, "mcal"), outlook);
+  assert.equal(reconnectMessageKey({ reconnectNeeded: true }, "gcal"), google);
+  assert.equal(reconnectMessageKey(null, "ask"), google);
 });
 
 // 4. RFC 5545 .ics Writer
