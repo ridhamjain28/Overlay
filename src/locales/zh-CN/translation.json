@@ -4133,14 +4133,23 @@
         "calendars": "日历",
         "api": "API 密钥",
         "mcp": "MCP 服务器",
-        "cli": "命令行"
+        "cli": "命令行",
+        "apps": "连接应用"
       },
       "docs": "集成文档"
     },
     "connectors": {
       "description": "让助手使用您的工具。每封邮件、每条消息和每个议题发出前都需要您批准。"
     },
-    "readDocs": "阅读文档"
+    "readDocs": "阅读文档",
+    "apps": {
+      "description": "只需点击登录，即可连接您常用的各类日常应用。",
+      "connected": "已连接",
+      "notConfigured": "此版本暂不可用",
+      "unavailable": "不可用",
+      "connect": "连接",
+      "disconnect": "断开连接"
+    }
   },
   "connectors": {
     "approval": {

@@ -359,46 +359,12 @@ function registerOverlayIpc({
     return result;
   });
 
-  // Feature C: dictation intent detection
-  const { mightContainIntent } = require("../intents/intentDetector");
-  const { extractIntent } = require("../intents/intentExtractor");
-  const { buildIcs } = require("../intents/icsWriter");
-
-  // Fast synchronous gate — no model, safe to call from the renderer.
-  ipcMain.handle("overlay-intent-detect", (_event, text) => {
-    if (typeof text !== "string") return false;
-    return mightContainIntent(text);
-  });
-
-  // Slow model call — runs in the background, returns null on timeout/error.
-  ipcMain.handle("overlay-intent-extract", async (_event, text) => {
-    if (typeof text !== "string" || text.length > 2000) return null;
-    try {
-      return await extractIntent({ text });
-    } catch {
-      return null;
-    }
-  });
-
-  // Write a .ics file to userData and open it in the system calendar app.
-  ipcMain.handle("overlay-ics-open", async (_event, intentData) => {
-    if (!intentData || typeof intentData !== "object") return { success: false };
-    try {
-      const icsContent = buildIcs({
-        title: String(intentData.title || "Event").slice(0, 200),
-        start: intentData.start,
-        end: intentData.end || null,
-      });
-      const tmpDir = app.getPath("temp");
-      const fileName = `overlay-event-${Date.now()}.ics`;
-      const filePath = path.join(tmpDir, fileName);
-      fs.writeFileSync(filePath, icsContent, "utf8");
-      await shell.openPath(filePath);
-      return { success: true, filePath };
-    } catch (error) {
-      debugLogger?.warn?.("overlay-ics-open failed", { error: error.message });
-      return { success: false, error: error.message };
-    }
+  // Feature B: check which third-party apps have OAuth credentials configured
+  ipcMain.handle("overlay-app-configs", async () => {
+    return {
+      "google-calendar": Boolean(process.env.GOOGLE_CALENDAR_CLIENT_ID),
+      "microsoft-calendar": Boolean(process.env.MICROSOFT_CALENDAR_CLIENT_ID),
+    };
   });
 }
 

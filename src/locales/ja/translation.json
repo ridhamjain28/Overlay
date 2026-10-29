@@ -4133,14 +4133,23 @@
         "calendars": "カレンダー",
         "api": "APIキー",
         "mcp": "MCPサーバー",
-        "cli": "コマンドライン"
+        "cli": "コマンドライン",
+        "apps": "アプリを連携"
       },
       "docs": "連携ドキュメント"
     },
     "connectors": {
       "description": "アシスタントがあなたのツールを使えるようにします。メール、メッセージ、課題はすべて送信前にあなたが承認します。"
     },
-    "readDocs": "ドキュメントを読む"
+    "readDocs": "ドキュメントを読む",
+    "apps": {
+      "description": "日常的に使うアプリを簡単なワンクリックサインインで連携します。",
+      "connected": "接続済み",
+      "notConfigured": "このビルドではまだ利用できません",
+      "unavailable": "利用不可",
+      "connect": "接続",
+      "disconnect": "切断"
+    }
   },
   "connectors": {
     "approval": {

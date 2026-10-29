@@ -4133,14 +4133,23 @@
         "calendars": "Calendari",
         "api": "Chiavi API",
         "mcp": "Server MCP",
-        "cli": "Riga di comando"
+        "cli": "Riga di comando",
+        "apps": "Connetti app"
       },
       "docs": "Documentazione integrazioni"
     },
     "connectors": {
       "description": "Lascia che l'assistente usi i tuoi strumenti. Approvi ogni email, messaggio e issue prima dell'invio."
     },
-    "readDocs": "Leggi la documentazione"
+    "readDocs": "Leggi la documentazione",
+    "apps": {
+      "description": "Collega le applicazioni che usi ogni giorno con un semplice accesso.",
+      "connected": "Connesso",
+      "notConfigured": "Non ancora disponibile in questa build",
+      "unavailable": "Non disponibile",
+      "connect": "Connetti",
+      "disconnect": "Disconnetti"
+    }
   },
   "connectors": {
     "approval": {

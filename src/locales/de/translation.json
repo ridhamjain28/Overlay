@@ -4305,14 +4305,23 @@
         "calendars": "Kalender",
         "api": "API-Schlüssel",
         "mcp": "MCP-Server",
-        "cli": "Kommandozeile"
+        "cli": "Kommandozeile",
+        "apps": "Apps verbinden"
       },
       "docs": "Integrations-Doku"
     },
     "connectors": {
       "description": "Lass den Assistenten deine Tools nutzen. Du bestätigst jede E-Mail, jede Nachricht und jedes Issue, bevor es rausgeht."
     },
-    "readDocs": "Dokumentation lesen"
+    "readDocs": "Dokumentation lesen",
+    "apps": {
+      "description": "Verbinden Sie die Apps, die Sie täglich nutzen, mit einer einfachen Anmeldung.",
+      "connected": "Verbunden",
+      "notConfigured": "In diesem Build noch nicht verfügbar",
+      "unavailable": "Nicht verfügbar",
+      "connect": "Verbinden",
+      "disconnect": "Trennen"
+    }
   },
   "connectors": {
     "approval": {

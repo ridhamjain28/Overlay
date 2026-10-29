@@ -4185,14 +4185,23 @@
         "calendars": "Calendarios",
         "api": "Claves API",
         "mcp": "Servidor MCP",
-        "cli": "Línea de comandos"
+        "cli": "Línea de comandos",
+        "apps": "Conectar aplicaciones"
       },
       "docs": "Documentación de integraciones"
     },
     "connectors": {
       "description": "Deja que el asistente use tus herramientas. Apruebas cada correo, mensaje e incidencia antes de que se envíe."
     },
-    "readDocs": "Leer la documentación"
+    "readDocs": "Leer la documentación",
+    "apps": {
+      "description": "Conecta las aplicaciones que usas todos los días con un simple inicio de sesión.",
+      "connected": "Conectado",
+      "notConfigured": "Aún no disponible en esta versión",
+      "unavailable": "No disponible",
+      "connect": "Conectar",
+      "disconnect": "Desconectar"
+    }
   },
   "connectors": {
     "approval": {

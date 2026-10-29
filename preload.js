@@ -1228,10 +1228,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     "overlay-requirements-output",
     (callback) => (_event, payload) => callback(payload)
   ),
-  // Feature C: detect calendar events / reminders in dictated text
-  overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
-  overlayIntentExtract: (text) => ipcRenderer.invoke("overlay-intent-extract", text),
-  overlayIcsOpen: (intentData) => ipcRenderer.invoke("overlay-ics-open", intentData),
+  // Feature B: get configured state of third-party apps
+  overlayGetAppConfigs: () => ipcRenderer.invoke("overlay-app-configs"),
 
   // Agent conversation persistence
   createAgentConversation: (title, noteId, spaceId, folderId) =>

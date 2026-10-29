@@ -4133,14 +4133,23 @@
         "calendars": "行事曆",
         "api": "API 金鑰",
         "mcp": "MCP 伺服器",
-        "cli": "命令列"
+        "cli": "命令列",
+        "apps": "連接應用程式"
       },
       "docs": "整合文件"
     },
     "connectors": {
       "description": "讓助理使用您的工具。每封郵件、每則訊息和每個議題送出前都需要您核准。"
     },
-    "readDocs": "閱讀文件"
+    "readDocs": "閱讀文件",
+    "apps": {
+      "description": "只需點擊登入，即可連接您每天使用的各種應用程式。",
+      "connected": "已連線",
+      "notConfigured": "此版本尚不可用",
+      "unavailable": "無法使用",
+      "connect": "連線",
+      "disconnect": "中斷連線"
+    }
   },
   "connectors": {
     "approval": {

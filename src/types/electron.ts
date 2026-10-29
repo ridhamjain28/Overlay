@@ -3994,6 +3994,9 @@ declare global {
       hardDeleteSnippet?: (id: number) => Promise<{ success: boolean; id: number }>;
       clearSnippetCloudId?: (id: number) => Promise<{ success: boolean }>;
       broadcastSnippetsUpdated?: () => Promise<{ success: boolean }>;
+
+      // Feature B: third-party app configs
+      overlayGetAppConfigs?: () => Promise<Record<string, boolean>>;
     };
 
     api?: {

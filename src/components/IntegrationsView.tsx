@@ -13,6 +13,7 @@ import { CONNECTOR_ROWS } from "./connectors/connectorRows";
 import { IntegrationsNav } from "./integrations/IntegrationsNav";
 import { IntegrationsPane, UpsellBar } from "./integrations/IntegrationsPane";
 import { CalendarsPane } from "./integrations/CalendarsPane";
+import { ConnectAppsPane } from "./integrations/ConnectAppsPane";
 import { SkillsPane } from "./integrations/SkillsPane";
 import { McpPane } from "./integrations/McpPane";
 import { CliPane } from "./integrations/CliPane";
@@ -103,6 +104,7 @@ export default function IntegrationsView({
   const titleOf = (id: IntegrationsSection): string => t(`integrations.nav.sections.${id}`);
 
   const panes: Record<IntegrationsSection, ReactNode> = {
+    apps: <ConnectAppsPane title={titleOf("apps")} />,
     connectors: (
       <IntegrationsPane
         title={titleOf("connectors")}
