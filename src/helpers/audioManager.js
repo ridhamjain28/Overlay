@@ -89,6 +89,7 @@ import {
   isSelfHostedTranscription,
   resolveSelfHostedTranscriptionModel,
 } from "./selfHostedTranscription";
+import { shouldRouteToHinglish, wantsHinglish } from "./overlay/hinglishRoute.js";
 import {
   isManagedOrukeetStream,
   resolveStreamingFallbackTarget,
@@ -635,9 +636,14 @@ class AudioManager {
         this.preparedMicCapture.active,
     });
 
+    this._hinglishReady = false;
+    this._hinglishKey = null;
+    this._maybeWarmHinglish(micSettings);
+
     // Every window owns an AudioManager (dictation and the agent overlay), so
     // the hold has to follow the setting here rather than in one window's hook.
     this._unsubscribeSettings = useSettingsStore.subscribe((state) => {
+      this._maybeWarmHinglish(state);
       const holdSeconds = Number(state.micWarmHoldSeconds) || 0;
       if (holdSeconds !== this._micHoldSeconds) {
         this._micHoldSeconds = holdSeconds;
@@ -1016,6 +1022,32 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   setTranslationRequested(requested) {
     this.translationRequested = requested;
     this.translationApplied = false;
+  }
+
+  // Overlay: start the Hinglish speech server early when the language needs it
+  // and remember whether it is ready (shouldUseStreaming decides synchronously).
+  _maybeWarmHinglish(settings) {
+    try {
+      const language = this.getEffectiveSttLanguage(settings || {});
+      const spokenLanguages = Array.isArray(settings?.spokenLanguages)
+        ? settings.spokenLanguages
+        : [];
+      const key = `${language || "auto"}|${spokenLanguages.join(",")}`;
+      if (key === this._hinglishKey) return;
+      this._hinglishKey = key;
+      if (!wantsHinglish({ language, spokenLanguages })) return;
+      const ensure =
+        typeof window !== "undefined" ? window.electronAPI?.overlayHinglishEnsure : null;
+      if (typeof ensure !== "function") return;
+      Promise.resolve()
+        .then(() => ensure())
+        .then((status) => {
+          this._hinglishReady = status?.ready === true;
+        })
+        .catch(() => {});
+    } catch {
+      // Optional helper: never let it break recording.
+    }
   }
 
   // In translation mode the STT hint is the configured source language, not
@@ -2242,7 +2274,15 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       // the administrator allows it. Error resolutions fail closed inside
       // processWithOpenAIAPI with their own code.
       const managedTranscription = getManagedTranscriptionResolution();
-      if (managedTranscription) {
+      // Overlay: Hindi / Hinglish goes to the local Hinglish speech server when
+      // it is ready; otherwise this is null and the normal path runs.
+      const hinglishResult = managedTranscription
+        ? null
+        : await this.processWithHinglish(audioBlob, metadata, wasCancelled, settings);
+      if (hinglishResult) {
+        activeModel = "hinglish";
+        result = hinglishResult;
+      } else if (managedTranscription) {
         activeModel =
           managedTranscription.kind === "managed" ? managedTranscription.deployment : null;
         result = await this.processWithOpenAIAPI(audioBlob, metadata, wasCancelled);
@@ -2368,6 +2408,58 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       // ownership, instead of receiving an IPC event mid-pipeline.
       if (shouldNotifyNoAudio) this.onNoAudio?.();
     }
+  }
+
+  // Overlay: returns null when the Hinglish server is not wanted, not ready or
+  // failed, so the caller falls back to the normal path without telling anyone.
+  async processWithHinglish(
+    audioBlob,
+    metadata = {},
+    wasCancelled = neverCancelled,
+    settings = getSettings()
+  ) {
+    const api = typeof window !== "undefined" ? window.electronAPI : null;
+    if (typeof api?.overlayHinglishTranscribe !== "function") return null;
+    const language = this.getEffectiveSttLanguage(settings);
+    const spokenLanguages = Array.isArray(settings?.spokenLanguages)
+      ? settings.spokenLanguages
+      : [];
+    if (!wantsHinglish({ language, spokenLanguages })) return null;
+
+    const timings = {};
+    let result;
+    try {
+      // The PCM tap's WAV decodes fastest; the WebM is the fallback.
+      const source = metadata.rawWav ?? audioBlob;
+      const started = performance.now();
+      result = await api.overlayHinglishTranscribe(await source.arrayBuffer(), {
+        mimeType: source.type || "audio/webm",
+        prompt: this.getWhisperPrompt(settings) || undefined,
+      });
+      timings.transcriptionProcessingDurationMs = Math.round(performance.now() - started);
+    } catch (error) {
+      logger.debug("Hinglish path unavailable", { message: error?.message }, "transcription");
+      return null;
+    }
+    if (result?.code === "NOT_READY") this._hinglishReady = false;
+    if (!result?.success) return null;
+    this._hinglishReady = true;
+    if (wasCancelled()) return { success: true, text: "", source: "hinglish", timings };
+
+    const rawText = typeof result.text === "string" ? result.text.trim() : "";
+    if (!rawText) throw new Error("No audio detected");
+    const reasoningStart = performance.now();
+    const text = await this.processTranscription(rawText, "hinglish", wasCancelled);
+    timings.reasoningProcessingDurationMs = Math.round(performance.now() - reasoningStart);
+    if (text === null || text === undefined) throw new Error("No text transcribed");
+    return {
+      success: true,
+      text: text || rawText,
+      rawText,
+      source: "hinglish",
+      timings,
+      ...(metadata.rawWav ? { decodedRawWav: true } : {}),
+    };
   }
 
   async processWithLocalWhisper(
@@ -4762,6 +4854,17 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   shouldUseStreaming(isSignedInOverride) {
     const s = getSettings();
     if (s.useLocalWhisper) return false;
+
+    // Overlay: Hindi / Hinglish goes to the local Hinglish server, batch only.
+    if (
+      shouldRouteToHinglish({
+        language: this.getEffectiveSttLanguage(s),
+        spokenLanguages: s.spokenLanguages,
+        helperReady: this._hinglishReady === true,
+      })
+    ) {
+      return false;
+    }
 
     // Managed enterprise STT is batch-only and outranks personal streaming
     // setups; an error resolution must fail closed on the batch path too.

@@ -8,7 +8,8 @@ model "MSpider3/whisper-hindi2hinglish-swift-ct2".
     POST http://127.0.0.1:8765/v1/audio/transcriptions   (multipart "file")
     GET  http://127.0.0.1:8765/health
 
-In Overlay: Settings -> Speech-to-Text -> Self-hosted, URL http://127.0.0.1:8765/v1
+Overlay starts this server by itself (hidden) once the speech helper and the
+model are installed, and sends Hindi / Hinglish recordings to it.
 
 Environment variables (all optional):
     HINGLISH_ASR_MODEL     model id or local folder (default above)
@@ -16,6 +17,7 @@ Environment variables (all optional):
     HINGLISH_ASR_COMPUTE   compute type (default: float16 on cuda, int8 on cpu)
     HINGLISH_ASR_HOST      bind address (default 127.0.0.1, keep it local)
     HINGLISH_ASR_PORT      port (default 8765)
+    HINGLISH_ASR_LOG_DIR   folder for server.log (default: next to this file)
     HF_HOME                Hugging Face cache folder (reuse an existing cache)
 """
 
@@ -35,7 +37,12 @@ HOST = os.environ.get("HINGLISH_ASR_HOST", "127.0.0.1")
 PORT = int(os.environ.get("HINGLISH_ASR_PORT", "8765"))
 
 log = logging.getLogger("hinglish-asr")
-_handlers = [logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "server.log"), encoding="utf-8")]
+_LOG_DIR = os.environ.get("HINGLISH_ASR_LOG_DIR") or os.path.dirname(os.path.abspath(__file__))
+_handlers = []
+try:
+    _handlers.append(logging.FileHandler(os.path.join(_LOG_DIR, "server.log"), encoding="utf-8"))
+except OSError:  # read-only install folder: skip the log file
+    pass
 if sys.stderr is not None:  # pythonw.exe has no console
     _handlers.append(logging.StreamHandler())
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=_handlers)

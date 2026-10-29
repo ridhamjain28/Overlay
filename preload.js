@@ -1206,6 +1206,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlayRequirementsCheck: (opts) => ipcRenderer.invoke("overlay-requirements-check", opts),
   overlayRequirementsInstall: (id, opts) =>
     ipcRenderer.invoke("overlay-requirements-install", id, opts),
+  overlayHinglishStatus: () => ipcRenderer.invoke("overlay-hinglish-status"),
+  overlayHinglishEnsure: () => ipcRenderer.invoke("overlay-hinglish-ensure"),
+  overlayHinglishTranscribe: (audio, opts) =>
+    ipcRenderer.invoke("overlay-hinglish-transcribe", audio, opts),
   onOverlayRequirementsOutput: registerListener(
     "overlay-requirements-output",
     (callback) => (_event, payload) => callback(payload)

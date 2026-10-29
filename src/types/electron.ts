@@ -3327,6 +3327,22 @@ declare global {
       onOverlayRequirementsOutput?: (
         callback: (payload: { id: string; line?: string; progress?: number }) => void
       ) => () => void;
+      overlayHinglishStatus?: () => Promise<{
+        state: string;
+        ready: boolean;
+        device?: string | null;
+        error?: string | null;
+      }>;
+      overlayHinglishEnsure?: () => Promise<{
+        state: string;
+        ready: boolean;
+        device?: string | null;
+        error?: string | null;
+      }>;
+      overlayHinglishTranscribe?: (
+        audio: ArrayBuffer,
+        opts?: { mimeType?: string; prompt?: string }
+      ) => Promise<{ success: boolean; text?: string; code?: string; error?: string }>;
 
       // Agent cloud tools
       agentOpenNote?: (noteId: number) => Promise<{ success: boolean; error?: string }>;

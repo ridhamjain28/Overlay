@@ -7,6 +7,9 @@
 //   overlay-system-action          -> run one allowlisted laptop action
 //   overlay-requirements-check     -> first-run checklist (what this PC still needs)
 //   overlay-requirements-install   -> install one checklist item, hidden, with live output
+//   overlay-hinglish-status        -> is the Hinglish speech server ready
+//   overlay-hinglish-ensure        -> start it (hidden) if it is installed
+//   overlay-hinglish-transcribe    -> turn one recording into Hinglish text
 //
 // Tokens (OPENCLAW_TOKEN, GEMINI_API_KEY, TAVILY_API_KEY) stay in this
 // process; the renderer only ever sees answer text.
@@ -23,6 +26,7 @@ const {
 const { createSystemActions } = require("./systemActions");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
 const { createRequirements } = require("./requirements");
+const { createHinglishServer } = require("./hinglishServer");
 
 // Model tags look like qwen3.5:4b-q4_K_M; refuse anything that could read as a flag.
 const MODEL_TAG = /^[A-Za-z0-9][\w.:/-]{0,120}$/;
@@ -35,6 +39,26 @@ function findHinglishRequirements() {
     path.join(__dirname, "..", "..", "..", "hinglish-asr", "requirements.txt"),
   ];
   return candidates.find((p) => fs.existsSync(p)) || null;
+}
+
+function findHinglishServerScript() {
+  const candidates = [
+    ...(process.resourcesPath
+      ? [path.join(process.resourcesPath, "hinglish-asr", "server.py")]
+      : []),
+    path.join(__dirname, "..", "..", "..", "hinglish-asr", "server.py"),
+  ];
+  return candidates.filter((p) => fs.existsSync(p));
+}
+
+// Largest recording accepted for the Hinglish server (about an hour of WAV).
+const MAX_HINGLISH_AUDIO_BYTES = 200 * 1024 * 1024;
+
+function toAudioBuffer(audio) {
+  if (audio instanceof ArrayBuffer) return Buffer.from(audio);
+  if (ArrayBuffer.isView(audio))
+    return Buffer.from(audio.buffer, audio.byteOffset, audio.byteLength);
+  return null;
 }
 
 function execFileAsync(file, args, options) {
@@ -163,6 +187,57 @@ function registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugL
     hinglishRequirementsFile: findHinglishRequirements(),
   });
 
+  const hinglishDataDir = path.join(app.getPath("userData"), "hinglish-asr");
+  const hinglish = createHinglishServer({
+    venvDirs: [
+      requirements.hinglishVenv,
+      // A development checkout may have its own venv next to server.py.
+      ...(app.isPackaged ? [] : [path.join(__dirname, "..", "..", "..", "hinglish-asr", ".venv")]),
+    ],
+    serverScripts: findHinglishServerScript(),
+    logDir: (() => {
+      try {
+        fs.mkdirSync(hinglishDataDir, { recursive: true });
+        return hinglishDataDir;
+      } catch {
+        return undefined;
+      }
+    })(),
+    logger: debugLogger,
+  });
+  const stopHinglish = () => hinglish.shutdown();
+  app.on("before-quit", stopHinglish);
+  app.on("will-quit", stopHinglish);
+  process.once("exit", stopHinglish);
+
+  ipcMain.handle("overlay-hinglish-status", async () => hinglish.status());
+
+  ipcMain.handle("overlay-hinglish-ensure", async () => {
+    try {
+      return await hinglish.ensure();
+    } catch (error) {
+      debugLogger?.warn?.("Hinglish speech server start failed", { error: error.message });
+      return { state: "failed", ready: false };
+    }
+  });
+
+  ipcMain.handle("overlay-hinglish-transcribe", async (_event, audio, opts = {}) => {
+    const buffer = toAudioBuffer(audio);
+    if (!buffer || buffer.length === 0 || buffer.length > MAX_HINGLISH_AUDIO_BYTES) {
+      return { success: false, code: "BAD_AUDIO" };
+    }
+    const mimeType =
+      typeof opts?.mimeType === "string" && /^audio\/[\w.+-]+/.test(opts.mimeType)
+        ? opts.mimeType
+        : "audio/webm";
+    const prompt = typeof opts?.prompt === "string" ? opts.prompt : undefined;
+    const result = await hinglish.transcribe(buffer, { mimeType, prompt });
+    if (!result.success && result.code !== "NOT_READY") {
+      debugLogger?.warn?.("Hinglish transcription failed", { code: result.code });
+    }
+    return result;
+  });
+
   ipcMain.handle("overlay-requirements-check", async (_event, opts = {}) => {
     try {
       return await requirements.check({
@@ -186,6 +261,10 @@ function registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugL
       },
     });
     debugLogger?.info?.("Overlay requirement install", { id: itemId, success: result.success });
+    if (result.success && (itemId === "hinglish-libs" || itemId === "hinglish-model")) {
+      hinglish.reset();
+      hinglish.ensure().catch(() => {});
+    }
     return result;
   });
 

@@ -57,7 +57,9 @@ export default function RequirementsChecklist({ compact = false }: { compact?: b
   const chatAgentMode = useSettingsStore((s) => s.chatAgentMode);
   const chatAgentModel = useSettingsStore((s) => s.chatAgentModel);
 
-  const hindiSelected = spokenLanguages.includes("hi") || preferredLanguage === "hi";
+  const hindiSelected = ["hi", "hi-Latn"].some(
+    (code) => spokenLanguages.includes(code) || preferredLanguage === code
+  );
   const [choice, setChoice] = useState<HinglishChoice>(readChoice);
   const includeHinglish = hindiSelected && choice === "download";
   const answerModel =

@@ -7,6 +7,7 @@ import { hasUseCaseIntent } from "./onboarding/useCases";
 import OnboardingShell, { OnboardingStepHeader } from "./onboarding/OnboardingShell";
 import CompactPermissionsStep from "./onboarding/CompactPermissionsStep";
 import LanguageSelectionStep from "./onboarding/LanguageSelectionStep";
+import { preferredLanguageFromSpoken } from "../helpers/overlay/hinglishRoute.js";
 import RequirementsChecklist from "./overlay/RequirementsChecklist";
 import ShortcutSetupStep from "./onboarding/ShortcutSetupStep";
 import AssistantHotkeyPreview from "./onboarding/AssistantHotkeyPreview";
@@ -779,9 +780,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         setAccessibilitySkipped(true);
       }
     } else if (currentStepId === "languages") {
-      settings.setPreferredLanguage(
-        settings.spokenLanguages.length === 1 ? settings.spokenLanguages[0] : "auto"
-      );
+      // Overlay: Hindi (alone or with English) means Hinglish in Roman script.
+      settings.setPreferredLanguage(preferredLanguageFromSpoken(settings.spokenLanguages));
     } else if (currentStepId === "use-cases") {
       syncUseCases();
     } else if (currentStepId === "dictation-hotkey") {

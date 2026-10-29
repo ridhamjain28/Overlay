@@ -26,6 +26,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 
 const SEARCH_ALIASES: Record<string, string> = {
   hi: "hind hindustani",
+  "hi-Latn": "hindi hinglish roman hindustani",
 };
 
 const PRIMARY_LANGUAGE_CODES = ["en-US", "zh-CN", "es", "ar", "af"];
