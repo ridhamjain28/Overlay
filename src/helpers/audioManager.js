@@ -90,6 +90,7 @@ import {
   resolveSelfHostedTranscriptionModel,
 } from "./selfHostedTranscription";
 import { shouldRouteToHinglish, wantsHinglish } from "./overlay/hinglishRoute.js";
+import { createSpokenLanguageGuard, singleSpokenLanguage } from "./overlay/spokenLanguageGuard.js";
 import {
   isManagedOrukeetStream,
   resolveStreamingFallbackTarget,
@@ -1053,9 +1054,14 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   // In translation mode the STT hint is the configured source language, not
   // the UI-wide preferred language; "auto" keeps whisper auto-detection.
   getEffectiveSttLanguage(settings) {
+    // Overlay: a second attempt pinned to one of the user's spoken languages.
+    if (this._sttLanguageOverride) return this._sttLanguageOverride;
     if (this.translationRequested) {
       return settings.translationSourceLanguage || "auto";
     }
+    // Overlay: Auto-detect with exactly one spoken language means that language.
+    const single = singleSpokenLanguage(settings);
+    if (single) return single;
     return settings.preferredLanguage;
   }
 
@@ -2250,6 +2256,7 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       return;
     }
 
+    let languageGuard = null;
     try {
       const useLocalWhisper = settings.useLocalWhisper;
       const localProvider = settings.localTranscriptionProvider;
@@ -2267,50 +2274,81 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         "transcription"
       );
 
-      let result;
-      let activeModel;
-      // Managed enterprise STT outranks the local and OpenWhispr Cloud lanes,
-      // matching the LLM scopes; users opt out via "Use personal setup" when
-      // the administrator allows it. Error resolutions fail closed inside
-      // processWithOpenAIAPI with their own code.
-      const managedTranscription = getManagedTranscriptionResolution();
-      // Overlay: Hindi / Hinglish goes to the local Hinglish speech server when
-      // it is ready; otherwise this is null and the normal path runs.
-      const hinglishResult = managedTranscription
-        ? null
-        : await this.processWithHinglish(audioBlob, metadata, wasCancelled, settings);
-      if (hinglishResult) {
-        activeModel = "hinglish";
-        result = hinglishResult;
-      } else if (managedTranscription) {
-        activeModel =
-          managedTranscription.kind === "managed" ? managedTranscription.deployment : null;
-        result = await this.processWithOpenAIAPI(audioBlob, metadata, wasCancelled);
-      } else if (useLocalWhisper) {
-        if (isSherpaLocalProvider(localProvider)) {
-          activeModel = localProvider === "cohere" ? settings.cohereModel : parakeetModel;
-          result = await this.processWithLocalParakeet(
-            audioBlob,
-            activeModel,
-            metadata,
-            wasCancelled
-          );
+      const runDispatch = async () => {
+        let result;
+        let activeModel;
+        // Managed enterprise STT outranks the local and OpenWhispr Cloud lanes,
+        // matching the LLM scopes; users opt out via "Use personal setup" when
+        // the administrator allows it. Error resolutions fail closed inside
+        // processWithOpenAIAPI with their own code.
+        const managedTranscription = getManagedTranscriptionResolution();
+        // Overlay: Hindi / Hinglish goes to the local Hinglish speech server when
+        // it is ready; otherwise this is null and the normal path runs.
+        const hinglishResult = managedTranscription
+          ? null
+          : await this.processWithHinglish(audioBlob, metadata, wasCancelled, settings);
+        if (hinglishResult) {
+          activeModel = "hinglish";
+          result = hinglishResult;
+        } else if (managedTranscription) {
+          activeModel =
+            managedTranscription.kind === "managed" ? managedTranscription.deployment : null;
+          result = await this.processWithOpenAIAPI(audioBlob, metadata, wasCancelled);
+        } else if (useLocalWhisper) {
+          if (isSherpaLocalProvider(localProvider)) {
+            activeModel = localProvider === "cohere" ? settings.cohereModel : parakeetModel;
+            result = await this.processWithLocalParakeet(
+              audioBlob,
+              activeModel,
+              metadata,
+              wasCancelled
+            );
+          } else {
+            activeModel = whisperModel;
+            result = await this.processWithLocalWhisper(
+              audioBlob,
+              whisperModel,
+              metadata,
+              wasCancelled
+            );
+          }
+        } else if (isOpenWhisprCloudMode) {
+          if (!isSignedIn) throw cloudSignInRequiredError();
+          activeModel = "openwhispr-cloud";
+          result = await this.processWithOpenWhisprCloud(audioBlob, metadata, wasCancelled);
         } else {
-          activeModel = whisperModel;
-          result = await this.processWithLocalWhisper(
-            audioBlob,
-            whisperModel,
-            metadata,
-            wasCancelled
+          activeModel = this.getTranscriptionModel();
+          result = await this.processWithOpenAIAPI(audioBlob, metadata, wasCancelled);
+        }
+        return { result, activeModel };
+      };
+
+      // Overlay: with Auto-detect and two or more spoken languages, a transcript
+      // in a script none of them use is transcribed once more with an allowed
+      // language pinned (see spokenLanguageGuard.js for the limits).
+      languageGuard = createSpokenLanguageGuard(settings, {
+        translationRequested: this.translationRequested,
+      });
+      this._spokenLanguageGuard = languageGuard;
+      let { result, activeModel } = await runDispatch();
+      if (languageGuard?.retryLanguage && !wasCancelled() && this.isProcessing) {
+        languageGuard.attempts += 1;
+        logger.info(
+          "Transcript outside spoken languages, retrying with a pinned language",
+          { language: languageGuard.retryLanguage, firstSource: result?.source },
+          "transcription"
+        );
+        this._sttLanguageOverride = languageGuard.retryLanguage;
+        try {
+          ({ result, activeModel } = await runDispatch());
+        } catch (retryError) {
+          if (wasCancelled()) throw retryError;
+          logger.warn(
+            "Pinned-language retry failed, keeping the first transcript",
+            { error: retryError?.message },
+            "transcription"
           );
         }
-      } else if (isOpenWhisprCloudMode) {
-        if (!isSignedIn) throw cloudSignInRequiredError();
-        activeModel = "openwhispr-cloud";
-        result = await this.processWithOpenWhisprCloud(audioBlob, metadata, wasCancelled);
-      } else {
-        activeModel = this.getTranscriptionModel();
-        result = await this.processWithOpenAIAPI(audioBlob, metadata, wasCancelled);
       }
 
       if (wasCancelled() || !this.isProcessing) {
@@ -2400,6 +2438,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         );
       }
     } finally {
+      if (languageGuard && this._spokenLanguageGuard === languageGuard) {
+        this._spokenLanguageGuard = null;
+        this._sttLanguageOverride = null;
+      }
       const shouldNotifyNoAudio =
         !wasCancelled() && noAudioDetected && this._activeProcessingPipeline === pipeline;
       this._settleProcessingPipeline(pipeline);
@@ -3418,6 +3460,12 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   }
 
   async processTranscription(text, source, wasCancelled = neverCancelled) {
+    // Overlay: a transcript outside the spoken languages is about to be redone
+    // with a pinned language, so skip cleanup for this one.
+    const languageGuard = this._spokenLanguageGuard;
+    if (languageGuard && typeof text === "string" && languageGuard.check(text, source)) {
+      return text.trim();
+    }
     try {
       const result = await this.processTranscriptionCore(text, source, wasCancelled);
       if (wasCancelled()) return result;
