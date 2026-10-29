@@ -8,7 +8,7 @@ const MICROSOFT_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.
 // "profile" puts preferred_username in the id_token and User.Read allows the
 // GET /me fallback — work accounts often omit the "email" claim.
 const CALENDAR_SCOPE =
-  "openid profile email offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Calendars.Read";
+  "openid profile email offline_access https://graph.microsoft.com/User.Read https://graph.microsoft.com/Calendars.Read https://graph.microsoft.com/Calendars.ReadWrite";
 
 function decodeIdToken(idToken) {
   if (!idToken) return null;

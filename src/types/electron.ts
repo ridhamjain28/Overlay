@@ -3997,6 +3997,39 @@ declare global {
 
       // Feature B: third-party app configs
       overlayGetAppConfigs?: () => Promise<Record<string, boolean>>;
+
+      // Feature C: intent detection, calendar/reminder scheduling and todos
+      overlayIntentDetect?: (text: string) => Promise<boolean>;
+      overlayIntentExtract?: (text: string) => Promise<{
+        type: "event" | "reminder" | "todo";
+        title: string;
+        start: string;
+        end?: string | null;
+        confidence: number;
+      } | null>;
+      overlayIcsOpen?: (intentData: {
+        title: string;
+        start: string;
+        end?: string | null;
+        description?: string;
+      }) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+      overlayReminderSchedule?: (reminderData: {
+        title: string;
+        start: string;
+      }) => Promise<{ success: boolean; reminder?: any; error?: string }>;
+      overlayCalendarEventCreate?: (payload: {
+        target: "ask" | "ics" | "gcal" | "mcal";
+        event: {
+          title: string;
+          start: string;
+          end?: string | null;
+          description?: string;
+        };
+      }) => Promise<{ success: boolean; reconnectNeeded?: boolean; provider?: string; error?: string; format?: string; eventId?: string; htmlLink?: string; webLink?: string }>;
+      overlayTodoCreate?: (todoData: {
+        title?: string;
+        text?: string;
+      }) => Promise<{ success: boolean; note?: any; error?: string }>;
     };
 
     api?: {

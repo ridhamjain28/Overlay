@@ -1927,6 +1927,30 @@
     "prompt": {
       "title": "مطالبة المساعد",
       "description": "مطالبة النظام المستخدمة عند اكتشاف كلمة التفعيل. إذا تُركت فارغة، تُستخدم المطالبة الافتراضية المدمجة."
+    },
+    "intents": {
+      "title": "الاجتماعات والتذكيرات",
+      "description": "اكتشاف الأحداث والتذكيرات والمهام مباشرة من الإملاء الصوتي.",
+      "enable": "اكتشاف الاجتماعات والتذكيرات",
+      "enableDescription": "يكتشف تلقائياً أحداث التقويم والتذكيرات من صوتك بنقرة واحدة.",
+      "destination": "وجهة الحدث",
+      "destinationDescription": "أين يتم حفظ أحداث التقويم المكتشفة.",
+      "destAsk": "السؤال في كل مرة",
+      "destIcs": "ملف التقويم (.ics)",
+      "destGcal": "تقويم Google",
+      "destMcal": "تقويم Outlook",
+      "eventPromptTitle": "إضافة إلى التقويم؟",
+      "reminderPromptTitle": "جدولة تذكير؟",
+      "todoPromptTitle": "إضافة إلى المهام؟",
+      "addAction": "إضافة",
+      "scheduleAction": "جدولة",
+      "eventAddedTitle": "تمت جدولة الحدث",
+      "reminderScheduledTitle": "تمت جدولة التذكير",
+      "todoCreatedTitle": "تم إنشاء المهمة",
+      "icsCreatedTitle": "تم فتح ملف التقويم",
+      "reconnectNeededTitle": "إعادة الاتصال مطلوبة",
+      "reconnectNeededGcal": "أعد توصيل تقويم Google للسماح بإنشاء الأحداث.",
+      "reconnectNeededMcal": "أعد توصيل تقويم Outlook للسماح بإنشاء الأحداث."
     }
   },
   "agentMode": {

@@ -107,6 +107,9 @@ function registerOverlayIpc({
   debugLogger,
   windowManager,
   getDatabase,
+  googleCalendarManager,
+  microsoftCalendarManager,
+  databaseManager,
 }) {
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
 
@@ -365,6 +368,140 @@ function registerOverlayIpc({
       "google-calendar": Boolean(process.env.GOOGLE_CALENDAR_CLIENT_ID),
       "microsoft-calendar": Boolean(process.env.MICROSOFT_CALENDAR_CLIENT_ID),
     };
+  });
+
+  // Feature C: dictation intent detection and scheduling
+  const { mightContainIntent } = require("../intents/intentDetector");
+  const { extractIntent } = require("../intents/intentExtractor");
+  const { buildIcs } = require("../intents/icsWriter");
+  const { ReminderScheduler } = require("../intents/reminderScheduler");
+
+  let reminderScheduler = null;
+  try {
+    const db = getDatabase?.() || databaseManager?.db || null;
+    if (db) {
+      reminderScheduler = new ReminderScheduler(db);
+      reminderScheduler.restorePendingReminders();
+    }
+  } catch {}
+
+  // Fast synchronous check — no model, no network
+  ipcMain.handle("overlay-intent-detect", (_event, text) => {
+    if (typeof text !== "string") return false;
+    return mightContainIntent(text);
+  });
+
+  // Local model call with 4s timeout
+  ipcMain.handle("overlay-intent-extract", async (_event, text) => {
+    if (typeof text !== "string" || text.length > 2000) return null;
+    try {
+      return await extractIntent({ text });
+    } catch {
+      return null;
+    }
+  });
+
+  // Write .ics file and open with default calendar app
+  ipcMain.handle("overlay-ics-open", async (_event, intentData) => {
+    if (!intentData || typeof intentData !== "object") return { success: false };
+    try {
+      const icsContent = buildIcs({
+        title: String(intentData.title || "Event").slice(0, 200),
+        start: intentData.start,
+        end: intentData.end || null,
+        description: intentData.description || undefined,
+      });
+      const tmpDir = app.getPath("temp");
+      const fileName = `overlay-event-${Date.now()}.ics`;
+      const filePath = path.join(tmpDir, fileName);
+      fs.writeFileSync(filePath, icsContent, "utf8");
+      await shell.openPath(filePath);
+      return { success: true, filePath };
+    } catch (error) {
+      debugLogger?.warn?.("overlay-ics-open failed", { error: error.message });
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Schedule a local reminder with a Windows/system notification
+  ipcMain.handle("overlay-reminder-schedule", async (_event, reminderData) => {
+    if (!reminderData || !reminderData.title || !reminderData.start) {
+      return { success: false, error: "invalid_params" };
+    }
+    try {
+      if (!reminderScheduler) {
+        const db = getDatabase?.() || databaseManager?.db || null;
+        if (db) reminderScheduler = new ReminderScheduler(db);
+      }
+      const scheduled = reminderScheduler?.schedule({
+        title: reminderData.title,
+        time: reminderData.start,
+      });
+      return { success: true, reminder: scheduled };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Create event in connected calendar (Google or Outlook) or fallback to .ics
+  ipcMain.handle("overlay-calendar-event-create", async (_event, { target, event: eventData }) => {
+    if (!eventData || !eventData.title || !eventData.start) {
+      return { success: false, error: "invalid_params" };
+    }
+    try {
+      if (target === "gcal" && googleCalendarManager?.isConnected()) {
+        try {
+          return await googleCalendarManager.createEvent(eventData);
+        } catch (err) {
+          if (err.code === "RECONNECT_NEEDED" || err.message === "reconnect_needed") {
+            return { success: false, reconnectNeeded: true, provider: "google" };
+          }
+          throw err;
+        }
+      }
+      if (target === "mcal" && microsoftCalendarManager?.isConnected()) {
+        try {
+          return await microsoftCalendarManager.createEvent(eventData);
+        } catch (err) {
+          if (err.code === "RECONNECT_NEEDED" || err.message === "reconnect_needed") {
+            return { success: false, reconnectNeeded: true, provider: "microsoft" };
+          }
+          throw err;
+        }
+      }
+      // Default / fallback: write .ics file and open
+      const icsContent = buildIcs({
+        title: String(eventData.title || "Event").slice(0, 200),
+        start: eventData.start,
+        end: eventData.end || null,
+      });
+      const tmpDir = app.getPath("temp");
+      const fileName = `overlay-event-${Date.now()}.ics`;
+      const filePath = path.join(tmpDir, fileName);
+      fs.writeFileSync(filePath, icsContent, "utf8");
+      await shell.openPath(filePath);
+      return { success: true, filePath, format: "ics" };
+    } catch (error) {
+      debugLogger?.warn?.("overlay-calendar-event-create failed", { error: error.message });
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Save to-do as an Overlay note titled "To-do"
+  ipcMain.handle("overlay-todo-create", async (_event, todoData) => {
+    try {
+      const title = "To-do";
+      const content = String(todoData?.title || todoData?.text || "").trim();
+      if (!content) return { success: false, error: "empty_content" };
+      const db = databaseManager || (getDatabase ? { db: getDatabase() } : null);
+      if (db?.saveNote) {
+        const result = db.saveNote(title, content, "personal");
+        return { success: true, note: result?.note };
+      }
+      return { success: false, error: "database_not_available" };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   });
 }
 

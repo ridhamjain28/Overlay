@@ -1365,6 +1365,8 @@ export interface SettingsState
   setKeepTranscriptionInClipboard: (value: boolean) => void;
   setNoteFilesEnabled: (value: boolean) => void;
   setNoteFilesPath: (value: string) => void;
+  setDetectDictationIntents: (value: boolean) => void;
+  setDictationIntentOutput: (value: "ask" | "ics" | "gcal" | "mcal") => void;
   setIsSignedIn: (value: boolean) => void;
 
   setChatAgentModel: (value: string) => void;
@@ -1838,6 +1840,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   keepTranscriptionInClipboard: readBoolean("keepTranscriptionInClipboard", false),
   noteFilesEnabled: readBoolean("noteFilesEnabled", false),
   noteFilesPath: readString("noteFilesPath", ""),
+  detectDictationIntents: readBoolean("detectDictationIntents", true),
+  dictationIntentOutput: (readString("dictationIntentOutput", "ask") as "ask" | "ics" | "gcal" | "mcal"),
   isSignedIn: readBoolean("isSignedIn", false),
   // Overlay: which source answers ("auto" | "local" | "openclaw" | "gemini").
   answerSource: readString("answerSource", "auto"),
@@ -2722,6 +2726,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setKeepTranscriptionInClipboard: createBooleanSetter("keepTranscriptionInClipboard"),
   setNoteFilesEnabled: createBooleanSetter("noteFilesEnabled"),
   setNoteFilesPath: createStringSetter("noteFilesPath"),
+  setDetectDictationIntents: createBooleanSetter("detectDictationIntents"),
+  setDictationIntentOutput: (value: "ask" | "ics" | "gcal" | "mcal") => {
+    if (isBrowser) localStorage.setItem("dictationIntentOutput", value);
+    set({ dictationIntentOutput: value });
+  },
 
   setIsSignedIn: (value: boolean) => {
     if (isBrowser) localStorage.setItem("isSignedIn", String(value));

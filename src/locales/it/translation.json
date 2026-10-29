@@ -3924,6 +3924,30 @@
     "prompt": {
       "title": "Prompt dell'assistente",
       "description": "Il prompt di sistema usato quando viene rilevata la parola di attivazione. In assenza, usa quello predefinito integrato."
+    },
+    "intents": {
+      "title": "Riunioni e Promemoria",
+      "description": "Rileva eventi, promemoria e attività direttamente dalle tue dettature.",
+      "enable": "Rileva riunioni e promemoria",
+      "enableDescription": "Rileva automaticamente gli eventi del calendario e i promemoria.",
+      "destination": "Destinazione evento",
+      "destinationDescription": "Dove salvare gli eventi del calendario rilevati.",
+      "destAsk": "Chiedi ogni volta",
+      "destIcs": "File calendario (.ics)",
+      "destGcal": "Google Calendar",
+      "destMcal": "Outlook Calendar",
+      "eventPromptTitle": "Aggiungere al calendario?",
+      "reminderPromptTitle": "Pianificare promemoria?",
+      "todoPromptTitle": "Aggiungere alle attività?",
+      "addAction": "Aggiungi",
+      "scheduleAction": "Pianifica",
+      "eventAddedTitle": "Evento pianificato",
+      "reminderScheduledTitle": "Promemoria pianificato",
+      "todoCreatedTitle": "Attività creata",
+      "icsCreatedTitle": "File calendario aperto",
+      "reconnectNeededTitle": "Riconnessione richiesta",
+      "reconnectNeededGcal": "Riconnetti Google Calendar per creare eventi.",
+      "reconnectNeededMcal": "Riconnetti Outlook Calendar per creare eventi."
     }
   },
   "agentMode": {

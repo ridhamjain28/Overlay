@@ -4096,6 +4096,30 @@
     "prompt": {
       "title": "Assistant prompt",
       "description": "The system prompt used when the wake word is detected. Falls back to the built-in default."
+    },
+    "intents": {
+      "title": "Meetings & Reminders",
+      "description": "Detect events, reminders, and tasks directly from your dictations.",
+      "enable": "Detect meetings and reminders",
+      "enableDescription": "Automatically spots calendar events and reminders in your speech and lets you add them with one click.",
+      "destination": "Event destination",
+      "destinationDescription": "Where to save detected calendar events.",
+      "destAsk": "Ask each time",
+      "destIcs": "Calendar file (.ics)",
+      "destGcal": "Google Calendar",
+      "destMcal": "Outlook Calendar",
+      "eventPromptTitle": "Add to calendar?",
+      "reminderPromptTitle": "Schedule reminder?",
+      "todoPromptTitle": "Add to tasks?",
+      "addAction": "Add",
+      "scheduleAction": "Schedule",
+      "eventAddedTitle": "Event scheduled",
+      "reminderScheduledTitle": "Reminder scheduled",
+      "todoCreatedTitle": "Task created",
+      "icsCreatedTitle": "Calendar file opened",
+      "reconnectNeededTitle": "Reconnect required",
+      "reconnectNeededGcal": "Reconnect Google Calendar to allow creating events.",
+      "reconnectNeededMcal": "Reconnect Outlook Calendar to allow creating events."
     }
   },
   "agentMode": {

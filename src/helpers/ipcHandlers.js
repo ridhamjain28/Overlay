@@ -11080,6 +11080,9 @@ class IPCHandlers {
       debugLogger,
       windowManager: this.windowManager,
       getDatabase: () => this.databaseManager?.db || null,
+      googleCalendarManager: this.googleCalendarManager,
+      microsoftCalendarManager: this.microsoftCalendarManager,
+      databaseManager: this.databaseManager,
     });
 
     ipcMain.handle(

@@ -408,6 +408,36 @@ class GoogleCalendarManager {
     }
     return parsed;
   }
+
+  async createEvent({ title, start, end, description }, accountEmail = null) {
+    const accessToken = await this.oauth.getValidAccessToken(accountEmail);
+    const body = {
+      summary: title,
+      description: description || undefined,
+      start: { dateTime: new Date(start).toISOString() },
+      end: { dateTime: new Date(end || new Date(Date.parse(start) + 30 * 60 * 1000)).toISOString() },
+    };
+    const response = await net.fetch(`${CALENDAR_API_BASE}/calendars/primary/events`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
+      useSessionCookies: false,
+    });
+    if (response.status === 401 || response.status === 403) {
+      const err = new Error("reconnect_needed");
+      err.code = "RECONNECT_NEEDED";
+      throw err;
+    }
+    if (!response.ok) {
+      throw new Error(`Google Calendar API error ${response.status}`);
+    }
+    const data = await response.json();
+    return { success: true, eventId: data.id, htmlLink: data.htmlLink };
+  }
 }
 
 module.exports = GoogleCalendarManager;

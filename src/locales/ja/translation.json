@@ -3924,6 +3924,30 @@
     "prompt": {
       "title": "アシスタントプロンプト",
       "description": "ウェイクワードが検出されたときに使用するシステムプロンプト。未設定の場合は組み込みのデフォルトが使われます。"
+    },
+    "intents": {
+      "title": "会議とリマインダー",
+      "description": "ディクテーションから予定、リマインダー、タスクを自動検出します。",
+      "enable": "会議とリマインダーを検出",
+      "enableDescription": "音声からカレンダーの予定やリマインダーを自動的に見つけます。",
+      "destination": "予定の保存先",
+      "destinationDescription": "検出された予定を保存する場所。",
+      "destAsk": "毎回確認",
+      "destIcs": "カレンダーファイル (.ics)",
+      "destGcal": "Google カレンダー",
+      "destMcal": "Outlook カレンダー",
+      "eventPromptTitle": "カレンダーに追加しますか？",
+      "reminderPromptTitle": "リマインダーを設定しますか？",
+      "todoPromptTitle": "タスクに追加しますか？",
+      "addAction": "追加",
+      "scheduleAction": "設定",
+      "eventAddedTitle": "予定を設定しました",
+      "reminderScheduledTitle": "リマインダーを設定しました",
+      "todoCreatedTitle": "タスクを作成しました",
+      "icsCreatedTitle": "カレンダーファイルを開きました",
+      "reconnectNeededTitle": "再接続が必要です",
+      "reconnectNeededGcal": "予定を作成するには Google カレンダーを再接続してください。",
+      "reconnectNeededMcal": "予定を作成するには Outlook カレンダーを再接続してください。"
     }
   },
   "agentMode": {

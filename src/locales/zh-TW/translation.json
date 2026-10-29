@@ -3924,6 +3924,30 @@
     "prompt": {
       "title": "助理提示詞",
       "description": "偵測到喚醒詞時使用的系統提示詞。若未設定則使用內建預設值。"
+    },
+    "intents": {
+      "title": "會議與提醒",
+      "description": "直接從您的聽寫中偵測行程、提醒與待辦事項。",
+      "enable": "偵測會議和提醒",
+      "enableDescription": "自動辨識語音中的行事曆事件與提醒，一鍵新增。",
+      "destination": "行程儲存位置",
+      "destinationDescription": "儲存偵測到的行事曆事件的位置。",
+      "destAsk": "每次詢問",
+      "destIcs": "行事曆檔案 (.ics)",
+      "destGcal": "Google 日曆",
+      "destMcal": "Outlook 行事曆",
+      "eventPromptTitle": "新增至行事曆？",
+      "reminderPromptTitle": "設定提醒？",
+      "todoPromptTitle": "新增至待辦？",
+      "addAction": "新增",
+      "scheduleAction": "設定",
+      "eventAddedTitle": "行程已排定",
+      "reminderScheduledTitle": "提醒已設定",
+      "todoCreatedTitle": "待辦已建立",
+      "icsCreatedTitle": "已開啟行事曆檔案",
+      "reconnectNeededTitle": "需要重新連線",
+      "reconnectNeededGcal": "請重新連線 Google 日曆以建立事件。",
+      "reconnectNeededMcal": "請重新連線 Outlook 行事曆以建立事件。"
     }
   },
   "agentMode": {

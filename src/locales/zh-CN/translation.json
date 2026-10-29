@@ -3924,6 +3924,30 @@
     "prompt": {
       "title": "助手提示词",
       "description": "检测到唤醒词时使用的系统提示词。未设置时回退到内置默认值。"
+    },
+    "intents": {
+      "title": "会议与提醒",
+      "description": "直接从您的听写中检测日程、提醒和待办事项。",
+      "enable": "检测会议和提醒",
+      "enableDescription": "自动识别语音中的日历事件和提醒，一键添加。",
+      "destination": "日程保存位置",
+      "destinationDescription": "保存检测到的日历事件的位置。",
+      "destAsk": "每次询问",
+      "destIcs": "日历文件 (.ics)",
+      "destGcal": "Google 日历",
+      "destMcal": "Outlook 日历",
+      "eventPromptTitle": "添加到日历？",
+      "reminderPromptTitle": "设置提醒？",
+      "todoPromptTitle": "添加到待办？",
+      "addAction": "添加",
+      "scheduleAction": "设置",
+      "eventAddedTitle": "日程已添加",
+      "reminderScheduledTitle": "提醒已设置",
+      "todoCreatedTitle": "待办已创建",
+      "icsCreatedTitle": "已打开日历文件",
+      "reconnectNeededTitle": "需要重新连接",
+      "reconnectNeededGcal": "请重新连接 Google 日历以创建事件。",
+      "reconnectNeededMcal": "请重新连接 Outlook 日历以创建事件。"
     }
   },
   "agentMode": {

@@ -15,6 +15,7 @@ import { Toggle } from "../ui/toggle";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { SettingsPanel, SettingsPanelRow, SettingsRow, SectionHeader } from "../ui/SettingsSection";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import PermissionCard from "../ui/PermissionCard";
 import PromptStudio from "../ui/PromptStudio";
 import InferenceConfigEditor from "./InferenceConfigEditor";
@@ -24,6 +25,10 @@ export default function DictationAgentSettings() {
   const { t } = useTranslation();
   const useDictationAgent = useSettingsStore((s) => s.useDictationAgent);
   const setUseDictationAgent = useSettingsStore((s) => s.setUseDictationAgent);
+  const detectDictationIntents = useSettingsStore((s) => s.detectDictationIntents);
+  const setDetectDictationIntents = useSettingsStore((s) => s.setDetectDictationIntents);
+  const dictationIntentOutput = useSettingsStore((s) => s.dictationIntentOutput);
+  const setDictationIntentOutput = useSettingsStore((s) => s.setDictationIntentOutput);
   const voiceAgentScreenContext = useSettingsStore((s) => s.voiceAgentScreenContext);
   const setVoiceAgentScreenContext = useSettingsStore((s) => s.setVoiceAgentScreenContext);
   const useDictationAgentVisionModel = useSettingsStore((s) => s.useDictationAgentVisionModel);
@@ -169,6 +174,49 @@ export default function DictationAgentSettings() {
           </SettingsRow>
         </SettingsPanelRow>
       </SettingsPanel>
+
+      <div className="border-t border-border/70 pt-6 space-y-3">
+        <SectionHeader
+          title={t("dictationAgent.intents.title")}
+          description={t("dictationAgent.intents.description")}
+        />
+        <SettingsPanel>
+          <SettingsPanelRow>
+            <SettingsRow
+              label={t("dictationAgent.intents.enable")}
+              description={t("dictationAgent.intents.enableDescription")}
+            >
+              <Toggle
+                checked={detectDictationIntents}
+                onChange={setDetectDictationIntents}
+              />
+            </SettingsRow>
+          </SettingsPanelRow>
+          {detectDictationIntents && (
+            <SettingsPanelRow>
+              <SettingsRow
+                label={t("dictationAgent.intents.destination")}
+                description={t("dictationAgent.intents.destinationDescription")}
+              >
+                <Select
+                  value={dictationIntentOutput}
+                  onValueChange={(val: "ask" | "ics" | "gcal" | "mcal") => setDictationIntentOutput(val)}
+                >
+                  <SelectTrigger className="h-7 w-48 text-xs rounded-lg px-2.5 [&>svg]:h-3 [&>svg]:w-3">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ask">{t("dictationAgent.intents.destAsk")}</SelectItem>
+                    <SelectItem value="ics">{t("dictationAgent.intents.destIcs")}</SelectItem>
+                    <SelectItem value="gcal">{t("dictationAgent.intents.destGcal")}</SelectItem>
+                    <SelectItem value="mcal">{t("dictationAgent.intents.destMcal")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SettingsRow>
+            </SettingsPanelRow>
+          )}
+        </SettingsPanel>
+      </div>
 
       {useDictationAgent && <AnswerSourceSettings />}
       {useDictationAgent && <InferenceConfigEditor scope="dictationAgent" />}

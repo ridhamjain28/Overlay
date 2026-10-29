@@ -3924,6 +3924,30 @@
     "prompt": {
       "title": "Prompt do assistente",
       "description": "O prompt de sistema usado quando a palavra de ativação é detectada. Recorre ao padrão integrado."
+    },
+    "intents": {
+      "title": "Reuniões e Lembretes",
+      "description": "Detecte eventos, lembretes e tarefas diretamente das suas ditados.",
+      "enable": "Detectar reuniões e lembretes",
+      "enableDescription": "Detecta automaticamente eventos de calendário e lembretes na sua fala.",
+      "destination": "Destino do evento",
+      "destinationDescription": "Onde salvar os eventos de calendário detectados.",
+      "destAsk": "Perguntar sempre",
+      "destIcs": "Arquivo de calendário (.ics)",
+      "destGcal": "Google Agenda",
+      "destMcal": "Calendário do Outlook",
+      "eventPromptTitle": "Adicionar ao calendário?",
+      "reminderPromptTitle": "Agendar lembrete?",
+      "todoPromptTitle": "Adicionar às tarefas?",
+      "addAction": "Adicionar",
+      "scheduleAction": "Agendar",
+      "eventAddedTitle": "Evento agendado",
+      "reminderScheduledTitle": "Lembrete agendado",
+      "todoCreatedTitle": "Tarefa criada",
+      "icsCreatedTitle": "Arquivo de calendário aberto",
+      "reconnectNeededTitle": "Reconexão necessária",
+      "reconnectNeededGcal": "Reconecte o Google Agenda para criar eventos.",
+      "reconnectNeededMcal": "Reconecte o Calendário do Outlook para criar eventos."
     }
   },
   "agentMode": {

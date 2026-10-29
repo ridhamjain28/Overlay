@@ -4096,6 +4096,30 @@
     "prompt": {
       "title": "Assistent-Prompt",
       "description": "Der System-Prompt, der bei Erkennung des Aktivierungsworts verwendet wird. Fällt auf die integrierte Standardvorgabe zurück."
+    },
+    "intents": {
+      "title": "Termine & Erinnerungen",
+      "description": "Termine, Erinnerungen und Aufgaben direkt aus Ihren Diktaten erkennen.",
+      "enable": "Termine und Erinnerungen erkennen",
+      "enableDescription": "Erkennt automatisch Kalenderereignisse und Erinnerungen in Ihrer Sprache.",
+      "destination": "Ziel für Termine",
+      "destinationDescription": "Wo erkannte Kalendertermine gespeichert werden sollen.",
+      "destAsk": "Jedes Mal fragen",
+      "destIcs": "Kalenderdatei (.ics)",
+      "destGcal": "Google Kalender",
+      "destMcal": "Outlook Kalender",
+      "eventPromptTitle": "Zum Kalender hinzufügen?",
+      "reminderPromptTitle": "Erinnerung einrichten?",
+      "todoPromptTitle": "Zu Aufgaben hinzufügen?",
+      "addAction": "Hinzufügen",
+      "scheduleAction": "Planen",
+      "eventAddedTitle": "Termin geplant",
+      "reminderScheduledTitle": "Erinnerung geplant",
+      "todoCreatedTitle": "Aufgabe erstellt",
+      "icsCreatedTitle": "Kalenderdatei geöffnet",
+      "reconnectNeededTitle": "Erneute Verbindung erforderlich",
+      "reconnectNeededGcal": "Google Kalender erneut verbinden, um Termine zu erstellen.",
+      "reconnectNeededMcal": "Outlook Kalender erneut verbinden, um Termine zu erstellen."
     }
   },
   "agentMode": {

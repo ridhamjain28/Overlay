@@ -1230,6 +1230,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   ),
   // Feature B: get configured state of third-party apps
   overlayGetAppConfigs: () => ipcRenderer.invoke("overlay-app-configs"),
+  // Feature C: intent detection, calendar/reminder scheduling and todos
+  overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
+  overlayIntentExtract: (text) => ipcRenderer.invoke("overlay-intent-extract", text),
+  overlayIcsOpen: (intentData) => ipcRenderer.invoke("overlay-ics-open", intentData),
+  overlayReminderSchedule: (reminderData) =>
+    ipcRenderer.invoke("overlay-reminder-schedule", reminderData),
+  overlayCalendarEventCreate: (payload) =>
+    ipcRenderer.invoke("overlay-calendar-event-create", payload),
+  overlayTodoCreate: (todoData) => ipcRenderer.invoke("overlay-todo-create", todoData),
 
   // Agent conversation persistence
   createAgentConversation: (title, noteId, spaceId, folderId) =>

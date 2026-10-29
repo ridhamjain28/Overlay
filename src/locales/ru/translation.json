@@ -3968,6 +3968,30 @@
     "prompt": {
       "title": "Подсказка помощника",
       "description": "Системная подсказка, используемая при обнаружении слова активации. По умолчанию применяется встроенная."
+    },
+    "intents": {
+      "title": "Встречи и напоминания",
+      "description": "Определение событий, напоминаний и задач из вашей диктовки.",
+      "enable": "Определять встречи и напоминания",
+      "enableDescription": "Автоматически определяет события календаря и напоминания в речи.",
+      "destination": "Назначение события",
+      "destinationDescription": "Куда сохранять обнаруженные события календаря.",
+      "destAsk": "Спрашивать каждый раз",
+      "destIcs": "Файл календаря (.ics)",
+      "destGcal": "Google Календарь",
+      "destMcal": "Календарь Outlook",
+      "eventPromptTitle": "Добавить в календарь?",
+      "reminderPromptTitle": "Запланировать напоминание?",
+      "todoPromptTitle": "Добавить в задачи?",
+      "addAction": "Добавить",
+      "scheduleAction": "Запланировать",
+      "eventAddedTitle": "Событие запланировано",
+      "reminderScheduledTitle": "Напоминание запланировано",
+      "todoCreatedTitle": "Задача создана",
+      "icsCreatedTitle": "Файл календаря открыт",
+      "reconnectNeededTitle": "Требуется переподключение",
+      "reconnectNeededGcal": "Переподключите Google Календарь для создания событий.",
+      "reconnectNeededMcal": "Переподключите Outlook для создания событий."
     }
   },
   "agentMode": {

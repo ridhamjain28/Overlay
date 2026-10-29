@@ -4096,6 +4096,30 @@
     "prompt": {
       "title": "Invite de l'assistant",
       "description": "L'invite système utilisée lorsque le mot de réveil est détecté. Revient à l'invite par défaut intégrée."
+    },
+    "intents": {
+      "title": "Réunions et Rappels",
+      "description": "Détectez les événements, rappels et tâches directement depuis vos dictées.",
+      "enable": "Détecter les réunions et rappels",
+      "enableDescription": "Détecte automatiquement les événements de calendrier et les rappels.",
+      "destination": "Destination de l'événement",
+      "destinationDescription": "Où enregistrer les événements de calendrier détectés.",
+      "destAsk": "Demander à chaque fois",
+      "destIcs": "Fichier calendrier (.ics)",
+      "destGcal": "Google Agenda",
+      "destMcal": "Calendrier Outlook",
+      "eventPromptTitle": "Ajouter au calendrier ?",
+      "reminderPromptTitle": "Programmer un rappel ?",
+      "todoPromptTitle": "Ajouter aux tâches ?",
+      "addAction": "Ajouter",
+      "scheduleAction": "Programmer",
+      "eventAddedTitle": "Événement programmé",
+      "reminderScheduledTitle": "Rappel programmé",
+      "todoCreatedTitle": "Tâche créée",
+      "icsCreatedTitle": "Fichier calendrier ouvert",
+      "reconnectNeededTitle": "Reconnexion requise",
+      "reconnectNeededGcal": "Reconnectez Google Agenda pour créer des événements.",
+      "reconnectNeededMcal": "Reconnectez Outlook pour créer des événements."
     }
   },
   "agentMode": {

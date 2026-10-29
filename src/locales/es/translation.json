@@ -3976,6 +3976,30 @@
     "prompt": {
       "title": "Prompt del asistente",
       "description": "El prompt de sistema usado cuando se detecta la palabra de activación. Recurre al valor predeterminado integrado."
+    },
+    "intents": {
+      "title": "Reuniones y Recordatorios",
+      "description": "Detecta eventos, recordatorios y tareas directamente de tus dictados.",
+      "enable": "Detectar reuniones y recordatorios",
+      "enableDescription": "Detecta automáticamente eventos y recordatorios en tu voz.",
+      "destination": "Destino del evento",
+      "destinationDescription": "Dónde guardar los eventos de calendario detectados.",
+      "destAsk": "Preguntar cada vez",
+      "destIcs": "Archivo de calendario (.ics)",
+      "destGcal": "Google Calendar",
+      "destMcal": "Outlook Calendar",
+      "eventPromptTitle": "¿Añadir al calendario?",
+      "reminderPromptTitle": "¿Programar recordatorio?",
+      "todoPromptTitle": "¿Añadir a tareas?",
+      "addAction": "Añadir",
+      "scheduleAction": "Programar",
+      "eventAddedTitle": "Evento programado",
+      "reminderScheduledTitle": "Recordatorio programado",
+      "todoCreatedTitle": "Tarea creada",
+      "icsCreatedTitle": "Archivo de calendario abierto",
+      "reconnectNeededTitle": "Reconexión necesaria",
+      "reconnectNeededGcal": "Vuelve a conectar Google Calendar para crear eventos.",
+      "reconnectNeededMcal": "Vuelve a conectar Outlook Calendar para crear eventos."
     }
   },
   "agentMode": {

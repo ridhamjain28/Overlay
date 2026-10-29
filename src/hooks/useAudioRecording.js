@@ -989,6 +989,157 @@ export const useAudioRecording = (toast, options = {}) => {
             audioManagerRef.current.warmupStreamingConnection();
           }
 
+          // Overlay: detect meetings, reminders and to-dos in dictation (non-blocking)
+          if (
+            getSettings().detectDictationIntents &&
+            result.text &&
+            window.electronAPI?.overlayIntentDetect
+          ) {
+            (async () => {
+              try {
+                const mightHaveIntent = await window.electronAPI.overlayIntentDetect(result.text);
+                if (!mightHaveIntent) return;
+                const intent = await window.electronAPI.overlayIntentExtract(result.text);
+                if (!intent || !intent.title) return;
+
+                const destination = getSettings().dictationIntentOutput || "ask";
+
+                // Direct export without prompt when destination is explicitly chosen
+                if (destination === "ics" && intent.type === "event") {
+                  await window.electronAPI.overlayIcsOpen(intent);
+                  toast({
+                    title: t("dictationAgent.intents.icsCreatedTitle"),
+                    description: intent.title,
+                  });
+                  return;
+                }
+                if (destination === "gcal" && intent.type === "event") {
+                  const res = await window.electronAPI.overlayCalendarEventCreate({
+                    target: "gcal",
+                    event: intent,
+                  });
+                  if (res?.reconnectNeeded) {
+                    toast({
+                      title: t("dictationAgent.intents.reconnectNeededTitle"),
+                      description: t("dictationAgent.intents.reconnectNeededGcal"),
+                    });
+                  } else if (res?.success) {
+                    toast({
+                      title: t("dictationAgent.intents.eventAddedTitle"),
+                      description: intent.title,
+                    });
+                  }
+                  return;
+                }
+                if (destination === "mcal" && intent.type === "event") {
+                  const res = await window.electronAPI.overlayCalendarEventCreate({
+                    target: "mcal",
+                    event: intent,
+                  });
+                  if (res?.reconnectNeeded) {
+                    toast({
+                      title: t("dictationAgent.intents.reconnectNeededTitle"),
+                      description: t("dictationAgent.intents.reconnectNeededMcal"),
+                    });
+                  } else if (res?.success) {
+                    toast({
+                      title: t("dictationAgent.intents.eventAddedTitle"),
+                      description: intent.title,
+                    });
+                  }
+                  return;
+                }
+
+                // Interactive toast ("ask" or reminder/todo)
+                let timeLabel = "";
+                if (intent.start) {
+                  try {
+                    const d = new Date(intent.start);
+                    timeLabel = ` · ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+                  } catch {}
+                }
+
+                if (intent.type === "reminder") {
+                  toast({
+                    title: t("dictationAgent.intents.reminderPromptTitle"),
+                    description: `${intent.title}${timeLabel}`,
+                    duration: 8000,
+                    dismissible: true,
+                    actions: [
+                      {
+                        label: t("dictationAgent.intents.scheduleAction"),
+                        onClick: async () => {
+                          await window.electronAPI?.overlayReminderSchedule?.({
+                            title: intent.title,
+                            start: intent.start,
+                          });
+                          toast({
+                            title: t("dictationAgent.intents.reminderScheduledTitle"),
+                            description: intent.title,
+                          });
+                        },
+                      },
+                    ],
+                  });
+                } else if (intent.type === "todo") {
+                  toast({
+                    title: t("dictationAgent.intents.todoPromptTitle"),
+                    description: intent.title,
+                    duration: 8000,
+                    dismissible: true,
+                    actions: [
+                      {
+                        label: t("dictationAgent.intents.addAction"),
+                        onClick: async () => {
+                          await window.electronAPI?.overlayTodoCreate?.({
+                            title: intent.title,
+                            start: intent.start,
+                          });
+                          toast({
+                            title: t("dictationAgent.intents.todoCreatedTitle"),
+                            description: intent.title,
+                          });
+                        },
+                      },
+                    ],
+                  });
+                } else {
+                  // Event
+                  toast({
+                    title: t("dictationAgent.intents.eventPromptTitle"),
+                    description: `${intent.title}${timeLabel}`,
+                    duration: 8000,
+                    dismissible: true,
+                    actions: [
+                      {
+                        label: t("dictationAgent.intents.addAction"),
+                        onClick: async () => {
+                          const res = await window.electronAPI?.overlayCalendarEventCreate?.({
+                            target: destination === "gcal" ? "gcal" : destination === "mcal" ? "mcal" : "ask",
+                            event: intent,
+                          });
+                          if (res?.reconnectNeeded) {
+                            toast({
+                              title: t("dictationAgent.intents.reconnectNeededTitle"),
+                              description: t("dictationAgent.intents.reconnectNeededGcal"),
+                            });
+                          } else if (res?.success) {
+                            toast({
+                              title: t("dictationAgent.intents.eventAddedTitle"),
+                              description: intent.title,
+                            });
+                          }
+                        },
+                      },
+                    ],
+                  });
+                }
+              } catch {
+                // Fail-safe: background intent handling never interrupts dictation
+              }
+            })();
+          }
+
           await persistencePromise;
         }
       },
