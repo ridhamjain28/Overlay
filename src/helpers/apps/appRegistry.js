@@ -6,8 +6,6 @@
 // Adding a new connectable app in the future only requires appending its
 // entry to this registry file; no UI rewrites required.
 
-"use strict";
-
 const APP_REGISTRY = [
   {
     id: "google-calendar",
@@ -249,8 +247,5 @@ function findApp(id) {
   return APP_REGISTRY.find((app) => app.id === id) || null;
 }
 
-module.exports = {
-  APP_REGISTRY,
-  getAppRegistry,
-  findApp,
-};
+// ES module exports so the renderer (Vite) can import it; tests load it via tsx.
+export { APP_REGISTRY, getAppRegistry, findApp };

@@ -249,7 +249,7 @@ test("the nav lists every section and switches the pane it shows", async (t) => 
     }
     return false;
   });
-  assert.deepEqual(order, ["calendars", "connectors", "skills", "api", "mcp", "cli"]);
+  assert.deepEqual(order, ["calendars", "apps", "connectors", "skills", "api", "mcp", "cli"]);
   assert.equal(navButton(container, "connectors").getAttribute("aria-current"), "page");
   assert.match(container.textContent, /CONNECTORS SECTION/);
 
