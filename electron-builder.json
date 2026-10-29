@@ -136,6 +136,11 @@
       ]
     },
     {
+      "from": "hinglish-asr",
+      "to": "hinglish-asr",
+      "filter": ["requirements.txt", "server.py", "README.md"]
+    },
+    {
       "from": "resources/mediaremote-adapter/bin/mediaremote-adapter.pl",
       "to": "bin/mediaremote-adapter.pl"
     },

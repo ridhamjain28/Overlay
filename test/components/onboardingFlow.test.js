@@ -66,10 +66,11 @@ test("Overlay's guest flow is permissions, language, both hotkeys and local setu
     "dictation-hotkey",
     "assistant-hotkey",
     "local-dictation",
+    "requirements",
   ]);
   assert.deepEqual(
     getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: false }),
-    ["permissions", "languages", "dictation-hotkey", "local-dictation"]
+    ["permissions", "languages", "dictation-hotkey", "local-dictation", "requirements"]
   );
 });
 test("policy removes assistant states", async () => {
@@ -358,7 +359,8 @@ test("route helpers recover from ineligible steps", async () => {
   const route = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
   assert.equal(reconcileStepWithRoute("assistant-demo", route), "assistant-hotkey");
   assert.equal(getNextOnboardingStep("permissions", route), "languages");
-  assert.equal(getNextOnboardingStep("local-dictation", route), null);
+  assert.equal(getNextOnboardingStep("local-dictation", route), "requirements");
+  assert.equal(getNextOnboardingStep("requirements", route), null);
 });
 test("progress counts every step the user is shown, once each", async () => {
   const { getOnboardingProgress, getOnboardingRoute } = await load();
@@ -397,11 +399,12 @@ test("progress total tracks the conditional parts of the route", async () => {
 
 test("progress counts only the guest steps that draw a footer", async () => {
   const { getOnboardingProgress, getOnboardingRoute } = await load();
-  // permissions is compact, so Overlay's guest route counts the other four.
+  // permissions is compact, so Overlay's guest route counts the other five.
   const guest = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
   assert.equal(getOnboardingProgress("permissions", guest), null);
-  assert.deepEqual(getOnboardingProgress("languages", guest), { index: 0, total: 4 });
-  assert.deepEqual(getOnboardingProgress("local-dictation", guest), { index: 3, total: 4 });
+  assert.deepEqual(getOnboardingProgress("languages", guest), { index: 0, total: 5 });
+  assert.deepEqual(getOnboardingProgress("local-dictation", guest), { index: 3, total: 5 });
+  assert.deepEqual(getOnboardingProgress("requirements", guest), { index: 4, total: 5 });
 
   // An off-route step has no position to report.
   assert.equal(getOnboardingProgress("notes", guest), null);

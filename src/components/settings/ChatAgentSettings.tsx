@@ -3,6 +3,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { SectionHeader } from "../ui/SettingsSection";
 import InferenceConfigEditor from "./InferenceConfigEditor";
 import AnswerSourceSettings from "./AnswerSourceSettings";
+import RequirementsChecklist from "../overlay/RequirementsChecklist";
 
 export default function ChatAgentSettings() {
   const { t } = useTranslation();
@@ -12,6 +13,13 @@ export default function ChatAgentSettings() {
   return (
     <div className="space-y-6">
       <AnswerSourceSettings />
+      <div>
+        <SectionHeader
+          title="Setup checklist"
+          description="What Overlay needs on this PC. Missing pieces install in the background."
+        />
+        <RequirementsChecklist />
+      </div>
       <InferenceConfigEditor scope="chatIntelligence" />
 
       <div>

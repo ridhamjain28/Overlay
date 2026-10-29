@@ -1203,6 +1203,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     (callback) => (_event, payload) => callback(payload)
   ),
   overlaySystemAction: (request) => ipcRenderer.invoke("overlay-system-action", request),
+  overlayRequirementsCheck: (opts) => ipcRenderer.invoke("overlay-requirements-check", opts),
+  overlayRequirementsInstall: (id, opts) =>
+    ipcRenderer.invoke("overlay-requirements-install", id, opts),
+  onOverlayRequirementsOutput: registerListener(
+    "overlay-requirements-output",
+    (callback) => (_event, payload) => callback(payload)
+  ),
 
   // Agent conversation persistence
   createAgentConversation: (title, noteId, spaceId, folderId) =>

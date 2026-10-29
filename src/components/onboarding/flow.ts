@@ -32,7 +32,9 @@ export type OnboardingStepId =
   | "byok-dictation"
   | "byok-assistant"
   | "local-dictation"
-  | "local-assistant";
+  | "local-assistant"
+  /** Overlay: final checklist of what this PC still needs. */
+  | "requirements";
 
 export type OnboardingAuthPath = "account" | "guest" | null;
 export type OnboardingSetupMode = "cloud" | "byok" | "local" | null;
@@ -146,6 +148,7 @@ const STEP_ORDER: OnboardingStepId[] = [
   "byok-assistant",
   "local-dictation",
   "local-assistant",
+  "requirements",
 ];
 
 const KNOWN_STEPS = new Set<OnboardingStepId>(STEP_ORDER);
@@ -242,6 +245,7 @@ export function getOnboardingRoute(context: OnboardingRouteContext): OnboardingS
       "dictation-hotkey",
       ...(context.agentAllowed ? (["assistant-hotkey"] as OnboardingStepId[]) : []),
       "local-dictation",
+      "requirements",
     ];
   }
 

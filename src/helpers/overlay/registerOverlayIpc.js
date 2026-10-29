@@ -5,6 +5,8 @@
 //   overlay-answer-stream-start    -> stream an answer from OpenClaw or Gemini
 //   overlay-answer-stream-cancel   -> stop that stream
 //   overlay-system-action          -> run one allowlisted laptop action
+//   overlay-requirements-check     -> first-run checklist (what this PC still needs)
+//   overlay-requirements-install   -> install one checklist item, hidden, with live output
 //
 // Tokens (OPENCLAW_TOKEN, GEMINI_API_KEY, TAVILY_API_KEY) stay in this
 // process; the renderer only ever sees answer text.
@@ -20,6 +22,20 @@ const {
 } = require("./answerSources");
 const { createSystemActions } = require("./systemActions");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
+const { createRequirements } = require("./requirements");
+
+// Model tags look like qwen3.5:4b-q4_K_M; refuse anything that could read as a flag.
+const MODEL_TAG = /^[A-Za-z0-9][\w.:/-]{0,120}$/;
+
+function findHinglishRequirements() {
+  const candidates = [
+    ...(process.resourcesPath
+      ? [path.join(process.resourcesPath, "hinglish-asr", "requirements.txt")]
+      : []),
+    path.join(__dirname, "..", "..", "..", "hinglish-asr", "requirements.txt"),
+  ];
+  return candidates.find((p) => fs.existsSync(p)) || null;
+}
 
 function execFileAsync(file, args, options) {
   return new Promise((resolve, reject) => {
@@ -140,6 +156,37 @@ function registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugL
     confirm,
     picturesDir: app.getPath("pictures"),
     findNircmd,
+  });
+
+  const requirements = createRequirements({
+    userDataDir: app.getPath("userData"),
+    hinglishRequirementsFile: findHinglishRequirements(),
+  });
+
+  ipcMain.handle("overlay-requirements-check", async (_event, opts = {}) => {
+    try {
+      return await requirements.check({
+        includeHinglish: !!opts?.includeHinglish,
+        answerModel: MODEL_TAG.test(opts?.answerModel || "") ? opts.answerModel : undefined,
+      });
+    } catch (error) {
+      debugLogger?.warn?.("Overlay requirements check failed", { error: error.message });
+      return { items: [], error: error.message };
+    }
+  });
+
+  ipcMain.handle("overlay-requirements-install", async (event, id, opts = {}) => {
+    const sender = event.sender;
+    const itemId = String(id || "");
+    const result = await requirements.install(itemId, {
+      model: MODEL_TAG.test(opts?.model || "") ? opts.model : undefined,
+      onEvent: (data) => {
+        if (!sender.isDestroyed())
+          sender.send("overlay-requirements-output", { id: itemId, ...data });
+      },
+    });
+    debugLogger?.info?.("Overlay requirement install", { id: itemId, success: result.success });
+    return result;
   });
 
   ipcMain.handle("overlay-system-action", async (_event, request) => {

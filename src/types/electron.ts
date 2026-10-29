@@ -3313,6 +3313,20 @@ declare global {
         url?: string;
         level?: number;
       }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
+      overlayRequirementsCheck?: (opts: {
+        includeHinglish?: boolean;
+        answerModel?: string;
+      }) => Promise<{
+        items: import("../components/overlay/RequirementsChecklist").RequirementItem[];
+        error?: string;
+      }>;
+      overlayRequirementsInstall?: (
+        id: string,
+        opts?: { model?: string }
+      ) => Promise<{ success: boolean; code?: number; error?: string }>;
+      onOverlayRequirementsOutput?: (
+        callback: (payload: { id: string; line?: string; progress?: number }) => void
+      ) => () => void;
 
       // Agent cloud tools
       agentOpenNote?: (noteId: number) => Promise<{ success: boolean; error?: string }>;

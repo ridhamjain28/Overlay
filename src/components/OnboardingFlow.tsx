@@ -7,6 +7,7 @@ import { hasUseCaseIntent } from "./onboarding/useCases";
 import OnboardingShell, { OnboardingStepHeader } from "./onboarding/OnboardingShell";
 import CompactPermissionsStep from "./onboarding/CompactPermissionsStep";
 import LanguageSelectionStep from "./onboarding/LanguageSelectionStep";
+import RequirementsChecklist from "./overlay/RequirementsChecklist";
 import ShortcutSetupStep from "./onboarding/ShortcutSetupStep";
 import AssistantHotkeyPreview from "./onboarding/AssistantHotkeyPreview";
 import DemoStep from "./onboarding/DemoStep";
@@ -1255,6 +1256,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               resumeState={session.resume.byok[currentStepId]}
               onResumeStateChange={updateCurrentByokDraft}
             />
+          </div>
+        );
+
+      case "requirements":
+        return (
+          <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto pt-2">
+            <OnboardingStepHeader
+              title="Almost done"
+              wideTitle
+              description="Overlay checked this PC. Install anything that is missing with one click, or do it later from Settings."
+            />
+            <RequirementsChecklist compact />
           </div>
         );
 
