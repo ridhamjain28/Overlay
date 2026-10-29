@@ -16,7 +16,8 @@ test("meeting AEC helper spawn sets windowsHide", () => {
 });
 
 test("text edit monitor spawns set windowsHide", () => {
-  assert.equal(hiddenSpawnCount(read("src/helpers/textEditMonitor.js")), 2);
+  // All three spawns, including the one-shot --probe-editable check.
+  assert.equal(hiddenSpawnCount(read("src/helpers/textEditMonitor.js")), 3);
 });
 
 test("Windows mic-listener spawn sets windowsHide", () => {

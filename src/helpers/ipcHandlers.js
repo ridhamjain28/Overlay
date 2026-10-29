@@ -4368,6 +4368,7 @@ class IPCHandlers {
         require("child_process")
           .spawn(waiter.file, waiter.args, {
             detached: true,
+            windowsHide: true,
             stdio: "ignore",
             cwd: path.dirname(launcherPath), // never inside the directory being removed
           })
