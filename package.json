@@ -1,7 +1,7 @@
 {
   "name": "overlay-assistant",
   "productName": "Overlay",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Overlay: local voice dictation and an always-on-top voice/typed assistant for Windows (Whisper + Ollama). Based on OpenWhispr.",
   "main": "main.js",
   "private": true,
