@@ -174,6 +174,20 @@ test("extractIntent: fails gracefully on network error or invalid JSON", async (
   assert.equal(res2, null);
 });
 
+test("extractIntent: asks Ollama to skip thinking so it answers inside the timeout", async () => {
+  let sent = null;
+  const fakeFetch = async (url, init) => {
+    sent = { url, body: JSON.parse(init.body) };
+    return { ok: true, json: async () => ({ choices: [{ message: { content: "{}" } }] }) };
+  };
+  await extractIntent({ text: "meeting tomorrow at 5pm", fetchImpl: fakeFetch });
+  assert.ok(sent);
+  assert.equal(sent.url, "http://localhost:11434/v1/chat/completions");
+  assert.equal(sent.body.reasoning_effort, "none");
+  assert.equal(sent.body.options, undefined);
+  assert.equal(sent.body.stream, false);
+});
+
 // 4. RFC 5545 .ics Writer
 test("icsWriter: generates compliant RFC 5545 calendar file with CRLF line endings", () => {
   const ics = buildIcs({

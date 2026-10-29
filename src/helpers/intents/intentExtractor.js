@@ -7,7 +7,8 @@
 
 const OLLAMA_BASE = "http://localhost:11434/v1";
 const MODEL = process.env.OVERLAY_INTENT_MODEL || "qwen3.5:4b-q4_K_M";
-const TIMEOUT_MS = 4000;
+// A cold model load can take a few seconds; this runs after paste, so it never delays it.
+const TIMEOUT_MS = 6000;
 const MIN_CONFIDENCE = 0.6;
 
 /**
@@ -119,8 +120,9 @@ async function extractIntent({
         messages: [{ role: "user", content: prompt }],
         stream: false,
         temperature: 0.1,
-        // Thinking off for speed
-        options: { think: false },
+        // Ollama's OpenAI-compatible endpoint ignores options.think; this is the
+        // field it honours to skip the thinking pass (qwen3.5 thinks by default).
+        reasoning_effort: "none",
       }),
       signal: controller.signal,
     });
