@@ -26,6 +26,12 @@ import { waitForVisualFrames } from "../utils/visualFrame";
 import { resolveLifecycleInputKind } from "../helpers/dictationRouting";
 import { createAssistantResponseDelivery } from "../helpers/assistantResponseDelivery";
 import { recordCleanupFailure } from "../stores/cleanupFailureStore";
+import {
+  createSilenceAutoStopState,
+  isSilenceAutoStopEnabled,
+  recordSilenceAutoStopWindow,
+  SILENCE_AUTO_STOP_DEFAULTS,
+} from "../helpers/silenceAutoStop";
 
 // Maps a failed selection-replacement code to its `selectionEditing.*` toast
 // detail key; unlisted codes fall back to the generic "unavailable" message.
@@ -1188,6 +1194,28 @@ export const useAudioRecording = (toast, options = {}) => {
     return () => clearInterval(interval);
   }, [assistantOpenRef, getAudioLevel, isAssistantVoice, isRecording]);
 
+  // Assistant questions end on their own: once the user has spoken and then
+  // gone quiet, stop exactly as a second hotkey press would. Silent by design,
+  // with no UI. Dictation keeps its manual stop.
+  useEffect(() => {
+    if (!isRecording || !isAssistantVoice || !isSilenceAutoStopEnabled()) return undefined;
+    const state = createSilenceAutoStopState();
+    let lastTick = performance.now();
+    let finished = false;
+    const interval = setInterval(() => {
+      if (finished) return;
+      const now = performance.now();
+      const decision = recordSilenceAutoStopWindow(state, getAudioLevel(), null, now - lastTick);
+      lastTick = now;
+      if (decision.action === "continue") return;
+      finished = true;
+      clearInterval(interval);
+      logger.debug("Assistant auto-stop", { reason: decision.reason }, "audio");
+      if (decision.action === "cancel") void cancelRecording();
+      else void performStopRecording();
+    }, SILENCE_AUTO_STOP_DEFAULTS.windowMs);
+    return () => clearInterval(interval);
+  }, [cancelRecording, getAudioLevel, isAssistantVoice, isRecording, performStopRecording]);
   const toggleListening = async ({
     voiceAgentRequested = false,
     translationRequested = false,
