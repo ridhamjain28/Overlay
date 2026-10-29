@@ -12,11 +12,14 @@
 //    on distros that restrict unprivileged user namespaces).
 // 3. Fails the build if required binaries (ffmpeg-static, ps-list vendor exe,
 //    onnx worker script) are missing from app.asar.unpacked/.
+// 4. On Windows, fails the build if a native .node module is missing from
+//    app.asar.unpacked/ or the packed better-sqlite3 does not load.
 
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const { Arch } = require("app-builder-lib");
+const { loadsInElectron } = require("./ensure-native-deps");
 const { buildLinuxWrapperScript } = require("./lib/linux-launcher");
 const {
   WINDOWS_ONNXRUNTIME_PRIVATE_NAME,
@@ -310,6 +313,39 @@ function verifyUnpackedBinaries(context) {
   console.log("  afterPack: verified unpacked bundled binaries");
 }
 
+// Native Node modules (.node files) must be unpacked next to app.asar or the
+// app crashes at startup (e.g. "Could not locate the bindings file" for
+// better-sqlite3). Fail the build instead of shipping a broken installer.
+function verifyWindowsNativeModules(context) {
+  if (context.electronPlatformName !== "win32") return;
+
+  const archName = Arch[context.arch];
+  const modulesDir = path.join(resolveResourcesDir(context), "app.asar.unpacked", "node_modules");
+  const required = [
+    "better-sqlite3/build/Release/better_sqlite3.node",
+    `@napi-rs/keyring-win32-${archName}-msvc/keyring.win32-${archName}-msvc.node`,
+    `onnxruntime-node/bin/napi-v6/win32/${archName}/onnxruntime_binding.node`,
+  ];
+
+  const missing = required.filter((file) => !fs.existsSync(path.join(modulesDir, file)));
+  if (missing.length > 0) {
+    throw new Error(
+      `afterPack: missing native module(s) in ${modulesDir}: ${missing.join(", ")}; run node scripts/ensure-native-deps.js and rebuild`
+    );
+  }
+
+  // better-sqlite3 is the only one built for Electron's ABI, so also load the
+  // packed copy inside Electron (no window) and run a tiny query.
+  if (process.platform === "win32" && archName === "x64") {
+    const sqlitePath = path.join(modulesDir, required[0]);
+    if (loadsInElectron(sqlitePath) === false) {
+      throw new Error(`afterPack: packed better-sqlite3 does not load in Electron (${sqlitePath})`);
+    }
+  }
+
+  console.log(`  afterPack: verified ${required.length} Windows native modules`);
+}
+
 // ---------------------------------------------------------------------------
 // Main hook
 // ---------------------------------------------------------------------------
@@ -319,8 +355,10 @@ exports.default = async function (context) {
   wrapLinuxBinary(context);
   verifyMeetingAecHelper(context);
   verifyUnpackedBinaries(context);
+  verifyWindowsNativeModules(context);
   registerMacResourceBinariesForSigning(context);
 };
 
 exports.verifyWindowsOnnxRuntimePrivatized = verifyWindowsOnnxRuntimePrivatized;
 exports.verifyWindowsKeyListener = verifyWindowsKeyListener;
+exports.verifyWindowsNativeModules = verifyWindowsNativeModules;
