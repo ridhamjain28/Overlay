@@ -154,6 +154,12 @@ import {
 import { usePolicyModeOptions, usePolicySnapshot } from "../hooks/usePolicy";
 import { usePolicyStore } from "../stores/policyStore";
 import { requestSignIn } from "../utils/requestSignIn";
+import {
+  CONFIRM_SKIPS_CHANGED_EVENT,
+  getSkippedConfirmations,
+  resetConfirmSkips,
+  skipAllConfirmations,
+} from "../utils/confirmPreferences";
 import { canManageSystemAudioInApp } from "../utils/systemAudioAccess";
 import WorkspaceSection from "./settings/WorkspaceSection";
 import { enterpriseTileCta, type EnterpriseTileCta } from "../lib/workspaceBilling";
@@ -1275,6 +1281,23 @@ export default function SettingsPage({
   } = useSettings();
   const keepAssistantOnTop = useSettingsStore((s) => s.keepAssistantOnTop);
   const setKeepAssistantOnTop = useSettingsStore((s) => s.setKeepAssistantOnTop);
+  const [askBeforeDeleting, setAskBeforeDeletingState] = useState(
+    () => getSkippedConfirmations().length === 0
+  );
+  useEffect(() => {
+    const sync = () => setAskBeforeDeletingState(getSkippedConfirmations().length === 0);
+    window.addEventListener(CONFIRM_SKIPS_CHANGED_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(CONFIRM_SKIPS_CHANGED_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const setAskBeforeDeleting = useCallback((enabled: boolean) => {
+    if (enabled) resetConfirmSkips();
+    else skipAllConfirmations();
+    setAskBeforeDeletingState(enabled);
+  }, []);
 
   const meetingProcessDetection = useSettingsStore((state) => state.meetingProcessDetection);
   const voiceAgentKey = useSettingsStore((s) => s.voiceAgentKey);
@@ -3281,6 +3304,26 @@ export default function SettingsPage({
                         {t("settingsPage.general.floatingIcon.bottomLeft")}
                       </option>
                     </select>
+                  </SettingsRow>
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
+
+            {/* Delete confirmations */}
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.confirmations.title")}
+                description={t("settingsPage.general.confirmations.description")}
+              />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.confirmations.askBeforeDeleting")}
+                    description={t(
+                      "settingsPage.general.confirmations.askBeforeDeletingDescription"
+                    )}
+                  >
+                    <Toggle checked={askBeforeDeleting} onChange={setAskBeforeDeleting} />
                   </SettingsRow>
                 </SettingsPanelRow>
               </SettingsPanel>

@@ -598,6 +598,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
           }
         },
         variant: "destructive",
+        dontAskAgainKey: "historyItem",
       });
     },
     [showConfirmDialog, showAlertDialog, t]
@@ -973,6 +974,7 @@ export default function ControlPanel({ initialSettingsSection }: ControlPanelPro
         description={confirmDialog.description}
         onConfirm={confirmDialog.onConfirm}
         variant={confirmDialog.variant}
+        dontAskAgainKey={confirmDialog.dontAskAgainKey}
         confirmText={confirmDialog.confirmText}
         cancelText={confirmDialog.cancelText}
       />

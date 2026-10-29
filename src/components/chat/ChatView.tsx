@@ -124,6 +124,7 @@ export default function ChatView() {
           setRefreshKey((k) => k + 1);
         },
         variant: "destructive",
+        dontAskAgainKey: "chatConversation",
       });
     },
     [activeConversationId, handleNewChat, showConfirmDialog, t]
@@ -150,6 +151,7 @@ export default function ChatView() {
         description={confirmDialog.description}
         onConfirm={confirmDialog.onConfirm}
         variant={confirmDialog.variant}
+        dontAskAgainKey={confirmDialog.dontAskAgainKey}
       />
       {showSearch && (
         <Suspense fallback={null}>

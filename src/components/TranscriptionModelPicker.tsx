@@ -1063,6 +1063,7 @@ export default function TranscriptionModelPicker({
           });
         },
         variant: "destructive",
+        dontAskAgainKey: "localModel",
       });
     },
     [showConfirmDialog, deleteModel, validateAndSelectModel, t]
@@ -1324,6 +1325,7 @@ export default function TranscriptionModelPicker({
           });
         },
         variant: "destructive",
+        dontAskAgainKey: "localModel",
       });
     },
     [showConfirmDialog, deleteParakeetModel, t]
@@ -1716,6 +1718,7 @@ export default function TranscriptionModelPicker({
         cancelText={confirmDialog.cancelText}
         onConfirm={confirmDialog.onConfirm}
         variant={confirmDialog.variant}
+        dontAskAgainKey={confirmDialog.dontAskAgainKey}
       />
     </div>
   );

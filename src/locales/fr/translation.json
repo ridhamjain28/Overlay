@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "L'accès d'entreprise géré est indisponible. Reconnectez-vous ou contactez votre administrateur.",
     "managedConfigAmbiguous": "La configuration gérée de votre organisation est incohérente. Contactez votre administrateur.",
     "managedPolicyConflict": "L'accès géré est bloqué par la politique de votre espace de travail. Contactez votre administrateur.",
-    "resizePanel": "Redimensionner le panneau"
+    "resizePanel": "Redimensionner le panneau",
+    "dontAskAgain": "Ne plus me demander"
   },
   "onboarding": {
     "rehaul": {
@@ -2490,6 +2491,12 @@
       "translationHotkey": {
         "title": "Raccourci de Traduction",
         "description": "Dictez dans n'importe quelle langue : le texte collé ressort traduit"
+      },
+      "confirmations": {
+        "title": "Confirmations de suppression",
+        "description": "Choisissez si la suppression d'un élément demande d'abord une confirmation.",
+        "askBeforeDeleting": "Demander avant de supprimer",
+        "askBeforeDeletingDescription": "Afficher une confirmation avant de supprimer un élément de l'historique, une conversation, un dossier vide ou un modèle téléchargé. L'activer rétablit les confirmations masquées avec Ne plus me demander."
       }
     },
     "permissions": {

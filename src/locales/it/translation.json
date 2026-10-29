@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "L'accesso aziendale gestito non è disponibile. Accedi di nuovo o contatta l'amministratore.",
     "managedConfigAmbiguous": "La configurazione gestita della tua organizzazione non è coerente. Contatta l'amministratore.",
     "managedPolicyConflict": "L'accesso gestito è bloccato dai criteri del tuo spazio di lavoro. Contatta l'amministratore.",
-    "resizePanel": "Ridimensiona il pannello"
+    "resizePanel": "Ridimensiona il pannello",
+    "dontAskAgain": "Non chiedere più"
   },
   "onboarding": {
     "rehaul": {
@@ -2195,6 +2196,12 @@
       "translationHotkey": {
         "title": "Hotkey Traduzione",
         "description": "Detta in qualsiasi lingua: il testo incollato esce tradotto"
+      },
+      "confirmations": {
+        "title": "Conferme di eliminazione",
+        "description": "Scegli se l'eliminazione di un elemento chiede prima conferma.",
+        "askBeforeDeleting": "Chiedi prima di eliminare",
+        "askBeforeDeletingDescription": "Mostra una conferma prima di eliminare un elemento della cronologia, una chat, una cartella vuota o un modello scaricato. Attivandola tornano le conferme nascoste con Non chiedere più."
       }
     },
     "permissions": {

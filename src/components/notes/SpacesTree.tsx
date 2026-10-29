@@ -1605,6 +1605,8 @@ export default function SpacesTree({
           : t("notes.folders.deleteDescriptionEmpty", { name: folder.name }),
       confirmText: t("notes.folders.deleteConfirm"),
       variant: "destructive",
+      // Only an empty folder may skip the prompt; one holding notes always asks.
+      dontAskAgainKey: count > 0 ? undefined : "emptyFolder",
       onConfirm: async () => {
         const result = await deleteFolder(folder.id);
         if (!result.success && result.error) {
@@ -2201,6 +2203,7 @@ export default function SpacesTree({
         cancelText={confirmDialog.cancelText}
         onConfirm={confirmDialog.onConfirm}
         variant={confirmDialog.variant}
+        dontAskAgainKey={confirmDialog.dontAskAgainKey}
       />
     </>
   );

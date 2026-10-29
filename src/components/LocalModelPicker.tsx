@@ -179,6 +179,7 @@ export default function LocalModelPicker({
         description: t("transcription.deleteModel.description"),
         onConfirm: () => deleteModel(modelId, loadDownloadedModels),
         variant: "destructive",
+        dontAskAgainKey: "localModel",
       });
     },
     [showConfirmDialog, deleteModel, loadDownloadedModels, t]
@@ -266,6 +267,7 @@ export default function LocalModelPicker({
         cancelText={confirmDialog.cancelText}
         onConfirm={confirmDialog.onConfirm}
         variant={confirmDialog.variant}
+        dontAskAgainKey={confirmDialog.dontAskAgainKey}
       />
     </div>
   );

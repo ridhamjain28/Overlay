@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "Der verwaltete Unternehmenszugriff ist nicht verfügbar. Melden Sie sich erneut an oder wenden Sie sich an Ihren Administrator.",
     "managedConfigAmbiguous": "Die verwaltete Einrichtung Ihrer Organisation ist widersprüchlich. Wenden Sie sich an Ihren Administrator.",
     "managedPolicyConflict": "Der verwaltete Zugriff wird durch Ihre Workspace-Richtlinie blockiert. Wenden Sie sich an Ihren Administrator.",
-    "resizePanel": "Bereichsgröße ändern"
+    "resizePanel": "Bereichsgröße ändern",
+    "dontAskAgain": "Nicht mehr fragen"
   },
   "onboarding": {
     "rehaul": {
@@ -2490,6 +2491,12 @@
       "translationHotkey": {
         "title": "Übersetzungs-Hotkey",
         "description": "Diktiere in beliebiger Sprache — der eingefügte Text kommt übersetzt heraus"
+      },
+      "confirmations": {
+        "title": "Löschbestätigungen",
+        "description": "Lege fest, ob vor dem Löschen eines Elements nachgefragt wird.",
+        "askBeforeDeleting": "Vor dem Löschen fragen",
+        "askBeforeDeletingDescription": "Vor dem Löschen eines Verlaufseintrags, Chats, leeren Ordners oder heruntergeladenen Modells eine Bestätigung anzeigen. Beim Einschalten kehren alle mit Nicht mehr fragen ausgeblendeten Bestätigungen zurück."
       }
     },
     "permissions": {

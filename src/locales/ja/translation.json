@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "マネージド エンタープライズ アクセスを利用できません。再度サインインするか、管理者にお問い合わせください。",
     "managedConfigAmbiguous": "組織のマネージド設定に矛盾があります。管理者にお問い合わせください。",
     "managedPolicyConflict": "ワークスペースのポリシーによりマネージド アクセスがブロックされています。管理者にお問い合わせください。",
-    "resizePanel": "パネルのサイズを変更"
+    "resizePanel": "パネルのサイズを変更",
+    "dontAskAgain": "今後確認しない"
   },
   "onboarding": {
     "rehaul": {
@@ -2195,6 +2196,12 @@
       "translationHotkey": {
         "title": "翻訳ホットキー",
         "description": "どの言語で話しても、貼り付けられるテキストは翻訳済みになります"
+      },
+      "confirmations": {
+        "title": "削除の確認",
+        "description": "項目を削除する前に確認するかどうかを選びます。",
+        "askBeforeDeleting": "削除前に確認する",
+        "askBeforeDeletingDescription": "履歴、チャット、空のフォルダー、ダウンロード済みモデルを削除する前に確認を表示します。オンにすると「今後確認しない」で非表示にした確認が元に戻ります。"
       }
     },
     "permissions": {

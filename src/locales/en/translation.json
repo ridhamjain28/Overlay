@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "Managed enterprise access is unavailable. Sign in again or contact your administrator.",
     "managedConfigAmbiguous": "Your organization's managed setup is inconsistent. Contact your administrator.",
     "managedPolicyConflict": "Managed access is blocked by your workspace policy. Contact your administrator.",
-    "resizePanel": "Resize panel"
+    "resizePanel": "Resize panel",
+    "dontAskAgain": "Don't ask me again"
   },
   "onboarding": {
     "rehaul": {
@@ -2490,6 +2491,12 @@
       "translationHotkey": {
         "title": "Translation Hotkey",
         "description": "Dictate in any language — the pasted text comes out translated"
+      },
+      "confirmations": {
+        "title": "Delete confirmations",
+        "description": "Choose whether deleting an item asks you first.",
+        "askBeforeDeleting": "Ask before deleting",
+        "askBeforeDeletingDescription": "Show a confirmation before deleting a history item, chat, empty folder or downloaded model. Turning this on brings back any confirmation you hid with Don't ask me again."
       }
     },
     "permissions": {

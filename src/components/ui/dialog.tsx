@@ -5,6 +5,8 @@ import { cn } from "../lib/utils";
 import { Button } from "./button";
 import { blurBehindOverlays } from "./overlayBlur";
 import { useDismissGuard } from "./useDismissGuard";
+import { useTranslation } from "react-i18next";
+import { setConfirmSkipped, type ConfirmSkipKind } from "../../utils/confirmPreferences";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -124,6 +126,8 @@ interface ConfirmDialogProps {
   /** Extra content between the header and the footer (e.g. a type-to-confirm input). */
   children?: React.ReactNode;
   confirmDisabled?: boolean;
+  /** Show a "Don't ask me again" checkbox; ticking it and confirming remembers the choice. */
+  dontAskAgainKey?: ConfirmSkipKind;
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -138,10 +142,18 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   variant = "default",
   children,
   confirmDisabled = false,
+  dontAskAgainKey,
 }) => {
+  const { t } = useTranslation();
   const confirmRef = React.useRef<HTMLButtonElement>(null);
+  const [dontAskAgain, setDontAskAgain] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) setDontAskAgain(false);
+  }, [open, dontAskAgainKey]);
 
   const handleConfirm = () => {
+    if (dontAskAgainKey && dontAskAgain) setConfirmSkipped(dontAskAgainKey, true);
     onConfirm();
     onOpenChange(false);
   };
@@ -169,6 +181,18 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         {children}
+        {dontAskAgainKey && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-border"
+              checked={dontAskAgain}
+              onChange={(event) => setDontAskAgain(event.target.checked)}
+              data-testid="confirm-dont-ask-again"
+            />
+            {t("common.dontAskAgain", { defaultValue: "Don't ask me again" })}
+          </label>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
             {cancelText}

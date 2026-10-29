@@ -140,6 +140,7 @@ export default function LocalWhisperPicker({
           });
         },
         variant: "destructive",
+        dontAskAgainKey: "localModel",
       });
     },
     [showConfirmDialog, deleteModel, validateAndSelectModel, t]
@@ -208,6 +209,7 @@ export default function LocalWhisperPicker({
         cancelText={confirmDialog.cancelText}
         onConfirm={confirmDialog.onConfirm}
         variant={confirmDialog.variant}
+        dontAskAgainKey={confirmDialog.dontAskAgainKey}
       />
     </div>
   );

@@ -195,7 +195,8 @@
     "managedConfigUnavailable": "O acesso empresarial gerenciado está indisponível. Entre novamente ou entre em contato com o administrador.",
     "managedConfigAmbiguous": "A configuração gerenciada da sua organização está inconsistente. Entre em contato com o administrador.",
     "managedPolicyConflict": "O acesso gerenciado está bloqueado pela política do seu espaço de trabalho. Entre em contato com o administrador.",
-    "resizePanel": "Redimensionar painel"
+    "resizePanel": "Redimensionar painel",
+    "dontAskAgain": "Não perguntar novamente"
   },
   "onboarding": {
     "rehaul": {
@@ -2174,6 +2175,12 @@
       "translationHotkey": {
         "title": "Atalho de Tradução",
         "description": "Dite em qualquer idioma: o texto colado sai traduzido"
+      },
+      "confirmations": {
+        "title": "Confirmações de exclusão",
+        "description": "Escolha se excluir um item pede confirmação antes.",
+        "askBeforeDeleting": "Perguntar antes de excluir",
+        "askBeforeDeletingDescription": "Mostra uma confirmação antes de excluir um item do histórico, um chat, uma pasta vazia ou um modelo baixado. Ativar isto traz de volta as confirmações ocultadas com Não perguntar novamente."
       }
     },
     "permissions": {

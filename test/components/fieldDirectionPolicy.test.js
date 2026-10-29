@@ -122,6 +122,8 @@ const EXPECTED_NATIVE_FIELD_DIRECTIONS = {
   "src/components/skills/UploadSkillsScreen.tsx": ["inherit"],
   "src/components/ui/EmojiPicker.tsx": ["auto"],
   "src/components/ui/LanguageSelector.tsx": ["auto"],
+  // The confirm dialog's Don't ask me again checkbox holds no text.
+  "src/components/ui/dialog.tsx": ["inherit"],
   // A skill's instructions: Markdown prose in any script.
   "src/components/ui/LineNumberedTextarea.tsx": ["auto"],
 };

@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "托管企业访问不可用。请重新登录或联系管理员。",
     "managedConfigAmbiguous": "您组织的托管设置不一致。请联系管理员。",
     "managedPolicyConflict": "托管访问已被您工作区的策略阻止。请联系管理员。",
-    "resizePanel": "调整面板大小"
+    "resizePanel": "调整面板大小",
+    "dontAskAgain": "不再询问"
   },
   "onboarding": {
     "rehaul": {
@@ -2195,6 +2196,12 @@
       "translationHotkey": {
         "title": "翻译快捷键",
         "description": "用任何语言听写——粘贴的文本会自动翻译"
+      },
+      "confirmations": {
+        "title": "删除确认",
+        "description": "选择删除项目前是否先询问你。",
+        "askBeforeDeleting": "删除前询问",
+        "askBeforeDeletingDescription": "删除历史记录、聊天、空文件夹或已下载模型前显示确认。开启后会恢复你通过“不再询问”隐藏的确认。"
       }
     },
     "permissions": {

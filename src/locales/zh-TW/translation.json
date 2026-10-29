@@ -216,7 +216,8 @@
     "managedConfigUnavailable": "託管企業存取無法使用。請重新登入或聯絡管理員。",
     "managedConfigAmbiguous": "您組織的託管設定不一致。請聯絡管理員。",
     "managedPolicyConflict": "託管存取已被您工作區的政策封鎖。請聯絡管理員。",
-    "resizePanel": "調整面板大小"
+    "resizePanel": "調整面板大小",
+    "dontAskAgain": "不再詢問"
   },
   "onboarding": {
     "rehaul": {
@@ -2195,6 +2196,12 @@
       "translationHotkey": {
         "title": "翻譯快捷鍵",
         "description": "用任何語言聽寫——貼上的文字會自動翻譯"
+      },
+      "confirmations": {
+        "title": "刪除確認",
+        "description": "選擇刪除項目前是否先詢問你。",
+        "askBeforeDeleting": "刪除前詢問",
+        "askBeforeDeletingDescription": "刪除歷史記錄、聊天、空資料夾或已下載模型前顯示確認。開啟後會恢復你透過「不再詢問」隱藏的確認。"
       }
     },
     "permissions": {

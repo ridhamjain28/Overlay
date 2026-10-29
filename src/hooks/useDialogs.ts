@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { isConfirmSkipped, type ConfirmSkipKind } from "../utils/confirmPreferences";
 
 export interface ConfirmDialogState {
   open: boolean;
@@ -8,6 +9,11 @@ export interface ConfirmDialogState {
   variant?: "default" | "destructive";
   confirmText?: string;
   cancelText?: string;
+  /**
+   * Offer a "Don't ask me again" checkbox for this kind of delete. Once the
+   * user ticks it, later requests of the same kind run onConfirm right away.
+   */
+  dontAskAgainKey?: ConfirmSkipKind;
 }
 
 export interface AlertDialogState {
@@ -33,6 +39,12 @@ export function useDialogs() {
   const [alertDialog, setAlertDialog] = useState<AlertDialogState>(defaultAlertDialog);
 
   const showConfirmDialog = useCallback((options: Omit<ConfirmDialogState, "open">) => {
+    if (options.dontAskAgainKey && isConfirmSkipped(options.dontAskAgainKey)) {
+      void Promise.resolve()
+        .then(() => options.onConfirm())
+        .catch(() => {});
+      return;
+    }
     setConfirmDialog({ ...options, open: true });
   }, []);
 
