@@ -58,6 +58,21 @@ function getMissingRequiredLibraries(directory, assetConfig) {
 // and swapped in with a single rename, so a crash or power loss mid-install
 // can never leave a truncated binary that isDownloaded() reports as installed.
 class GpuBinaryManager {
+  // Optional { onInstalled(manager), onDeleted(manager) } set once at startup.
+  static packHooks = null;
+
+  static setPackHooks(hooks) {
+    GpuBinaryManager.packHooks = hooks || null;
+  }
+
+  _runPackHook(name) {
+    try {
+      GpuBinaryManager.packHooks?.[name]?.(this);
+    } catch (err) {
+      debugLogger.warn(`${this.config.name} pack hook failed`, { hook: name, error: err.message });
+    }
+  }
+
   constructor(config) {
     this.config = config;
     this._downloadSignal = null;
@@ -254,6 +269,7 @@ class GpuBinaryManager {
       stagingDir = null;
 
       debugLogger.info(`${this.config.name} binary installed`, { version, path: this.binDir });
+      this._runPackHook("onInstalled");
       return { version };
     } finally {
       this._downloading = false;
@@ -298,6 +314,7 @@ class GpuBinaryManager {
     } catch {
       // Pack directory may not exist
     }
+    this._runPackHook("onDeleted");
 
     debugLogger.info(`${this.config.name} binary deleted`, { deletedCount, freedBytes });
     return { deletedCount, freedBytes };

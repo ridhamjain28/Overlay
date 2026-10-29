@@ -308,11 +308,8 @@ const SelectionManager = require("./src/helpers/selectionManager");
 const { PermissionGuideManager } = require("./src/helpers/permissionGuideManager");
 const WhisperCudaManager = require("./src/helpers/whisperCudaManager");
 const WhisperVulkanManager = require("./src/helpers/whisperVulkanManager");
-const {
-  migrateLegacyBinDir,
-  detectOrphanedGpuPacks,
-  detectOutdatedGpuPacks,
-} = require("./src/helpers/gpuBinaryManager");
+const GpuBinaryManager = require("./src/helpers/gpuBinaryManager");
+const { migrateLegacyBinDir, detectOrphanedGpuPacks, detectOutdatedGpuPacks } = GpuBinaryManager;
 const { resetWhisperGpuFailureOnUpgrade } = require("./src/helpers/whisperGpuUpgradeReset");
 const GoogleCalendarManager = require("./src/helpers/googleCalendarManager");
 const MicrosoftCalendarManager = require("./src/helpers/microsoftCalendarManager");
@@ -568,6 +565,23 @@ function initializeCoreManagers() {
       // as a toast takes it (#1606, #2554).
       require("./src/helpers/gpuPackMigrationNotice").record(clearedPacks);
     }
+    // Overlay: bring back a GPU pack this machine already downloaded (another
+    // channel, or before a reinstall) instead of offering the download again,
+    // and keep a mirror so the next reinstall finds it. Deleting a pack in
+    // Settings deletes its mirror.
+    const gpuPackRestore = require("./src/helpers/overlay/gpuPackRestore");
+    GpuBinaryManager.setPackHooks({
+      onInstalled: (manager) => gpuPackRestore.mirrorGpuPack(manager, { logger: debugLogger }),
+      onDeleted: (manager) => gpuPackRestore.forgetGpuPack(manager, { logger: debugLogger }),
+    });
+    gpuPackRestore.restoreGpuPacks(
+      [
+        { manager: whisperCudaManager, enabledEnvVar: "WHISPER_CUDA_ENABLED" },
+        { manager: whisperVulkanManager, enabledEnvVar: "WHISPER_VULKAN_ENABLED" },
+        { manager: llamaVulkanManager, enabledEnvVar: "LLAMA_VULKAN_ENABLED" },
+      ],
+      { userDataDir: app.getPath("userData"), logger: debugLogger }
+    );
     // The 1.8.3 migration deleted lib-carrying packs without recording that
     // notice, leaving those users on a silent CPU fallback: an enabled flag
     // with no pack on disk only happens via such data loss. recordOnce gates
