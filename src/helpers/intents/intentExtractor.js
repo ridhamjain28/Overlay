@@ -5,6 +5,15 @@
 
 "use strict";
 
+const {
+  DAY_NAMES,
+  floorToMinute,
+  localIso,
+  reconcileStart,
+  upcomingDays,
+  zonedParts,
+} = require("./intentTime");
+
 const OLLAMA_BASE = "http://localhost:11434/v1";
 const MODEL = process.env.OVERLAY_INTENT_MODEL || "qwen3.5:4b-q4_K_M";
 // A cold model load can take a few seconds; this runs after paste, so it never delays it.
@@ -16,13 +25,16 @@ const MIN_CONFIDENCE = 0.6;
  * regardless of the user's UI language.
  *
  * @param {string} text  — the dictated text
- * @param {string} now   — ISO 8601 string for current date-time with offset
+ * @param {string} now   — the user's local date-time with its UTC offset
  * @param {string} tz    — IANA timezone name, e.g. "Asia/Kolkata"
+ * @param {{ weekday?: string, upcoming?: string }} [calendar] — today's weekday and the next days
  * @returns {string}
  */
-function buildPrompt(text, now, tz) {
+function buildPrompt(text, now, tz, calendar = {}) {
+  const today = calendar.weekday ? `${calendar.weekday}, ` : "";
+  const next = calendar.upcoming ? `Next days: ${calendar.upcoming}\n` : "";
   return (
-    `Current date-time: ${now}\nTimezone: ${tz}\n\n` +
+    `Now (user's local time): ${today}${now}\nTimezone: ${tz}\n${next}\n` +
     `Dictated text: "${text}"\n\n` +
     `Classify the dictated text as a calendar event, reminder, or to-do. ` +
     `Reply with ONLY a JSON object and nothing else. Schema:\n` +
@@ -30,7 +42,7 @@ function buildPrompt(text, now, tz) {
     `Rules:\n` +
     `- type: "event" for meetings/calls, "reminder" for remind-me/alarm, "todo" for tasks/deadlines.\n` +
     `- title: concise noun phrase (≤8 words), no filler, no time.\n` +
-    `- start: must include timezone offset. A bare number like "5" means next 5:00 PM (or AM if PM is already past). "kal"=tomorrow, "parso"=day-after-tomorrow, "aaj"=today.\n` +
+    `- start: the user's local time with the same UTC offset as Now, whole minutes, seconds 00. A bare number like "5" means next 5:00 PM (or AM if PM is already past). "kal"=tomorrow, "parso"=day-after-tomorrow, "aaj"=today. A weekday such as "Monday" or "next Monday" means the first such day in Next days.\n` +
     `- end: null unless explicitly stated. Default event length is 30 minutes.\n` +
     `- confidence: your estimate 0–1 that this is a real future calendar entry.\n` +
     `- Reject past events (confidence < 0.6) unless they are about a future follow-up.\n` +
@@ -44,9 +56,10 @@ function buildPrompt(text, now, tz) {
  *
  * @param {unknown} raw
  * @param {number}  nowMs  — epoch millis for "in the past?" check
+ * @param {{ text?: string, tz?: string }} [spoken] — the dictation and zone, to check the day and time
  * @returns {{ type: string, title: string, start: string, end: string|null, confidence: number }|null}
  */
-function validate(raw, nowMs) {
+function validate(raw, nowMs, { text, tz } = {}) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
 
   const type = raw.type;
@@ -61,12 +74,16 @@ function validate(raw, nowMs) {
   // start is required for events and reminders, optional for todos
   const startRaw = typeof raw.start === "string" ? raw.start.trim() : null;
   let start = null;
+  let startShift = 0;
   if (startRaw) {
     const parsed = Date.parse(startRaw);
     if (!Number.isFinite(parsed)) return null;
+    // Match the day and clock time to the words spoken, in whole minutes.
+    startShift = (text && tz ? reconcileStart(parsed, text, nowMs, tz) : floorToMinute(parsed)) - parsed;
+    const startMs = parsed + startShift;
     // Reject times clearly in the past (more than 5 minutes ago)
-    if (parsed < nowMs - 5 * 60 * 1000 && type !== "todo") return null;
-    start = new Date(parsed).toISOString();
+    if (startMs < nowMs - 5 * 60 * 1000 && type !== "todo") return null;
+    start = new Date(startMs).toISOString();
   } else if (type !== "todo") {
     // event and reminder must have a start time
     return null;
@@ -76,8 +93,12 @@ function validate(raw, nowMs) {
   let end = null;
   if (endRaw) {
     const parsed = Date.parse(endRaw);
-    if (Number.isFinite(parsed)) {
-      end = new Date(parsed).toISOString();
+    // Move the end with the start, and drop an end that no longer follows it.
+    if (Number.isFinite(parsed) && start) {
+      const endMs = floorToMinute(parsed + startShift);
+      if (endMs > Date.parse(start)) end = new Date(endMs).toISOString();
+    } else if (Number.isFinite(parsed)) {
+      end = new Date(floorToMinute(parsed)).toISOString();
     }
   }
   // Default event length: 30 min
@@ -96,7 +117,7 @@ function validate(raw, nowMs) {
  * @param {string}   [opts.ollamaBase]  — override Ollama base URL (tests)
  * @param {Function} [opts.fetchImpl]   — override fetch (tests)
  * @param {number}   [opts.nowMs]       — override Date.now() (tests)
- * @param {string}   [opts.nowIso]      — override ISO now string (tests)
+ * @param {string}   [opts.nowIso]      — override the local now string (tests)
  * @param {string}   [opts.tz]          — override timezone (tests)
  * @returns {Promise<{type,title,start,end,confidence}|null>}
  */
@@ -105,10 +126,13 @@ async function extractIntent({
   ollamaBase = OLLAMA_BASE,
   fetchImpl = fetch,
   nowMs = Date.now(),
-  nowIso = new Date(nowMs).toISOString(),
   tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  nowIso = localIso(nowMs, tz),
 } = {}) {
-  const prompt = buildPrompt(text, nowIso, tz);
+  const prompt = buildPrompt(text, nowIso, tz, {
+    weekday: DAY_NAMES[zonedParts(nowMs, tz).weekday],
+    upcoming: upcomingDays(nowMs, tz),
+  });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -138,7 +162,7 @@ async function extractIntent({
     } catch {
       return null;
     }
-    return validate(parsed, nowMs);
+    return validate(parsed, nowMs, { text, tz });
   } catch {
     return null;
   } finally {

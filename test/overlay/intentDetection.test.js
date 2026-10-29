@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const { mightContainIntent } = require("../../src/helpers/intents/intentDetector.js");
 const { buildPrompt, validate, extractIntent } = require("../../src/helpers/intents/intentExtractor.js");
 const { buildIcs } = require("../../src/helpers/intents/icsWriter.js");
+const intentTime = require("../../src/helpers/intents/intentTime.js");
 const { ReminderScheduler } = require("../../src/helpers/intents/reminderScheduler.js");
 
 // 1. Intent Trigger Detection (regex gate)
@@ -142,6 +143,7 @@ test("extractIntent: parses valid response and handles markdown fencing", async 
     text: "meeting tomorrow at 3pm with client",
     fetchImpl: fakeFetch,
     nowMs,
+    tz: "UTC",
   });
 
   assert.ok(result);
@@ -186,6 +188,120 @@ test("extractIntent: asks Ollama to skip thinking so it answers inside the timeo
   assert.equal(sent.body.reasoning_effort, "none");
   assert.equal(sent.body.options, undefined);
   assert.equal(sent.body.stream, false);
+});
+
+// Thursday 29 Oct 2026, 7:15:20 PM in India.
+const IST = "Asia/Kolkata";
+const THU_EVENING_IST = Date.parse("2026-10-29T19:15:20+05:30");
+
+function modelReply(content) {
+  let sent = null;
+  const fetchImpl = async (_url, init) => {
+    sent = JSON.parse(init.body);
+    return {
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify(content) } }] }),
+    };
+  };
+  return { fetchImpl, prompt: () => sent?.messages?.[0]?.content || "" };
+}
+
+test("intent time: local now carries the offset and the next days carry weekdays", () => {
+  assert.equal(intentTime.localIso(THU_EVENING_IST, IST), "2026-10-29T19:15:00+05:30");
+  assert.equal(intentTime.DAY_NAMES[intentTime.zonedParts(THU_EVENING_IST, IST).weekday], "Thursday");
+  const days = intentTime.upcomingDays(THU_EVENING_IST, IST);
+  assert.match(days, /^Friday 2026-10-30 \(tomorrow, kal\)/);
+  assert.match(days, /Monday 2026-11-02/);
+  assert.equal(intentTime.localIso(Date.parse("2026-06-09T12:00:00Z"), "America/New_York"), "2026-06-09T08:00:00-04:00");
+});
+
+test("intent time: reads spoken days and clock times in English and Hinglish", () => {
+  assert.equal(intentTime.spokenDayOffset("kal 4 baje meeting", 4), 1);
+  assert.equal(intentTime.spokenDayOffset("parso call karna", 4), 2);
+  assert.equal(intentTime.spokenDayOffset("sync next Monday at 11am", 4), 4);
+  assert.equal(intentTime.spokenDayOffset("standup on thursday", 4), 7);
+  assert.equal(intentTime.spokenDayOffset("this thursday at 9pm", 4), 0);
+  assert.equal(intentTime.spokenDayOffset("meeting at 5", 4), null);
+  assert.deepEqual(intentTime.spokenTime("next Monday at 11am"), { hour: 11, minute: 0, meridiem: "am" });
+  assert.deepEqual(intentTime.spokenTime("kal 4 baje"), { hour: 4, minute: 0, meridiem: null });
+  assert.deepEqual(intentTime.spokenTime("kal shaam saadhe paanch baje"), { hour: 5, minute: 30, meridiem: "pm" });
+  assert.deepEqual(intentTime.spokenTime("call at 17:45"), { hour: 17, minute: 45, meridiem: null });
+  assert.equal(intentTime.spokenTime("meeting tomorrow"), null);
+});
+
+test("extractIntent: sends the local time, weekday and next days instead of UTC", async () => {
+  const reply = modelReply({ type: "todo", title: "Buy milk", start: null, confidence: 0.9 });
+  await extractIntent({ text: "buy milk", fetchImpl: reply.fetchImpl, nowMs: THU_EVENING_IST, tz: IST });
+  const prompt = reply.prompt();
+  assert.match(prompt, /Thursday, 2026-10-29T19:15:00\+05:30/);
+  assert.match(prompt, /Timezone: Asia\/Kolkata/);
+  assert.match(prompt, /Monday 2026-11-02/);
+  assert.doesNotMatch(prompt, /2026-10-29T13:45/);
+});
+
+test("extractIntent: 'kal 4 baje' lands on tomorrow 4:00 PM with zero seconds", async () => {
+  // The model copied the current seconds and minutes into its answer.
+  const reply = modelReply({
+    type: "event",
+    title: "Team meeting",
+    start: "2026-10-30T10:59:38.000Z",
+    end: "2026-10-30T11:29:38.000Z",
+    confidence: 0.95,
+  });
+  const result = await extractIntent({
+    text: "kal 4 baje team meeting hai",
+    fetchImpl: reply.fetchImpl,
+    nowMs: THU_EVENING_IST,
+    tz: IST,
+  });
+  assert.equal(result.start, "2026-10-30T10:30:00.000Z"); // 4:00 PM IST
+  assert.equal(result.end, "2026-10-30T11:00:00.000Z");
+});
+
+test("extractIntent: 'next Monday 11am' lands on Monday, not another weekday", async () => {
+  const reply = modelReply({
+    type: "event",
+    title: "Sync with Priya",
+    start: "2026-11-05T05:30:00.000Z", // Thursday
+    end: null,
+    confidence: 0.9,
+  });
+  const result = await extractIntent({
+    text: "Set up a sync with Priya next Monday at 11am",
+    fetchImpl: reply.fetchImpl,
+    nowMs: THU_EVENING_IST,
+    tz: IST,
+  });
+  assert.equal(result.start, "2026-11-02T05:30:00.000Z"); // Monday 11:00 AM IST
+  assert.equal(result.end, "2026-11-02T06:00:00.000Z");
+});
+
+test("extractIntent: keeps a correct answer and trims stray seconds", async () => {
+  const reply = modelReply({
+    type: "reminder",
+    title: "Call mom",
+    start: "2026-10-30T17:00:42+05:30",
+    end: null,
+    confidence: 1,
+  });
+  const result = await extractIntent({
+    text: "Remind me to call mom tomorrow at 5pm",
+    fetchImpl: reply.fetchImpl,
+    nowMs: THU_EVENING_IST,
+    tz: IST,
+  });
+  assert.equal(result.start, "2026-10-30T11:30:00.000Z");
+  assert.equal(result.end, null);
+});
+
+test("extractor validation: without the dictation it still rounds to whole minutes", () => {
+  const nowMs = Date.parse("2026-10-29T10:00:00.000Z");
+  const result = validate(
+    { type: "event", title: "Demo", start: "2026-10-29T14:00:59.900Z", end: null, confidence: 0.9 },
+    nowMs
+  );
+  assert.equal(result.start, "2026-10-29T14:00:00.000Z");
+  assert.equal(result.end, "2026-10-29T14:30:00.000Z");
 });
 
 // 4. RFC 5545 .ics Writer
