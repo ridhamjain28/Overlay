@@ -2202,6 +2202,27 @@
         "description": "項目を削除する前に確認するかどうかを選びます。",
         "askBeforeDeleting": "削除前に確認する",
         "askBeforeDeletingDescription": "履歴、チャット、空のフォルダー、ダウンロード済みモデルを削除する前に確認を表示します。オンにすると「今後確認しない」で非表示にした確認が元に戻ります。"
+      },
+      "chatMemory": {
+        "title": "チャットの記憶",
+        "description": "長いチャットや伝えた内容をアシスタントが覚えておきます。",
+        "remember": "過去のチャットを覚える",
+        "rememberDescription": "名前や取り組んでいたことなど、以前伝えた内容をアシスタントが思い出せます。すべてこのコンピューター内に保存されます。",
+        "length": "覚えておくチャットの長さ",
+        "lengthDescription": "長くすると会話をより多く覚えますが、メモリを多く使います。",
+        "lengthAuto": "自動（おすすめ）",
+        "lengthStandard": "短め",
+        "lengthLong": "普通",
+        "lengthExtraLong": "長め",
+        "lengthMax": "とても長い",
+        "forget": "記憶を消す",
+        "forgetRowDescription": "過去のチャットからアシスタントが覚えた内容を消します。チャット自体は削除されません。",
+        "forgetButton": "消す",
+        "forgetTitle": "アシスタントの記憶を消しますか？",
+        "forgetDescription": "アシスタントは過去のチャットを思い出さなくなります。チャットは履歴に残ります。",
+        "forgetConfirm": "消す",
+        "forgetDone": "完了しました。アシスタントは過去のチャットを忘れました。",
+        "forgetFailed": "今は記憶を消せませんでした。少し待ってからもう一度お試しください。"
       }
     },
     "permissions": {

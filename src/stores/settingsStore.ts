@@ -75,6 +75,10 @@ let _ReasoningService: typeof import("../services/ReasoningService").default | n
 // store with partial window stubs that don't define it.
 const isBrowser = typeof window !== "undefined" && typeof localStorage !== "undefined";
 
+// How much of a chat the local model keeps in view. "auto" sizes by memory.
+export const CHAT_CONTEXT_LENGTHS = ["auto", "standard", "long", "extra-long", "max"] as const;
+export type ChatContextLength = (typeof CHAT_CONTEXT_LENGTHS)[number];
+
 // Overlay defaults: a local Ollama server and a small tool-capable model.
 export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
 export const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
@@ -302,6 +306,7 @@ const BOOLEAN_SETTINGS = new Set([
   "pauseMediaOnDictation",
   "floatingIconAutoHide",
   "keepAssistantOnTop",
+  "chatMemoryEnabled",
   "startMinimized",
   "meetingProcessDetection",
   "speakerDiarizationEnabled",
@@ -992,6 +997,8 @@ export interface SettingsState
   pauseMediaOnDictation: boolean;
   floatingIconAutoHide: boolean;
   keepAssistantOnTop: boolean;
+  chatMemoryEnabled: boolean;
+  chatContextLength: ChatContextLength;
   startMinimized: boolean;
   gcalAccounts: CalendarAccount[];
   gcalConnected: boolean;
@@ -1023,6 +1030,10 @@ export interface SettingsState
   keepTranscriptionInClipboard: boolean;
   noteFilesEnabled: boolean;
   noteFilesPath: string;
+  /** Feature C: detect meeting/reminder/to-do in dictated text and offer to add it. */
+  detectDictationIntents: boolean;
+  /** Feature C: where detected events go — "ask"|"ics"|"gcal"|"mcal" */
+  dictationIntentOutput: "ask" | "ics" | "gcal" | "mcal";
 
   transcriptionMode: InferenceMode;
   remoteTranscriptionType: SelfHostedType;
@@ -1324,6 +1335,8 @@ export interface SettingsState
   setPauseMediaOnDictation: (value: boolean) => void;
   setFloatingIconAutoHide: (enabled: boolean) => void;
   setKeepAssistantOnTop: (enabled: boolean) => void;
+  setChatMemoryEnabled: (enabled: boolean) => void;
+  setChatContextLength: (value: ChatContextLength) => void;
   setStartMinimized: (enabled: boolean) => void;
   setGcalAccounts: (accounts: CalendarAccount[]) => void;
   setMcalAccounts: (accounts: MicrosoftCalendarAccount[]) => void;
@@ -1745,6 +1758,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   pauseMediaOnDictation: readBoolean("pauseMediaOnDictation", false),
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
   keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
+  chatMemoryEnabled: readBoolean("chatMemoryEnabled", true),
+  chatContextLength: (() => {
+    const v = readString("chatContextLength", "auto");
+    return (CHAT_CONTEXT_LENGTHS as readonly string[]).includes(v)
+      ? (v as ChatContextLength)
+      : "auto";
+  })(),
   startMinimized: readBoolean("startMinimized", false),
   notificationsEnabled: readBoolean("notificationsEnabled", true),
   notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
@@ -2544,6 +2564,20 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (isBrowser) {
       window.electronAPI?.notifyFloatingIconAutoHideChanged?.(enabled);
     }
+  },
+
+  setChatMemoryEnabled: (enabled: boolean) => {
+    if (get().chatMemoryEnabled === enabled) return;
+    if (isBrowser) localStorage.setItem("chatMemoryEnabled", String(enabled));
+    set({ chatMemoryEnabled: enabled });
+  },
+
+  setChatContextLength: (value: ChatContextLength) => {
+    const next = (CHAT_CONTEXT_LENGTHS as readonly string[]).includes(value) ? value : "auto";
+    if (get().chatContextLength === next) return;
+    if (isBrowser) localStorage.setItem("chatContextLength", next);
+    set({ chatContextLength: next });
+    if (isBrowser) window.electronAPI?.overlaySetChatContextLength?.(next);
   },
 
   setKeepAssistantOnTop: (enabled: boolean) => {

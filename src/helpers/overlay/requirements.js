@@ -331,8 +331,21 @@ function createRequirements(deps = {}) {
         return [
           { file: "winget", args: ["install", "-e", "--id", "Ollama.Ollama", ...WINGET_FLAGS] },
         ];
-      case "ollama-start":
-        return [{ file: ctx.ollama || "ollama", args: ["serve"], background: true }];
+      case "ollama-start": {
+        // Ollama's /v1 endpoint ignores a per-request window, so the only way
+        // to give chat a longer memory is to start the server with one.
+        const contextLength = Number(ctx.contextLength);
+        return [
+          {
+            file: ctx.ollama || "ollama",
+            args: ["serve"],
+            background: true,
+            ...(Number.isFinite(contextLength) && contextLength > 0
+              ? { env: { OLLAMA_CONTEXT_LENGTH: String(Math.floor(contextLength)) } }
+              : {}),
+          },
+        ];
+      }
       case "answer-model":
         return [
           { file: ctx.ollama || "ollama", args: ["pull", ctx.model || DEFAULT_ANSWER_MODEL] },
@@ -383,7 +396,7 @@ function createRequirements(deps = {}) {
           shell: false,
           detached: !!step.background,
           stdio: step.background ? "ignore" : ["ignore", "pipe", "pipe"],
-          env: { ...env, PYTHONUNBUFFERED: "1", PIP_NO_INPUT: "1" },
+          env: { ...env, PYTHONUNBUFFERED: "1", PIP_NO_INPUT: "1", ...(step.env || {}) },
         });
       } catch (error) {
         resolve({ ok: false, code: -1, error: error.message });
@@ -419,9 +432,12 @@ function createRequirements(deps = {}) {
    * Install one item. onEvent receives { line } and { progress } (0-100).
    * Returns { success, code?, error? }.
    */
-  async function install(id, { onEvent = () => {}, dryRun = dryRunDefault, model } = {}) {
+  async function install(
+    id,
+    { onEvent = () => {}, dryRun = dryRunDefault, model, contextLength } = {}
+  ) {
     if (busy) return { success: false, error: "Another install is still running" };
-    let ctx = { model };
+    let ctx = { model, contextLength };
     let stepsId = id;
     if (id === "ollama" || id === "answer-model") {
       const ollama = findOllama(probe);

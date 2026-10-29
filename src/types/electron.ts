@@ -2307,8 +2307,9 @@ declare global {
 
       // llama-server
       llamaServerStart: (
-        modelId: string
-      ) => Promise<{ success: boolean; port?: number; error?: string }>;
+        modelId: string,
+        opts?: { chat?: boolean }
+      ) => Promise<{ success: boolean; port?: number; contextSize?: number; error?: string }>;
       llamaServerStatus: () => Promise<LlamaServerStatus>;
       llamaGpuReset: () => Promise<{ success: boolean; error?: string }>;
       detectVulkanGpu?: () => Promise<VulkanGpuResult>;
@@ -2730,6 +2731,28 @@ declare global {
       registerMeetingHotkey?: (hotkey: string) => Promise<{ success: boolean; message?: string }>;
       notifyFloatingIconAutoHideChanged?: (enabled: boolean) => void;
       overlaySetKeepAssistantOnTop?: (enabled: boolean) => void;
+      overlaySetChatContextLength?: (value: string) => void;
+      overlayChatContextWindow?: (opts: {
+        model: string;
+        baseUrl?: string;
+      }) => Promise<{ tokens: number | null }>;
+      overlayMemoryRecall?: (
+        conversationKey: string,
+        query: string
+      ) => Promise<{
+        facts: string[];
+        summary: { summary: string; covered: number } | null;
+        related: string[];
+      }>;
+      overlayMemoryRemember?: (
+        conversationKey: string,
+        payload: {
+          facts?: Array<{ key: string; fact: string }>;
+          summary?: string;
+          covered?: number;
+        }
+      ) => Promise<{ savedFacts: number; savedSummary: boolean }>;
+      overlayMemoryClear?: () => Promise<{ success: boolean }>;
       onOverlayAssistantCollapse?: (callback: () => void) => () => void;
       onFloatingIconAutoHideChanged?: (callback: (enabled: boolean) => void) => () => void;
       notifyStartMinimizedChanged?: (enabled: boolean) => void;

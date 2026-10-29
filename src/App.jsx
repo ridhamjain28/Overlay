@@ -200,6 +200,11 @@ export default function App() {
   useEffect(() => {
     window.electronAPI?.overlaySetKeepAssistantOnTop?.(keepAssistantOnTop);
   }, [keepAssistantOnTop]);
+  // Overlay: how much of a chat the local model keeps in view, for main.
+  const chatContextLength = useSettingsStore((s) => s.chatContextLength);
+  useEffect(() => {
+    window.electronAPI?.overlaySetChatContextLength?.(chatContextLength);
+  }, [chatContextLength]);
   useEffect(() => {
     const unsubscribe = window.electronAPI?.onOverlayAssistantCollapse?.(() => {
       if (assistantOpenRef.current) closeAssistantPanel();

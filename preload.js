@@ -768,7 +768,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   llamaCppUninstall: () => ipcRenderer.invoke("llama-cpp-uninstall"),
 
   // llama-server
-  llamaServerStart: (modelId) => ipcRenderer.invoke("llama-server-start", modelId),
+  llamaServerStart: (modelId, opts) => ipcRenderer.invoke("llama-server-start", modelId, opts),
   llamaServerStatus: () => ipcRenderer.invoke("llama-server-status"),
   llamaGpuReset: () => ipcRenderer.invoke("llama-gpu-reset"),
 
@@ -1207,6 +1207,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlayRequirementsInstall: (id, opts) =>
     ipcRenderer.invoke("overlay-requirements-install", id, opts),
   overlayHinglishStatus: () => ipcRenderer.invoke("overlay-hinglish-status"),
+  overlaySetChatContextLength: (value) =>
+    ipcRenderer.send("overlay-set-chat-context-length", String(value || "auto")),
+  overlayChatContextWindow: (opts) => ipcRenderer.invoke("overlay-chat-context-window", opts),
+  overlayMemoryRecall: (conversationKey, query) =>
+    ipcRenderer.invoke("overlay-memory-recall", conversationKey, query),
+  overlayMemoryRemember: (conversationKey, payload) =>
+    ipcRenderer.invoke("overlay-memory-remember", conversationKey, payload),
+  overlayMemoryClear: () => ipcRenderer.invoke("overlay-memory-clear"),
   overlaySetKeepAssistantOnTop: (enabled) =>
     ipcRenderer.send("overlay-set-keep-assistant-on-top", enabled === true),
   onOverlayAssistantCollapse: registerListener(
@@ -1220,6 +1228,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     "overlay-requirements-output",
     (callback) => (_event, payload) => callback(payload)
   ),
+  // Feature C: detect calendar events / reminders in dictated text
+  overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
+  overlayIntentExtract: (text) => ipcRenderer.invoke("overlay-intent-extract", text),
+  overlayIcsOpen: (intentData) => ipcRenderer.invoke("overlay-ics-open", intentData),
 
   // Agent conversation persistence
   createAgentConversation: (title, noteId, spaceId, folderId) =>

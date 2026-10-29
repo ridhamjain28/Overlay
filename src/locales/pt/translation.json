@@ -2181,6 +2181,27 @@
         "description": "Escolha se excluir um item pede confirmação antes.",
         "askBeforeDeleting": "Perguntar antes de excluir",
         "askBeforeDeletingDescription": "Mostra uma confirmação antes de excluir um item do histórico, um chat, uma pasta vazia ou um modelo baixado. Ativar isto traz de volta as confirmações ocultadas com Não perguntar novamente."
+      },
+      "chatMemory": {
+        "title": "Memória do chat",
+        "description": "O assistente mantém em mente chats longos e o que você conta a ele.",
+        "remember": "Lembrar chats anteriores",
+        "rememberDescription": "O assistente pode lembrar o que você contou antes, como seu nome ou no que estava trabalhando. Tudo fica neste computador.",
+        "length": "Tamanho do chat a lembrar",
+        "lengthDescription": "Mais longo mantém mais da conversa, mas usa mais memória do computador.",
+        "lengthAuto": "Automático (recomendado)",
+        "lengthStandard": "Curto",
+        "lengthLong": "Médio",
+        "lengthExtraLong": "Longo",
+        "lengthMax": "Muito longo",
+        "forget": "Esquecer lembranças",
+        "forgetRowDescription": "Apaga o que o assistente lembra de chats anteriores. Seus chats não são excluídos.",
+        "forgetButton": "Esquecer",
+        "forgetTitle": "Esquecer o que o assistente lembra?",
+        "forgetDescription": "O assistente não lembrará mais dos chats anteriores. Seus chats continuam no histórico.",
+        "forgetConfirm": "Esquecer",
+        "forgetDone": "Pronto. O assistente esqueceu seus chats anteriores.",
+        "forgetFailed": "Não foi possível apagar a memória agora. Tente de novo em instantes."
       }
     },
     "permissions": {

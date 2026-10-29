@@ -2497,6 +2497,27 @@
         "description": "Choisissez si la suppression d'un élément demande d'abord une confirmation.",
         "askBeforeDeleting": "Demander avant de supprimer",
         "askBeforeDeletingDescription": "Afficher une confirmation avant de supprimer un élément de l'historique, une conversation, un dossier vide ou un modèle téléchargé. L'activer rétablit les confirmations masquées avec Ne plus me demander."
+      },
+      "chatMemory": {
+        "title": "Mémoire du chat",
+        "description": "L'assistant garde en tête les longues discussions et ce que vous lui dites.",
+        "remember": "Se souvenir des discussions",
+        "rememberDescription": "L'assistant peut se rappeler ce que vous lui avez dit, comme votre nom ou ce sur quoi vous travailliez. Tout reste sur cet ordinateur.",
+        "length": "Longueur de discussion retenue",
+        "lengthDescription": "Plus long garde davantage la conversation en tête mais utilise plus de mémoire.",
+        "lengthAuto": "Automatique (recommandé)",
+        "lengthStandard": "Courte",
+        "lengthLong": "Moyenne",
+        "lengthExtraLong": "Longue",
+        "lengthMax": "Très longue",
+        "forget": "Oublier les souvenirs",
+        "forgetRowDescription": "Efface ce que l'assistant retient des discussions passées. Vos discussions ne sont pas supprimées.",
+        "forgetButton": "Oublier",
+        "forgetTitle": "Effacer les souvenirs de l'assistant ?",
+        "forgetDescription": "L'assistant ne se souviendra plus de vos discussions passées. Elles restent dans l'historique.",
+        "forgetConfirm": "Oublier",
+        "forgetDone": "C'est fait. L'assistant a oublié vos discussions passées.",
+        "forgetFailed": "Impossible d'effacer la mémoire pour le moment. Réessayez dans un instant."
       }
     },
     "permissions": {

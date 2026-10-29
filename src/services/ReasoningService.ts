@@ -619,7 +619,7 @@ class ReasoningService extends BaseReasoningService {
       endpoint = buildApiUrl(baseUrl, "/chat/completions");
       apiKey = route.apiKey;
     } else if (isLocalProvider) {
-      const serverResult = await window.electronAPI.llamaServerStart(model);
+      const serverResult = await window.electronAPI.llamaServerStart(model, { chat: true });
       if (!serverResult.success || !serverResult.port) {
         throw new Error(serverResult.error || "Failed to start local model server");
       }
@@ -908,7 +908,7 @@ class ReasoningService extends BaseReasoningService {
       apiKey = route.apiKey;
       baseURL = resolveSelfHostedOpenAIBase(route.baseUrl);
     } else if (isLocalProvider) {
-      const serverResult = await window.electronAPI.llamaServerStart(model);
+      const serverResult = await window.electronAPI.llamaServerStart(model, { chat: true });
       if (!serverResult.success || !serverResult.port) {
         throw new Error(serverResult.error || "Failed to start local model server");
       }

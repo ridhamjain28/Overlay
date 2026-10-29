@@ -121,9 +121,10 @@ export function withoutEchoedToolTrace(content: string): string {
 /** The last messages as the model sees them, with earlier tool use noted on assistant turns. */
 export function toHistoryMessages(
   messages: ReadonlyArray<Message>,
-  { includeToolTrace }: { includeToolTrace: boolean }
+  { includeToolTrace, limit = HISTORY_LIMIT }: { includeToolTrace: boolean; limit?: number }
 ): HistoryMessage[] {
-  return messages.slice(-HISTORY_LIMIT).map((m) => {
+  const recent = Number.isFinite(limit) ? messages.slice(-limit) : messages.slice();
+  return recent.map((m) => {
     const trace = includeToolTrace && m.role === "assistant" ? toolTrace(m.toolCalls) : "";
     return { role: m.role, content: trace ? `${trace}\n\n${m.content}` : m.content };
   });

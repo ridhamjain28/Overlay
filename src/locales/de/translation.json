@@ -2497,6 +2497,27 @@
         "description": "Lege fest, ob vor dem Löschen eines Elements nachgefragt wird.",
         "askBeforeDeleting": "Vor dem Löschen fragen",
         "askBeforeDeletingDescription": "Vor dem Löschen eines Verlaufseintrags, Chats, leeren Ordners oder heruntergeladenen Modells eine Bestätigung anzeigen. Beim Einschalten kehren alle mit Nicht mehr fragen ausgeblendeten Bestätigungen zurück."
+      },
+      "chatMemory": {
+        "title": "Chat-Gedächtnis",
+        "description": "Der Assistent behält lange Chats und das, was du ihm sagst, im Blick.",
+        "remember": "Frühere Chats merken",
+        "rememberDescription": "Der Assistent kann sich an Dinge erinnern, die du ihm erzählt hast, etwa deinen Namen oder woran du gearbeitet hast. Alles bleibt auf diesem Computer.",
+        "length": "Chatlänge im Blick behalten",
+        "lengthDescription": "Länger behält mehr vom Gespräch im Blick, braucht aber mehr Arbeitsspeicher.",
+        "lengthAuto": "Automatisch (empfohlen)",
+        "lengthStandard": "Kurz",
+        "lengthLong": "Mittel",
+        "lengthExtraLong": "Lang",
+        "lengthMax": "Sehr lang",
+        "forget": "Erinnerungen vergessen",
+        "forgetRowDescription": "Löscht, was sich der Assistent aus früheren Chats gemerkt hat. Die Chats selbst bleiben erhalten.",
+        "forgetButton": "Vergessen",
+        "forgetTitle": "Erinnerungen des Assistenten löschen?",
+        "forgetDescription": "Der Assistent erinnert sich dann nicht mehr an frühere Chats. Deine Chats bleiben im Verlauf.",
+        "forgetConfirm": "Vergessen",
+        "forgetDone": "Erledigt. Der Assistent hat deine früheren Chats vergessen.",
+        "forgetFailed": "Das Gedächtnis konnte gerade nicht gelöscht werden. Versuche es gleich noch einmal."
       }
     },
     "permissions": {

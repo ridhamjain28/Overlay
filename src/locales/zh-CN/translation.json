@@ -2202,6 +2202,27 @@
         "description": "选择删除项目前是否先询问你。",
         "askBeforeDeleting": "删除前询问",
         "askBeforeDeletingDescription": "删除历史记录、聊天、空文件夹或已下载模型前显示确认。开启后会恢复你通过“不再询问”隐藏的确认。"
+      },
+      "chatMemory": {
+        "title": "聊天记忆",
+        "description": "让助手记住长对话和你告诉它的事情。",
+        "remember": "记住以前的聊天",
+        "rememberDescription": "助手可以记起你之前告诉它的事，比如你的名字或你在做的事。所有内容都保存在这台电脑上。",
+        "length": "记住的聊天长度",
+        "lengthDescription": "越长能记住越多对话，但会占用更多内存。",
+        "lengthAuto": "自动（推荐）",
+        "lengthStandard": "短",
+        "lengthLong": "中",
+        "lengthExtraLong": "长",
+        "lengthMax": "很长",
+        "forget": "清除记忆",
+        "forgetRowDescription": "清除助手从以前聊天中记住的内容。聊天本身不会被删除。",
+        "forgetButton": "清除",
+        "forgetTitle": "清除助手的记忆？",
+        "forgetDescription": "助手将不再记得以前的聊天。聊天仍保留在历史记录中。",
+        "forgetConfirm": "清除",
+        "forgetDone": "已完成。助手已忘记以前的聊天。",
+        "forgetFailed": "暂时无法清除记忆，请稍后再试。"
       }
     },
     "permissions": {

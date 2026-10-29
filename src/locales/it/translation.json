@@ -2202,6 +2202,27 @@
         "description": "Scegli se l'eliminazione di un elemento chiede prima conferma.",
         "askBeforeDeleting": "Chiedi prima di eliminare",
         "askBeforeDeletingDescription": "Mostra una conferma prima di eliminare un elemento della cronologia, una chat, una cartella vuota o un modello scaricato. Attivandola tornano le conferme nascoste con Non chiedere più."
+      },
+      "chatMemory": {
+        "title": "Memoria della chat",
+        "description": "L'assistente tiene a mente le chat lunghe e ciò che gli dici.",
+        "remember": "Ricorda le chat passate",
+        "rememberDescription": "L'assistente può ricordare ciò che gli hai detto, come il tuo nome o ciò su cui lavoravi. Tutto resta su questo computer.",
+        "length": "Lunghezza della chat da ricordare",
+        "lengthDescription": "Più lunga tiene a mente più conversazione ma usa più memoria.",
+        "lengthAuto": "Automatica (consigliata)",
+        "lengthStandard": "Breve",
+        "lengthLong": "Media",
+        "lengthExtraLong": "Lunga",
+        "lengthMax": "Molto lunga",
+        "forget": "Dimentica i ricordi",
+        "forgetRowDescription": "Cancella ciò che l'assistente ricorda delle chat passate. Le chat non vengono eliminate.",
+        "forgetButton": "Dimentica",
+        "forgetTitle": "Cancellare i ricordi dell'assistente?",
+        "forgetDescription": "L'assistente non ricorderà più le chat passate. Le chat restano nella cronologia.",
+        "forgetConfirm": "Dimentica",
+        "forgetDone": "Fatto. L'assistente ha dimenticato le chat passate.",
+        "forgetFailed": "Impossibile cancellare la memoria ora. Riprova tra poco."
       }
     },
     "permissions": {

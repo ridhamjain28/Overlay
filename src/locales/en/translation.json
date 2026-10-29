@@ -2497,6 +2497,27 @@
         "description": "Choose whether deleting an item asks you first.",
         "askBeforeDeleting": "Ask before deleting",
         "askBeforeDeletingDescription": "Show a confirmation before deleting a history item, chat, empty folder or downloaded model. Turning this on brings back any confirmation you hid with Don't ask me again."
+      },
+      "chatMemory": {
+        "title": "Chat memory",
+        "description": "Let the assistant keep long chats and the things you tell it in mind.",
+        "remember": "Remember past chats",
+        "rememberDescription": "Lets the assistant recall things you've told it before, like your name or what you were working on. Everything stays on this computer.",
+        "length": "Chat length to keep in mind",
+        "lengthDescription": "Longer keeps more of a conversation in view but uses more memory on this computer.",
+        "lengthAuto": "Automatic (recommended)",
+        "lengthStandard": "Short",
+        "lengthLong": "Medium",
+        "lengthExtraLong": "Long",
+        "lengthMax": "Very long",
+        "forget": "Forget what it remembers",
+        "forgetRowDescription": "Clears what the assistant remembers from past chats. Your chats themselves are not deleted.",
+        "forgetButton": "Forget",
+        "forgetTitle": "Forget what the assistant remembers?",
+        "forgetDescription": "The assistant will no longer recall things from your past chats. Your chats stay in your history.",
+        "forgetConfirm": "Forget",
+        "forgetDone": "Done. The assistant has forgotten your past chats.",
+        "forgetFailed": "Couldn't clear the memory right now. Try again in a moment."
       }
     },
     "permissions": {

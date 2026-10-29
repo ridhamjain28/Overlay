@@ -65,6 +65,8 @@ import { isQueryResultData } from "../../services/tools/connectors/runQueryActio
 import { getAgentToolActivityRemainingMs } from "../../helpers/agentToolPresentation";
 import type { Message, AgentState, ChatImageAttachment, ToolCallInfo } from "./types";
 import { toHistoryMessages, withoutEchoedToolTrace, type HistoryMessage } from "./historyMessages";
+import { conversationKey, planChatMemory } from "./chatMemory";
+import { recallMemory, rememberInBackground, resolveChatWindow } from "./chatContextWindow";
 import type { ContainerScope } from "../../types/chat";
 import type { NoteAttendeesRequest } from "../../types/connectors";
 import {
@@ -557,8 +559,12 @@ export function useChatStreaming({
           settings.uiLanguage
         );
 
-        const history: HistoryMessage[] = toHistoryMessages(allMessages, {
+        // With memory on, the whole chat is offered and planChatMemory keeps
+        // what fits; with it off, the original last-20 window is unchanged.
+        const memoryEnabled = settings.chatMemoryEnabled !== false;
+        let history: HistoryMessage[] = toHistoryMessages(allMessages, {
           includeToolTrace: registry !== null,
+          limit: memoryEnabled ? Infinity : undefined,
         });
 
         const requestText = options?.requestText;
@@ -638,6 +644,31 @@ export function useChatStreaming({
             }
             if (cancelled() || !mountedRef.current) return;
           }
+        }
+
+        if (memoryEnabled) {
+          const memoryKey = conversationKey(allMessages);
+          const [windowTokens, recalled] = await Promise.all([
+            resolveChatWindow({
+              isCloudAgent,
+              isLanAgent,
+              isLocalProvider,
+              model: llmConfig.model,
+              remoteUrl: llmConfig.remoteUrl,
+            }),
+            recallMemory(memoryKey, userText),
+          ]);
+          if (cancelled() || !mountedRef.current) return;
+          const plan = planChatMemory({
+            history,
+            userText,
+            windowTokens,
+            systemPrompt,
+            recalled,
+          });
+          history = plan.history;
+          if (plan.memoryBlock) systemPrompt = `${systemPrompt}\n\n${plan.memoryBlock}`;
+          rememberInBackground(plan.remember.key, plan.remember);
         }
 
         const llmMessages = [{ role: "system", content: systemPrompt }, ...history];

@@ -1281,6 +1281,26 @@ export default function SettingsPage({
   } = useSettings();
   const keepAssistantOnTop = useSettingsStore((s) => s.keepAssistantOnTop);
   const setKeepAssistantOnTop = useSettingsStore((s) => s.setKeepAssistantOnTop);
+  const chatMemoryEnabled = useSettingsStore((s) => s.chatMemoryEnabled);
+  const setChatMemoryEnabled = useSettingsStore((s) => s.setChatMemoryEnabled);
+  const chatContextLength = useSettingsStore((s) => s.chatContextLength);
+  const setChatContextLength = useSettingsStore((s) => s.setChatContextLength);
+  const handleForgetChats = () => {
+    showConfirmDialog({
+      title: t("settingsPage.general.chatMemory.forgetTitle"),
+      description: t("settingsPage.general.chatMemory.forgetDescription"),
+      confirmText: t("settingsPage.general.chatMemory.forgetConfirm"),
+      variant: "destructive",
+      onConfirm: async () => {
+        const result = await window.electronAPI?.overlayMemoryClear?.();
+        showAlertDialog({
+          title: result?.success
+            ? t("settingsPage.general.chatMemory.forgetDone")
+            : t("settingsPage.general.chatMemory.forgetFailed"),
+        });
+      },
+    });
+  };
   const [askBeforeDeleting, setAskBeforeDeletingState] = useState(
     () => getSkippedConfirmations().length === 0
   );
@@ -3324,6 +3344,68 @@ export default function SettingsPage({
                     )}
                   >
                     <Toggle checked={askBeforeDeleting} onChange={setAskBeforeDeleting} />
+                  </SettingsRow>
+                </SettingsPanelRow>
+              </SettingsPanel>
+            </div>
+
+            {/* Chat memory */}
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.chatMemory.title")}
+                description={t("settingsPage.general.chatMemory.description")}
+              />
+              <SettingsPanel>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.chatMemory.remember")}
+                    description={t("settingsPage.general.chatMemory.rememberDescription")}
+                  >
+                    <Toggle checked={chatMemoryEnabled} onChange={setChatMemoryEnabled} />
+                  </SettingsRow>
+                </SettingsPanelRow>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.chatMemory.length")}
+                    description={t("settingsPage.general.chatMemory.lengthDescription")}
+                  >
+                    <select
+                      data-testid="chat-context-length"
+                      value={chatContextLength}
+                      onChange={(e) =>
+                        setChatContextLength(e.target.value as typeof chatContextLength)
+                      }
+                      className="h-7 rounded border border-border/70 bg-surface-1/80 px-2.5 text-xs font-medium text-foreground shadow-sm hover:border-border-hover hover:bg-surface-2/70 focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-1 transition-colors duration-200"
+                    >
+                      <option value="auto">
+                        {t("settingsPage.general.chatMemory.lengthAuto")}
+                      </option>
+                      <option value="standard">
+                        {t("settingsPage.general.chatMemory.lengthStandard")}
+                      </option>
+                      <option value="long">
+                        {t("settingsPage.general.chatMemory.lengthLong")}
+                      </option>
+                      <option value="extra-long">
+                        {t("settingsPage.general.chatMemory.lengthExtraLong")}
+                      </option>
+                      <option value="max">{t("settingsPage.general.chatMemory.lengthMax")}</option>
+                    </select>
+                  </SettingsRow>
+                </SettingsPanelRow>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.chatMemory.forget")}
+                    description={t("settingsPage.general.chatMemory.forgetRowDescription")}
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="chat-memory-forget"
+                      onClick={handleForgetChats}
+                    >
+                      {t("settingsPage.general.chatMemory.forgetButton")}
+                    </Button>
                   </SettingsRow>
                 </SettingsPanelRow>
               </SettingsPanel>

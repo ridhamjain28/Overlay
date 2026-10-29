@@ -5996,7 +5996,7 @@ class IPCHandlers {
       }
     });
 
-    ipcMain.handle("llama-server-start", async (event, modelId) => {
+    ipcMain.handle("llama-server-start", async (event, modelId, opts = {}) => {
       try {
         const modelManager = require("./modelManagerBridge").default;
         modelManager.ensureInitialized();
@@ -6007,14 +6007,43 @@ class IPCHandlers {
 
         const modelPath = require("path").join(modelManager.modelsDir, modelInfo.model.fileName);
 
+        // Chat asks for a longer window than the baseline when this machine
+        // can hold it for this model; everything else keeps the baseline.
+        const overrides = {};
+        if (opts?.chat) {
+          const {
+            chatContextTarget,
+            getChatContextSetting,
+            llamaChatContextSize,
+          } = require("./overlay/chatContext");
+          const { BASELINE_CONTEXT_SIZE } = require("./llamaContextPolicy");
+          const target = chatContextTarget(getChatContextSetting(), require("os").totalmem());
+          let ceiling = null;
+          try {
+            ceiling = await modelManager.contextCeiling(modelInfo, modelPath);
+          } catch {
+            ceiling = null;
+          }
+          overrides.contextSize = llamaChatContextSize({
+            target,
+            ceiling: ceiling?.ceiling,
+            baseline: BASELINE_CONTEXT_SIZE,
+          });
+          if (ceiling?.cacheRamMiB) overrides.cacheRamMiB = ceiling.cacheRamMiB;
+        }
+
         await modelManager.serverManager.start(
           modelPath,
-          await modelManager.serverStartOptions(modelInfo)
+          await modelManager.serverStartOptions(modelInfo, overrides)
         );
         modelManager.currentServerModelId = modelId;
 
         this.environmentManager.saveAllKeysToEnvFile().catch(() => {});
-        return { success: true, port: modelManager.serverManager.port };
+        return {
+          success: true,
+          port: modelManager.serverManager.port,
+          contextSize: modelManager.serverManager.contextSize || undefined,
+        };
       } catch (error) {
         return { success: false, error: error.message };
       }
@@ -11050,6 +11079,7 @@ class IPCHandlers {
       BrowserWindow,
       debugLogger,
       windowManager: this.windowManager,
+      getDatabase: () => this.databaseManager?.db || null,
     });
 
     ipcMain.handle(

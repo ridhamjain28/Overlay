@@ -11,6 +11,9 @@
 //   overlay-hinglish-ensure        -> start it (hidden) if it is installed
 //   overlay-hinglish-transcribe    -> turn one recording into Hinglish text
 //   overlay-set-keep-assistant-on-top -> "Keep on top of other apps" for the answer panel
+//   overlay-set-chat-context-length -> how much of a chat the local model keeps in view
+//   overlay-chat-context-window    -> the window the local Ollama model actually loaded
+//   overlay-memory-recall/remember/clear -> long-term chat memory in the app database
 //
 // Tokens (OPENCLAW_TOKEN, GEMINI_API_KEY, TAVILY_API_KEY) stay in this
 // process; the renderer only ever sees answer text.
@@ -28,6 +31,13 @@ const { createSystemActions } = require("./systemActions");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
 const { createRequirements } = require("./requirements");
 const { createHinglishServer } = require("./hinglishServer");
+const {
+  chatContextTarget,
+  normalizeChatContextSetting,
+  ollamaLoadedContext,
+  setChatContextSetting,
+} = require("./chatContext");
+const { createChatMemoryStore } = require("./chatMemoryStore");
 
 // Model tags look like qwen3.5:4b-q4_K_M; refuse anything that could read as a flag.
 const MODEL_TAG = /^[A-Za-z0-9][\w.:/-]{0,120}$/;
@@ -96,6 +106,7 @@ function registerOverlayIpc({
   BrowserWindow,
   debugLogger,
   windowManager,
+  getDatabase,
 }) {
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
 
@@ -109,6 +120,62 @@ function registerOverlayIpc({
   );
 
   ipcMain.handle("overlay-ollama-models", async () => listOllamaModels());
+
+  let chatContextSetting = "auto";
+  ipcMain.on("overlay-set-chat-context-length", (_event, value) => {
+    chatContextSetting = normalizeChatContextSetting(value);
+    setChatContextSetting(chatContextSetting);
+  });
+
+  ipcMain.handle("overlay-chat-context-window", async (_event, opts = {}) => {
+    const model = typeof opts?.model === "string" ? opts.model : "";
+    const baseUrl = typeof opts?.baseUrl === "string" ? opts.baseUrl : undefined;
+    try {
+      return { tokens: await ollamaLoadedContext({ baseUrl, model }) };
+    } catch {
+      return { tokens: null };
+    }
+  });
+
+  let memoryStore = null;
+  const memory = () => {
+    if (memoryStore) return memoryStore;
+    const db = typeof getDatabase === "function" ? getDatabase() : null;
+    if (!db) return null;
+    memoryStore = createChatMemoryStore(db);
+    return memoryStore;
+  };
+  const memoryCall = (fn, fallback) => {
+    try {
+      const store = memory();
+      return store ? fn(store) : fallback;
+    } catch (error) {
+      debugLogger?.warn?.("Chat memory unavailable", { error: error.message });
+      return fallback;
+    }
+  };
+  ipcMain.handle("overlay-memory-recall", async (_event, conversationKey, query) =>
+    memoryCall((store) => store.recall(String(conversationKey || ""), String(query || "")), {
+      facts: [],
+      summary: null,
+      related: [],
+    })
+  );
+  ipcMain.handle("overlay-memory-remember", async (_event, conversationKey, payload = {}) =>
+    memoryCall((store) => store.remember(String(conversationKey || ""), payload || {}), {
+      savedFacts: 0,
+      savedSummary: false,
+    })
+  );
+  ipcMain.handle("overlay-memory-clear", async () =>
+    memoryCall(
+      (store) => {
+        store.clear();
+        return { success: true };
+      },
+      { success: false }
+    )
+  );
 
   ipcMain.handle("overlay-answer-sources-status", async () => {
     try {
@@ -268,6 +335,7 @@ function registerOverlayIpc({
     const itemId = String(id || "");
     const result = await requirements.install(itemId, {
       model: MODEL_TAG.test(opts?.model || "") ? opts.model : undefined,
+      contextLength: chatContextTarget(chatContextSetting, require("os").totalmem()),
       onEvent: (data) => {
         if (!sender.isDestroyed())
           sender.send("overlay-requirements-output", { id: itemId, ...data });
@@ -289,6 +357,48 @@ function registerOverlayIpc({
       code: result.code,
     });
     return result;
+  });
+
+  // Feature C: dictation intent detection
+  const { mightContainIntent } = require("../intents/intentDetector");
+  const { extractIntent } = require("../intents/intentExtractor");
+  const { buildIcs } = require("../intents/icsWriter");
+
+  // Fast synchronous gate — no model, safe to call from the renderer.
+  ipcMain.handle("overlay-intent-detect", (_event, text) => {
+    if (typeof text !== "string") return false;
+    return mightContainIntent(text);
+  });
+
+  // Slow model call — runs in the background, returns null on timeout/error.
+  ipcMain.handle("overlay-intent-extract", async (_event, text) => {
+    if (typeof text !== "string" || text.length > 2000) return null;
+    try {
+      return await extractIntent({ text });
+    } catch {
+      return null;
+    }
+  });
+
+  // Write a .ics file to userData and open it in the system calendar app.
+  ipcMain.handle("overlay-ics-open", async (_event, intentData) => {
+    if (!intentData || typeof intentData !== "object") return { success: false };
+    try {
+      const icsContent = buildIcs({
+        title: String(intentData.title || "Event").slice(0, 200),
+        start: intentData.start,
+        end: intentData.end || null,
+      });
+      const tmpDir = app.getPath("temp");
+      const fileName = `overlay-event-${Date.now()}.ics`;
+      const filePath = path.join(tmpDir, fileName);
+      fs.writeFileSync(filePath, icsContent, "utf8");
+      await shell.openPath(filePath);
+      return { success: true, filePath };
+    } catch (error) {
+      debugLogger?.warn?.("overlay-ics-open failed", { error: error.message });
+      return { success: false, error: error.message };
+    }
   });
 }
 

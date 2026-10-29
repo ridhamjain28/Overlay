@@ -2202,6 +2202,27 @@
         "description": "選擇刪除項目前是否先詢問你。",
         "askBeforeDeleting": "刪除前詢問",
         "askBeforeDeletingDescription": "刪除歷史記錄、聊天、空資料夾或已下載模型前顯示確認。開啟後會恢復你透過「不再詢問」隱藏的確認。"
+      },
+      "chatMemory": {
+        "title": "聊天記憶",
+        "description": "讓助理記住長對話和你告訴它的事情。",
+        "remember": "記住以前的聊天",
+        "rememberDescription": "助理可以記起你之前告訴它的事，例如你的名字或你在做的事。所有內容都保存在這台電腦上。",
+        "length": "記住的聊天長度",
+        "lengthDescription": "越長能記住越多對話，但會佔用更多記憶體。",
+        "lengthAuto": "自動（建議）",
+        "lengthStandard": "短",
+        "lengthLong": "中",
+        "lengthExtraLong": "長",
+        "lengthMax": "很長",
+        "forget": "清除記憶",
+        "forgetRowDescription": "清除助理從以前聊天中記住的內容。聊天本身不會被刪除。",
+        "forgetButton": "清除",
+        "forgetTitle": "清除助理的記憶？",
+        "forgetDescription": "助理將不再記得以前的聊天。聊天仍保留在歷史記錄中。",
+        "forgetConfirm": "清除",
+        "forgetDone": "已完成。助理已忘記以前的聊天。",
+        "forgetFailed": "暫時無法清除記憶，請稍後再試。"
       }
     },
     "permissions": {
