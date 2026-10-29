@@ -159,8 +159,8 @@
   box-shadow: none;
 }
 
-/* The SVG geometry itself moves between identities: the listening ring opens
-   into the leaf contour, while its bars bend into the leaf spine and spark. */
+/* The SVG geometry itself moves between identities: the listening ring
+   tightens into the Agent mark's outer ring and its bars draw in to the dot. */
 .voice-identity-svg {
   color: inherit;
 }
@@ -173,6 +173,54 @@
   color: var(--color-agent-brand);
 }
 
+/* Agent mark "pulsing ring": while the assistant is listening the two rings
+   breathe outward from the centre dot. Still for reduced-motion users. */
+.voice-identity-final-agent .agent-ring,
+.voice-identity-final-agent .agent-ring-glow {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+}
+
+.voice-identity-icon[data-listening="true"] .agent-ring-inner {
+  animation: agent-ring-pulse 1.6s ease-in-out infinite;
+}
+
+.voice-identity-icon[data-listening="true"] .agent-ring-outer {
+  animation: agent-ring-pulse 1.6s ease-in-out 0.3s infinite;
+}
+
+.voice-identity-icon[data-listening="true"] .agent-ring-glow {
+  animation: agent-ring-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes agent-ring-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.6;
+  }
+}
+
+@keyframes agent-ring-glow {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-identity-icon[data-listening="true"] .agent-ring,
+  .voice-identity-icon[data-listening="true"] .agent-ring-glow {
+    animation: none;
+  }
+}
 /* Agent response controls and the persistent pill share the footer anchor.
    Right-origin sessions retreat right and grow leftward; left-origin sessions
    mirror the same choreography without swapping DOM order mid-transition. */

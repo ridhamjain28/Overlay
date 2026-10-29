@@ -147,6 +147,7 @@ export const VoicePill = forwardRef<HTMLDivElement, VoicePillProps>(function Voi
           <VoiceIdentityIcon
             size={identitySize}
             agentMode={agentMode}
+            listening={isRecording}
             className={cn(
               "transition-[width,height] duration-200",
               state === "idle" && "text-foreground",

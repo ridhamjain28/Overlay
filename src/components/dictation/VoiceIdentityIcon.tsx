@@ -1,7 +1,7 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useId, useRef, type RefObject } from "react";
 import { cn } from "../lib/utils";
 import {
-  AGENT_MODE_PATH,
+  AGENT_RING_MARK,
   resolveVoiceIdentityMorphPaths,
   VOICE_IDENTITY_MORPH_DURATION_MS,
 } from "./voiceIdentityMorph";
@@ -9,6 +9,8 @@ import {
 interface VoiceIdentityIconProps {
   size?: number;
   agentMode?: boolean;
+  /** Agent Mode is hearing the user: the mark's rings gently pulse. */
+  listening?: boolean;
   className?: string;
 }
 
@@ -18,12 +20,13 @@ const setPath = (ref: RefObject<SVGPathElement | null>, path: string, opacity: n
 };
 
 /**
- * A real one-SVG morph: the listening ring becomes a leaf contour, its audio
- * bars bend into the leaf structure, and the left bar emits the Agent spark.
+ * A real one-SVG morph: the listening ring tightens into the Agent mark's
+ * outer ring and its audio bars draw in to the centre dot.
  */
 export function VoiceIdentityIcon({
   size = 24,
   agentMode = false,
+  listening = false,
   className,
 }: VoiceIdentityIconProps) {
   const progressRef = useRef(agentMode ? 1 : 0);
@@ -32,7 +35,8 @@ export function VoiceIdentityIcon({
   const centerBarRef = useRef<SVGPathElement>(null);
   const rightBarRef = useRef<SVGPathElement>(null);
   const sparkCrossRef = useRef<SVGPathElement>(null);
-  const agentRef = useRef<SVGPathElement>(null);
+  const agentRef = useRef<SVGGElement>(null);
+  const gradientId = `voice-ring-${useId().replace(/:/g, "")}`;
   const renderedMorph = resolveVoiceIdentityMorphPaths(progressRef.current);
 
   useEffect(() => {
@@ -76,6 +80,7 @@ export function VoiceIdentityIcon({
       className={cn("voice-identity-icon relative inline-block shrink-0", className)}
       style={{ width: size, height: size }}
       data-agent-mode={agentMode ? "true" : "false"}
+      data-listening={agentMode && listening ? "true" : undefined}
       aria-hidden="true"
     >
       <svg
@@ -134,14 +139,66 @@ export function VoiceIdentityIcon({
             style={{ opacity: renderedMorph.sparkOpacity }}
           />
         </g>
-        <path
+        <g
           ref={agentRef}
           className="voice-identity-final-agent"
-          d={AGENT_MODE_PATH}
-          fill="currentColor"
-          transform="scale(1.2)"
           style={{ opacity: renderedMorph.agentOpacity }}
-        />
+        >
+          <defs>
+            <linearGradient id={`${gradientId}-tile`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor={AGENT_RING_MARK.tile.from} />
+              <stop offset="1" stopColor={AGENT_RING_MARK.tile.to} />
+            </linearGradient>
+            <radialGradient id={`${gradientId}-glow`} cx="0.5" cy="0.5" r="0.5">
+              <stop
+                offset="0"
+                stopColor={AGENT_RING_MARK.glow.color}
+                stopOpacity={AGENT_RING_MARK.glow.opacity}
+              />
+              <stop offset="1" stopColor={AGENT_RING_MARK.glow.color} stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <rect
+            width={AGENT_RING_MARK.tile.size}
+            height={AGENT_RING_MARK.tile.size}
+            rx={AGENT_RING_MARK.tile.radius}
+            fill={`url(#${gradientId}-tile)`}
+          />
+          <circle
+            className="agent-ring-glow"
+            cx="12"
+            cy="12"
+            r={AGENT_RING_MARK.glow.r}
+            fill={`url(#${gradientId}-glow)`}
+          />
+          <circle
+            className="agent-ring agent-ring-outer"
+            cx="12"
+            cy="12"
+            r={AGENT_RING_MARK.outerRing.r}
+            fill="none"
+            stroke="#fff"
+            strokeOpacity={AGENT_RING_MARK.outerRing.opacity}
+            strokeWidth={AGENT_RING_MARK.outerRing.strokeWidth}
+          />
+          <circle
+            className="agent-ring agent-ring-inner"
+            cx="12"
+            cy="12"
+            r={AGENT_RING_MARK.innerRing.r}
+            fill="none"
+            stroke="#fff"
+            strokeOpacity={AGENT_RING_MARK.innerRing.opacity}
+            strokeWidth={AGENT_RING_MARK.innerRing.strokeWidth}
+          />
+          <circle
+            className="agent-ring-dot"
+            cx="12"
+            cy="12"
+            r={AGENT_RING_MARK.dot.r}
+            fill="#fff"
+          />
+        </g>
       </svg>
     </span>
   );

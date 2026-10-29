@@ -234,15 +234,15 @@ test("Live Transcript hands visual border ownership to the shared panel", async 
   assert.doesNotMatch(standalone, /data-integrated-with-panel/);
 });
 
-test("Agent Mode uses the supplied mark, a gold perimeter glow, and a neutral waveform", async () => {
+test("Agent Mode uses the pulsing-ring mark, a gold perimeter glow, and a neutral waveform", async () => {
   const agentRecording = await renderPill("recording", true, "right", {
     agentMode: true,
   });
   const normalRecording = await renderPill("recording", true);
-  const { AGENT_MODE_PATH } = await import("../../src/components/dictation/voiceIdentityMorph.ts");
+  const { AGENT_RING_MARK } = await import("../../src/components/dictation/voiceIdentityMorph.ts");
   const styles = readDictationStyles();
 
-  assert.match(AGENT_MODE_PATH, /^M6\.14226 /);
+  assert.equal(AGENT_RING_MARK.tile.from, "#a3123a");
   assert.match(styles, /--color-agent-brand:/);
   assert.doesNotMatch(styles, /\.voice-pill-control\[data-agent-mode="true"\]\s*\{/);
   // The agent glow is the same Signal treatment re-paletted to the agent's
@@ -256,7 +256,13 @@ test("Agent Mode uses the supplied mark, a gold perimeter glow, and a neutral wa
   assert.doesNotMatch(agentRecording, /data-active/);
   assert.match(agentRecording, /data-agent-mode="true"/);
   assert.match(agentRecording, /voice-identity-final-agent/);
-  assert.ok(agentRecording.includes(`d="${AGENT_MODE_PATH}"`));
+  assert.match(agentRecording, /agent-ring agent-ring-inner/);
+  assert.match(agentRecording, /agent-ring agent-ring-outer/);
+  assert.match(agentRecording, /agent-ring-dot/);
+  // Listening: the rings pulse; dictation never sets the flag.
+  assert.match(agentRecording, /data-listening="true"/);
+  assert.doesNotMatch(normalRecording, /data-listening/);
+  assert.doesNotMatch(agentRecording, /M6\.14226 /);
   assert.doesNotMatch(agentRecording, /agent-waveform-background|text-agent-brand/);
   assert.equal(
     (agentRecording.match(/w-0\.5 rounded-full bg-current/g) || []).length,
