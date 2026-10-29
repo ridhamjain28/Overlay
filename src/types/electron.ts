@@ -4000,7 +4000,10 @@ declare global {
 
       // Feature C: intent detection, calendar/reminder scheduling and todos
       overlayIntentDetect?: (text: string) => Promise<boolean>;
-      overlayIntentExtract?: (text: string) => Promise<{
+      overlayIntentExtract?: (
+        text: string,
+        opts?: { baseUrl?: string }
+      ) => Promise<{
         type: "event" | "reminder" | "todo";
         title: string;
         start: string;

@@ -2,7 +2,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { mightContainIntent } = require("../../src/helpers/intents/intentDetector.js");
-const { buildPrompt, validate, extractIntent } = require("../../src/helpers/intents/intentExtractor.js");
+const {
+  buildPrompt,
+  validate,
+  extractIntent,
+  intentBaseUrl,
+} = require("../../src/helpers/intents/intentExtractor.js");
 const { buildIcs } = require("../../src/helpers/intents/icsWriter.js");
 const intentTime = require("../../src/helpers/intents/intentTime.js");
 const { reconnectMessageKey } = require("../../src/utils/intentReconnect.js");
@@ -314,6 +319,29 @@ test("reconnect toast names the calendar that refused the event", () => {
   assert.equal(reconnectMessageKey({ reconnectNeeded: true }, "mcal"), outlook);
   assert.equal(reconnectMessageKey({ reconnectNeeded: true }, "gcal"), google);
   assert.equal(reconnectMessageKey(null, "ask"), google);
+});
+
+test("intent extraction uses the configured Ollama server and falls back to localhost", async () => {
+  assert.equal(intentBaseUrl("http://192.168.1.20:11434"), "http://192.168.1.20:11434/v1");
+  assert.equal(intentBaseUrl("http://192.168.1.20:11434/v1/"), "http://192.168.1.20:11434/v1");
+  assert.equal(intentBaseUrl("http://gpu-box:11434/v1/chat/completions"), "http://gpu-box:11434/v1");
+  assert.equal(intentBaseUrl("https://ollama.lan/api"), "https://ollama.lan/api/v1");
+  assert.equal(intentBaseUrl(""), "http://localhost:11434/v1");
+  assert.equal(intentBaseUrl(undefined), "http://localhost:11434/v1");
+  assert.equal(intentBaseUrl("not a url"), "http://localhost:11434/v1");
+  assert.equal(intentBaseUrl("file:///etc/passwd"), "http://localhost:11434/v1");
+
+  let url = null;
+  const fetchImpl = async (u) => {
+    url = u;
+    return { ok: false };
+  };
+  await extractIntent({
+    text: "meeting at 5pm",
+    fetchImpl,
+    ollamaBase: intentBaseUrl("http://gpu-box:11434"),
+  });
+  assert.equal(url, "http://gpu-box:11434/v1/chat/completions");
 });
 
 // 4. RFC 5545 .ics Writer

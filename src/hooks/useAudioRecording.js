@@ -1000,7 +1000,15 @@ export const useAudioRecording = (toast, options = {}) => {
               try {
                 const mightHaveIntent = await window.electronAPI.overlayIntentDetect(result.text);
                 if (!mightHaveIntent) return;
-                const intent = await window.electronAPI.overlayIntentExtract(result.text);
+                // Use the Ollama server dictation cleanup is set to, when it is self-hosted.
+                const settingsNow = getSettings();
+                const baseUrl =
+                  settingsNow.cleanupMode === "self-hosted"
+                    ? settingsNow.cleanupRemoteUrl || undefined
+                    : undefined;
+                const intent = await window.electronAPI.overlayIntentExtract(result.text, {
+                  baseUrl,
+                });
                 if (!intent || !intent.title) return;
 
                 const destination = getSettings().dictationIntentOutput || "ask";

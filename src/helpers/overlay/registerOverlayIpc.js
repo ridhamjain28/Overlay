@@ -372,7 +372,7 @@ function registerOverlayIpc({
 
   // Feature C: dictation intent detection and scheduling
   const { mightContainIntent } = require("../intents/intentDetector");
-  const { extractIntent } = require("../intents/intentExtractor");
+  const { extractIntent, intentBaseUrl } = require("../intents/intentExtractor");
   const { buildIcs } = require("../intents/icsWriter");
   const { ReminderScheduler } = require("../intents/reminderScheduler");
 
@@ -392,10 +392,10 @@ function registerOverlayIpc({
   });
 
   // Local model call with 4s timeout
-  ipcMain.handle("overlay-intent-extract", async (_event, text) => {
+  ipcMain.handle("overlay-intent-extract", async (_event, text, opts) => {
     if (typeof text !== "string" || text.length > 2000) return null;
     try {
-      return await extractIntent({ text });
+      return await extractIntent({ text, ollamaBase: intentBaseUrl(opts?.baseUrl) });
     } catch {
       return null;
     }

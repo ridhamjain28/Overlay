@@ -1,5 +1,5 @@
 // Overlay: extract a structured calendar event / reminder / to-do from dictated text.
-// Calls the local Ollama API (http://localhost:11434/v1/chat/completions) with a
+// Calls the Ollama API (the dictation cleanup server, else localhost:11434) with a
 // tight JSON-only prompt and validates the result before returning it.
 // Fails silently: any error or timeout returns null.
 
@@ -19,6 +19,28 @@ const MODEL = process.env.OVERLAY_INTENT_MODEL || "qwen3.5:4b-q4_K_M";
 // A cold model load can take a few seconds; this runs after paste, so it never delays it.
 const TIMEOUT_MS = 6000;
 const MIN_CONFIDENCE = 0.6;
+
+/**
+ * The OpenAI-compatible base for the user's Ollama server. Takes the dictation
+ * cleanup server URL ("http://host:11434", ".../v1", ".../v1/chat/completions")
+ * and falls back to the local default for anything that is not http(s).
+ *
+ * @param {unknown} url
+ * @returns {string}
+ */
+function intentBaseUrl(url) {
+  if (typeof url !== "string" || !url.trim()) return OLLAMA_BASE;
+  let parsed;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return OLLAMA_BASE;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return OLLAMA_BASE;
+  let path = parsed.pathname.replace(/\/+$/, "").replace(/\/chat\/completions$/, "");
+  if (!/\/v1$/.test(path)) path = `${path}/v1`;
+  return `${parsed.origin}${path}`;
+}
 
 /**
  * Build the extraction prompt. Kept in English so the local model works well
@@ -170,4 +192,4 @@ async function extractIntent({
   }
 }
 
-module.exports = { extractIntent, buildPrompt, validate };
+module.exports = { extractIntent, buildPrompt, validate, intentBaseUrl };

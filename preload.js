@@ -1232,7 +1232,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlayGetAppConfigs: () => ipcRenderer.invoke("overlay-app-configs"),
   // Feature C: intent detection, calendar/reminder scheduling and todos
   overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
-  overlayIntentExtract: (text) => ipcRenderer.invoke("overlay-intent-extract", text),
+  overlayIntentExtract: (text, opts) => ipcRenderer.invoke("overlay-intent-extract", text, opts),
   overlayIcsOpen: (intentData) => ipcRenderer.invoke("overlay-ics-open", intentData),
   overlayReminderSchedule: (reminderData) =>
     ipcRenderer.invoke("overlay-reminder-schedule", reminderData),
