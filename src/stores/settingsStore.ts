@@ -301,6 +301,7 @@ const BOOLEAN_SETTINGS = new Set([
   "audioCuesEnabled",
   "pauseMediaOnDictation",
   "floatingIconAutoHide",
+  "keepAssistantOnTop",
   "startMinimized",
   "meetingProcessDetection",
   "speakerDiarizationEnabled",
@@ -990,6 +991,7 @@ export interface SettingsState
   audioCuesEnabled: boolean;
   pauseMediaOnDictation: boolean;
   floatingIconAutoHide: boolean;
+  keepAssistantOnTop: boolean;
   startMinimized: boolean;
   gcalAccounts: CalendarAccount[];
   gcalConnected: boolean;
@@ -1321,6 +1323,7 @@ export interface SettingsState
   setAudioCuesEnabled: (value: boolean) => void;
   setPauseMediaOnDictation: (value: boolean) => void;
   setFloatingIconAutoHide: (enabled: boolean) => void;
+  setKeepAssistantOnTop: (enabled: boolean) => void;
   setStartMinimized: (enabled: boolean) => void;
   setGcalAccounts: (accounts: CalendarAccount[]) => void;
   setMcalAccounts: (accounts: MicrosoftCalendarAccount[]) => void;
@@ -1741,6 +1744,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   audioCuesEnabled: readBoolean("audioCuesEnabled", true),
   pauseMediaOnDictation: readBoolean("pauseMediaOnDictation", false),
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
+  keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
   startMinimized: readBoolean("startMinimized", false),
   notificationsEnabled: readBoolean("notificationsEnabled", true),
   notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
@@ -2540,6 +2544,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (isBrowser) {
       window.electronAPI?.notifyFloatingIconAutoHideChanged?.(enabled);
     }
+  },
+
+  setKeepAssistantOnTop: (enabled: boolean) => {
+    if (get().keepAssistantOnTop === enabled) return;
+    if (isBrowser) localStorage.setItem("keepAssistantOnTop", String(enabled));
+    set({ keepAssistantOnTop: enabled });
+    if (isBrowser) window.electronAPI?.overlaySetKeepAssistantOnTop?.(enabled);
   },
 
   setStartMinimized: (enabled: boolean) => {

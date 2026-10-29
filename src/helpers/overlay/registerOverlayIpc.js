@@ -10,6 +10,7 @@
 //   overlay-hinglish-status        -> is the Hinglish speech server ready
 //   overlay-hinglish-ensure        -> start it (hidden) if it is installed
 //   overlay-hinglish-transcribe    -> turn one recording into Hinglish text
+//   overlay-set-keep-assistant-on-top -> "Keep on top of other apps" for the answer panel
 //
 // Tokens (OPENCLAW_TOKEN, GEMINI_API_KEY, TAVILY_API_KEY) stay in this
 // process; the renderer only ever sees answer text.
@@ -87,8 +88,20 @@ function findNircmd() {
   );
 }
 
-function registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugLogger }) {
+function registerOverlayIpc({
+  ipcMain,
+  shell,
+  dialog,
+  app,
+  BrowserWindow,
+  debugLogger,
+  windowManager,
+}) {
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
+
+  ipcMain.on("overlay-set-keep-assistant-on-top", (_event, enabled) => {
+    windowManager?.setKeepAssistantOnTop?.(enabled === true);
+  });
   setDefaultSearchCounter(
     createDailyCounter({
       filePath: path.join(app.getPath("userData"), "overlay-search-usage.json"),

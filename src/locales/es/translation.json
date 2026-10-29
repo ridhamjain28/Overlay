@@ -2042,7 +2042,9 @@
         "startPositionDescription": "Dónde aparece el panel de grabación de voz en la pantalla",
         "bottomRight": "Inferior derecha",
         "center": "Inferior centro",
-        "bottomLeft": "Inferior izquierda"
+        "bottomLeft": "Inferior izquierda",
+        "keepAssistantOnTop": "Mantener sobre otras apps",
+        "keepAssistantOnTopDescription": "Mantén el panel de respuestas y búsqueda sobre otras ventanas. Si está desactivado, vuelve al icono flotante al cambiar a otra app."
       },
       "hotkey": {
         "activationMode": "Modo de activación",

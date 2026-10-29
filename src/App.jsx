@@ -191,7 +191,21 @@ export default function App() {
     noteDictationError,
     openRef: assistantOpenRef,
     openPanel: openAssistantPanel,
+    handleClose: closeAssistantPanel,
   } = assistant;
+
+  // Overlay: "Keep on top of other apps". When it is off, main asks the panel
+  // to fold back to the floating icon once the user has moved to another app.
+  const keepAssistantOnTop = useSettingsStore((s) => s.keepAssistantOnTop);
+  useEffect(() => {
+    window.electronAPI?.overlaySetKeepAssistantOnTop?.(keepAssistantOnTop);
+  }, [keepAssistantOnTop]);
+  useEffect(() => {
+    const unsubscribe = window.electronAPI?.onOverlayAssistantCollapse?.(() => {
+      if (assistantOpenRef.current) closeAssistantPanel();
+    });
+    return () => unsubscribe?.();
+  }, [assistantOpenRef, closeAssistantPanel]);
 
   const handleDictationError = React.useCallback(
     (options = {}) => {

@@ -1990,7 +1990,9 @@
         "startPositionDescription": "语音录制面板在屏幕上的显示位置",
         "bottomRight": "右下角",
         "center": "底部居中",
-        "bottomLeft": "左下角"
+        "bottomLeft": "左下角",
+        "keepAssistantOnTop": "置于其他应用之上",
+        "keepAssistantOnTopDescription": "让回答和搜索面板保持在其他窗口之上。关闭时，切换到其他应用后会收回为悬浮图标。"
       },
       "hotkey": {
         "activationMode": "激活模式",

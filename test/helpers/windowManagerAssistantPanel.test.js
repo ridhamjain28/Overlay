@@ -1044,3 +1044,25 @@ test("entering onboarding hides an already-visible companion pill", () => {
 
   assert.equal(pill.isVisible(), false);
 });
+
+// Overlay: "Keep on top of other apps" (off by default) for the answer panel.
+test("with keep-on-top off, blurring the open panel asks the renderer to fold it", async () => {
+  const { manager } = makeManager({ visible: true });
+  const sent = [];
+  manager.mainWindow.webContents = { send: (channel) => sent.push(channel) };
+  manager.setAssistantPanelOpen(true);
+  manager._assistantAutoCollapse.onBlur();
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.deepEqual(sent, ["overlay-assistant-collapse"]);
+});
+
+test("with keep-on-top on, blurring the open panel leaves it open", async () => {
+  const { manager } = makeManager({ visible: true });
+  const sent = [];
+  manager.mainWindow.webContents = { send: (channel) => sent.push(channel) };
+  manager.setKeepAssistantOnTop(true);
+  manager.setAssistantPanelOpen(true);
+  manager._assistantAutoCollapse.onBlur();
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.deepEqual(sent, []);
+});

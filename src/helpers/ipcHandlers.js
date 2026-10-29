@@ -11042,7 +11042,15 @@ class IPCHandlers {
       return runWebSearch(query, numResults, { logger: debugLogger });
     });
 
-    registerOverlayIpc({ ipcMain, shell, dialog, app, BrowserWindow, debugLogger });
+    registerOverlayIpc({
+      ipcMain,
+      shell,
+      dialog,
+      app,
+      BrowserWindow,
+      debugLogger,
+      windowManager: this.windowManager,
+    });
 
     ipcMain.handle(
       "cloud-streaming-usage",

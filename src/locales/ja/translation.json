@@ -1990,7 +1990,9 @@
         "startPositionDescription": "音声レコーダーパネルが画面上に表示される位置",
         "bottomRight": "右下",
         "center": "下中央",
-        "bottomLeft": "左下"
+        "bottomLeft": "左下",
+        "keepAssistantOnTop": "他のアプリの前面に表示",
+        "keepAssistantOnTopDescription": "回答と検索のパネルを他のウィンドウの前面に表示します。オフの場合、他のアプリに切り替えるとフローティングアイコンに戻ります。"
       },
       "hotkey": {
         "activationMode": "起動モード",

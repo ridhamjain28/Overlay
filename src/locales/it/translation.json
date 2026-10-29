@@ -1990,7 +1990,9 @@
         "startPositionDescription": "Dove appare il pannello di registrazione vocale sullo schermo",
         "bottomRight": "In basso a destra",
         "center": "In basso al centro",
-        "bottomLeft": "In basso a sinistra"
+        "bottomLeft": "In basso a sinistra",
+        "keepAssistantOnTop": "Mantieni sopra le altre app",
+        "keepAssistantOnTopDescription": "Mantieni il pannello di risposta e ricerca sopra le altre finestre. Se disattivato, torna all’icona fluttuante quando passi a un’altra app."
       },
       "hotkey": {
         "activationMode": "Modalità di attivazione",

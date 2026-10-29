@@ -1207,6 +1207,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlayRequirementsInstall: (id, opts) =>
     ipcRenderer.invoke("overlay-requirements-install", id, opts),
   overlayHinglishStatus: () => ipcRenderer.invoke("overlay-hinglish-status"),
+  overlaySetKeepAssistantOnTop: (enabled) =>
+    ipcRenderer.send("overlay-set-keep-assistant-on-top", enabled === true),
+  onOverlayAssistantCollapse: registerListener(
+    "overlay-assistant-collapse",
+    (callback) => () => callback()
+  ),
   overlayHinglishEnsure: () => ipcRenderer.invoke("overlay-hinglish-ensure"),
   overlayHinglishTranscribe: (audio, opts) =>
     ipcRenderer.invoke("overlay-hinglish-transcribe", audio, opts),

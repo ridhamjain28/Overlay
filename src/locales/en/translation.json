@@ -2285,7 +2285,9 @@
         "center": "Bottom Center",
         "bottomLeft": "Bottom Left",
         "description": "Control when the dictation icon is visible on your screen",
-        "title": "Floating Icon"
+        "title": "Floating Icon",
+        "keepAssistantOnTop": "Keep on top of other apps",
+        "keepAssistantOnTopDescription": "Keep the answer and search panel above other windows. When off, it folds back to the floating icon when you switch to another app."
       },
       "hotkey": {
         "activationMode": "Activation Mode",

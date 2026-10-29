@@ -62,6 +62,7 @@ const MEETING_NOTIFICATION_CARD_REGION = Object.freeze({
 const { centeredBounds, clampedBounds } = require("./onboardingWindowBounds");
 const { ONBOARDING_DEMO_KINDS, isOnboardingInputAllowed } = require("./onboardingInputPolicy");
 const { createHotkeyRepeatGate } = require("./hotkeyRepeatGate");
+const { createAssistantAutoCollapse } = require("./overlay/assistantAutoCollapse");
 
 class WindowManager {
   constructor() {
@@ -125,6 +126,21 @@ class WindowManager {
     this._dictationInputKind = DICTATION_INPUT_KIND.DICTATION;
     this._assistantPanelOpen = false;
     this._assistantPanelBusy = false;
+    // Overlay: "Keep on top of other apps" for the answer/search panel (off by default).
+    this._keepAssistantOnTop = false;
+    this._assistantAutoCollapse = createAssistantAutoCollapse({
+      keepOnTop: () => this._keepAssistantOnTop,
+      isPanelOpen: () => this._assistantPanelOpen,
+      isPanelBusy: () => this._assistantPanelBusy,
+      isAppFocused: () => {
+        const focused = BrowserWindow.getFocusedWindow?.();
+        return Boolean(focused && !focused.isDestroyed?.());
+      },
+      collapse: () => {
+        const win = this.mainWindow;
+        if (win && !win.isDestroyed()) win.webContents.send("overlay-assistant-collapse");
+      },
+    });
     this._pendingMeetingNoteNavigation = null;
     this._pendingNoteNavigation = null;
     this._pendingSettingsSection = null;
@@ -290,6 +306,11 @@ class WindowManager {
 
   setAssistantPanelBusy(busy) {
     this._assistantPanelBusy = Boolean(busy);
+  }
+
+  setKeepAssistantOnTop(enabled) {
+    this._keepAssistantOnTop = Boolean(enabled);
+    if (this._keepAssistantOnTop) this._assistantAutoCollapse.dispose();
   }
 
   setMainWindowInteractivity(shouldCapture) {
@@ -2301,9 +2322,12 @@ class WindowManager {
     });
 
     this.mainWindow.on("focus", () => {
+      this._assistantAutoCollapse.onFocus();
       this.enforceMainWindowOnTop();
       if (this._assistantPanelOpen) this.showAgentDictationPill();
     });
+
+    this.mainWindow.on("blur", () => this._assistantAutoCollapse.onBlur());
 
     this.mainWindow.on("move", () => this.positionAgentDictationPill());
 

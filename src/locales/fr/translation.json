@@ -2285,7 +2285,9 @@
         "center": "En bas au centre",
         "bottomLeft": "En bas à gauche",
         "description": "Contrôlez quand l'icône de dictée est visible à l'écran",
-        "title": "Icône flottante"
+        "title": "Icône flottante",
+        "keepAssistantOnTop": "Garder au-dessus des autres apps",
+        "keepAssistantOnTopDescription": "Garder le panneau de réponse et de recherche au-dessus des autres fenêtres. Désactivé, il revient à l’icône flottante quand vous passez à une autre app."
       },
       "hotkey": {
         "activationMode": "Mode d'activation",

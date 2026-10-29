@@ -1969,7 +1969,9 @@
         "startPositionDescription": "Onde o painel de gravação de voz aparece na tela",
         "bottomRight": "Inferior direito",
         "center": "Inferior central",
-        "bottomLeft": "Inferior esquerdo"
+        "bottomLeft": "Inferior esquerdo",
+        "keepAssistantOnTop": "Manter sobre outros apps",
+        "keepAssistantOnTopDescription": "Mantém o painel de respostas e pesquisa acima de outras janelas. Desativado, ele volta ao ícone flutuante quando você muda para outro app."
       },
       "hotkey": {
         "activationMode": "Modo de ativação",

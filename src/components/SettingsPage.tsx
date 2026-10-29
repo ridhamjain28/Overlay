@@ -1273,6 +1273,8 @@ export default function SettingsPage({
     whisperVadSamplesOverlap,
     setWhisperVadSamplesOverlap,
   } = useSettings();
+  const keepAssistantOnTop = useSettingsStore((s) => s.keepAssistantOnTop);
+  const setKeepAssistantOnTop = useSettingsStore((s) => s.setKeepAssistantOnTop);
 
   const meetingProcessDetection = useSettingsStore((state) => state.meetingProcessDetection);
   const voiceAgentKey = useSettingsStore((s) => s.voiceAgentKey);
@@ -3243,6 +3245,16 @@ export default function SettingsPage({
                     description={t("settingsPage.general.floatingIcon.autoHideDescription")}
                   >
                     <Toggle checked={floatingIconAutoHide} onChange={setFloatingIconAutoHide} />
+                  </SettingsRow>
+                </SettingsPanelRow>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.floatingIcon.keepAssistantOnTop")}
+                    description={t(
+                      "settingsPage.general.floatingIcon.keepAssistantOnTopDescription"
+                    )}
+                  >
+                    <Toggle checked={keepAssistantOnTop} onChange={setKeepAssistantOnTop} />
                   </SettingsRow>
                 </SettingsPanelRow>
                 <SettingsPanelRow>
