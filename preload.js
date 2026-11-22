@@ -1203,6 +1203,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     (callback) => (_event, payload) => callback(payload)
   ),
   overlaySystemAction: (request) => ipcRenderer.invoke("overlay-system-action", request),
+  overlayCommandParse: (payload) => ipcRenderer.invoke("overlay-command-parse", payload),
+  overlayCommandExecute: (payload) => ipcRenderer.invoke("overlay-command-execute", payload),
+  overlaySetCommandModePrefs: (prefs) =>
+    ipcRenderer.send("overlay-set-command-mode-prefs", prefs),
   overlayRequirementsCheck: (opts) => ipcRenderer.invoke("overlay-requirements-check", opts),
   overlayRequirementsInstall: (id, opts) =>
     ipcRenderer.invoke("overlay-requirements-install", id, opts),

@@ -3338,6 +3338,28 @@ declare global {
         url?: string;
         level?: number;
       }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
+      overlayCommandParse?: (payload: {
+        text: string;
+        parser?: "local" | "cloud";
+        model?: string;
+        localBaseUrl?: string;
+        cloudProvider?: string;
+      }) => Promise<{
+        action: string;
+        args: Record<string, string>;
+        confidence: number;
+        source?: string;
+      }>;
+      overlayCommandExecute?: (payload: {
+        action: string;
+        args?: Record<string, string>;
+        confirmed?: boolean;
+        autoRunTrusted?: boolean;
+      }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
+      overlaySetCommandModePrefs?: (prefs: {
+        enabled: boolean;
+        autoRunTrusted: boolean;
+      }) => void;
       overlayRequirementsCheck?: (opts: {
         includeHinglish?: boolean;
         answerModel?: string;

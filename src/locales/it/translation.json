@@ -2223,6 +2223,18 @@
         "forgetConfirm": "Dimentica",
         "forgetDone": "Fatto. L'assistente ha dimenticato le chat passate.",
         "forgetFailed": "Impossibile cancellare la memoria ora. Riprova tra poco."
+      },
+      "commandMode": {
+        "title": "Modalità comandi",
+        "description": "Dì o digita un comando e Overlay lo esegue sul PC: aprire un'app o un link, digitare testo, eseguire un comando o indicare un pulsante sullo schermo.",
+        "enabled": "Attiva la modalità comandi",
+        "enabledDescription": "Se attiva, Overlay tratta le richieste all'assistente come comandi del desktop quando può. Resta disattivata finché non la accendi.",
+        "autoRunTrusted": "Esegui automaticamente le azioni attendibili",
+        "autoRunTrustedDescription": "Salta la conferma per aprire app e link, digitare testo e mostrare una guida sullo schermo. I comandi della shell chiedono sempre conferma.",
+        "parser": "Analisi dell'intento",
+        "parserDescription": "Come Overlay trasforma le tue parole in un comando. In locale usa il modello già in esecuzione su questo PC (Ollama o llama-server) senza API cloud. Cloud usa il provider già configurato nelle Impostazioni.",
+        "parserLocal": "Locale (Ollama / llama-server)",
+        "parserCloud": "Cloud (provider configurato)"
       }
     },
     "permissions": {
@@ -3948,6 +3960,21 @@
       "reconnectNeededTitle": "Riconnessione richiesta",
       "reconnectNeededGcal": "Riconnetti Google Calendar per creare eventi.",
       "reconnectNeededMcal": "Riconnetti Outlook Calendar per creare eventi."
+    }
+  },
+  "commandMode": {
+    "statusParsing": "Sto capendo il comando...",
+    "statusRunning": "Lo faccio sul tuo PC...",
+    "cancelled": "Annullato. Non è stato eseguito nulla.",
+    "disabled": "La modalità comandi è disattivata.",
+    "unsupported": "Questo comando è disponibile solo su Windows.",
+    "resultPrefix": "Modalità comandi",
+    "actions": {
+      "open_app": "Apri app: {{app}}",
+      "open_url": "Apri link: {{url}}",
+      "run_command": "Esegui comando: {{command}}",
+      "type_text": "Digita testo: {{text}}",
+      "guide": "Trova sullo schermo: {{target}}"
     }
   },
   "agentMode": {

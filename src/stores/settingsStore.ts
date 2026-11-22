@@ -306,6 +306,8 @@ const BOOLEAN_SETTINGS = new Set([
   "pauseMediaOnDictation",
   "floatingIconAutoHide",
   "keepAssistantOnTop",
+  "commandModeEnabled",
+  "commandModeAutoRunTrusted",
   "chatMemoryEnabled",
   "startMinimized",
   "meetingProcessDetection",
@@ -997,6 +999,9 @@ export interface SettingsState
   pauseMediaOnDictation: boolean;
   floatingIconAutoHide: boolean;
   keepAssistantOnTop: boolean;
+  commandModeEnabled: boolean;
+  commandModeAutoRunTrusted: boolean;
+  commandModeParser: "local" | "cloud";
   chatMemoryEnabled: boolean;
   chatContextLength: ChatContextLength;
   startMinimized: boolean;
@@ -1335,6 +1340,9 @@ export interface SettingsState
   setPauseMediaOnDictation: (value: boolean) => void;
   setFloatingIconAutoHide: (enabled: boolean) => void;
   setKeepAssistantOnTop: (enabled: boolean) => void;
+  setCommandModeEnabled: (enabled: boolean) => void;
+  setCommandModeAutoRunTrusted: (enabled: boolean) => void;
+  setCommandModeParser: (value: "local" | "cloud") => void;
   setChatMemoryEnabled: (enabled: boolean) => void;
   setChatContextLength: (value: ChatContextLength) => void;
   setStartMinimized: (enabled: boolean) => void;
@@ -1760,6 +1768,12 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   pauseMediaOnDictation: readBoolean("pauseMediaOnDictation", false),
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
   keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
+  commandModeEnabled: readBoolean("commandModeEnabled", false),
+  commandModeAutoRunTrusted: readBoolean("commandModeAutoRunTrusted", false),
+  commandModeParser: ((): "local" | "cloud" => {
+    const v = readString("commandModeParser", "local");
+    return v === "cloud" ? "cloud" : "local";
+  })(),
   chatMemoryEnabled: readBoolean("chatMemoryEnabled", true),
   chatContextLength: (() => {
     const v = readString("chatContextLength", "auto");
@@ -2589,6 +2603,37 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (isBrowser) localStorage.setItem("keepAssistantOnTop", String(enabled));
     set({ keepAssistantOnTop: enabled });
     if (isBrowser) window.electronAPI?.overlaySetKeepAssistantOnTop?.(enabled);
+  },
+
+  setCommandModeEnabled: (enabled: boolean) => {
+    if (get().commandModeEnabled === enabled) return;
+    if (isBrowser) localStorage.setItem("commandModeEnabled", String(enabled));
+    set({ commandModeEnabled: enabled });
+    if (isBrowser) {
+      window.electronAPI?.overlaySetCommandModePrefs?.({
+        enabled,
+        autoRunTrusted: get().commandModeAutoRunTrusted,
+      });
+    }
+  },
+
+  setCommandModeAutoRunTrusted: (enabled: boolean) => {
+    if (get().commandModeAutoRunTrusted === enabled) return;
+    if (isBrowser) localStorage.setItem("commandModeAutoRunTrusted", String(enabled));
+    set({ commandModeAutoRunTrusted: enabled });
+    if (isBrowser) {
+      window.electronAPI?.overlaySetCommandModePrefs?.({
+        enabled: get().commandModeEnabled,
+        autoRunTrusted: enabled,
+      });
+    }
+  },
+
+  setCommandModeParser: (value: "local" | "cloud") => {
+    const next = value === "cloud" ? "cloud" : "local";
+    if (get().commandModeParser === next) return;
+    if (isBrowser) localStorage.setItem("commandModeParser", next);
+    set({ commandModeParser: next });
   },
 
   setStartMinimized: (enabled: boolean) => {

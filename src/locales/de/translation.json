@@ -2518,6 +2518,18 @@
         "forgetConfirm": "Vergessen",
         "forgetDone": "Erledigt. Der Assistent hat deine früheren Chats vergessen.",
         "forgetFailed": "Das Gedächtnis konnte gerade nicht gelöscht werden. Versuche es gleich noch einmal."
+      },
+      "commandMode": {
+        "title": "Befehlsmodus",
+        "description": "Sag oder tippe einen Befehl, und Overlay führt ihn auf deinem PC aus: App oder Link öffnen, Text tippen, einen Befehl ausführen oder auf eine Schaltfläche zeigen.",
+        "enabled": "Befehlsmodus aktivieren",
+        "enabledDescription": "Wenn aktiv, behandelt Overlay Anfragen an den Assistenten nach Möglichkeit als Desktop-Befehle. Standardmäßig ausgeschaltet.",
+        "autoRunTrusted": "Vertrauenswürdige Aktionen automatisch ausführen",
+        "autoRunTrustedDescription": "Bestätigung überspringen für das Öffnen von Apps und Links, das Tippen von Text und Hinweise auf dem Bildschirm. Shell-Befehle fragen immer zuerst nach.",
+        "parser": "Befehlsauswertung",
+        "parserDescription": "So macht Overlay aus deinen Worten einen Befehl. Lokal nutzt das Modell auf diesem PC (Ollama oder llama-server) und braucht keine Cloud-API. Cloud nutzt den bereits in den Einstellungen hinterlegten Anbieter.",
+        "parserLocal": "Lokal (Ollama / llama-server)",
+        "parserCloud": "Cloud (konfigurierter Anbieter)"
       }
     },
     "permissions": {
@@ -4120,6 +4132,21 @@
       "reconnectNeededTitle": "Erneute Verbindung erforderlich",
       "reconnectNeededGcal": "Google Kalender erneut verbinden, um Termine zu erstellen.",
       "reconnectNeededMcal": "Outlook Kalender erneut verbinden, um Termine zu erstellen."
+    }
+  },
+  "commandMode": {
+    "statusParsing": "Befehl wird erkannt...",
+    "statusRunning": "Wird auf deinem PC ausgeführt...",
+    "cancelled": "Abgebrochen. Es wurde nichts ausgeführt.",
+    "disabled": "Der Befehlsmodus ist ausgeschaltet.",
+    "unsupported": "Dieser Befehl ist nur unter Windows verfügbar.",
+    "resultPrefix": "Befehlsmodus",
+    "actions": {
+      "open_app": "App öffnen: {{app}}",
+      "open_url": "Link öffnen: {{url}}",
+      "run_command": "Befehl ausführen: {{command}}",
+      "type_text": "Text tippen: {{text}}",
+      "guide": "Auf dem Bildschirm finden: {{target}}"
     }
   },
   "agentMode": {

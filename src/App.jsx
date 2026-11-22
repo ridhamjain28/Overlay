@@ -200,6 +200,14 @@ export default function App() {
   useEffect(() => {
     window.electronAPI?.overlaySetKeepAssistantOnTop?.(keepAssistantOnTop);
   }, [keepAssistantOnTop]);
+  const commandModeEnabled = useSettingsStore((s) => s.commandModeEnabled);
+  const commandModeAutoRunTrusted = useSettingsStore((s) => s.commandModeAutoRunTrusted);
+  useEffect(() => {
+    window.electronAPI?.overlaySetCommandModePrefs?.({
+      enabled: commandModeEnabled,
+      autoRunTrusted: commandModeAutoRunTrusted,
+    });
+  }, [commandModeEnabled, commandModeAutoRunTrusted]);
   // Overlay: how much of a chat the local model keeps in view, for main.
   const chatContextLength = useSettingsStore((s) => s.chatContextLength);
   useEffect(() => {

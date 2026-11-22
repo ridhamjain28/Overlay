@@ -2223,6 +2223,18 @@
         "forgetConfirm": "消す",
         "forgetDone": "完了しました。アシスタントは過去のチャットを忘れました。",
         "forgetFailed": "今は記憶を消せませんでした。少し待ってからもう一度お試しください。"
+      },
+      "commandMode": {
+        "title": "コマンドモード",
+        "description": "話するか入力したコマンドを、Overlay が PC 上で実行します。アプリやリンクを開く、文字を入力する、コマンドを実行する、画面上のボタンを示す、ができます。",
+        "enabled": "コマンドモードをオンにする",
+        "enabledDescription": "オンにすると、可能な場合はアシスタントへの依頼をデスクトップコマンドとして扱います。初期状態ではオフです。",
+        "autoRunTrusted": "信頼できる操作を自動実行する",
+        "autoRunTrustedDescription": "アプリやリンクを開く、文字入力、画面上の案内では確認を省略します。シェルコマンドは必ず確認します。",
+        "parser": "意図の解析",
+        "parserDescription": "言葉をコマンドに変換する方法です。ローカルは、この PC で動いているモデル（Ollama または llama-server）を使い、クラウド API は不要です。クラウドは、設定済みのプロバイダーを使います。",
+        "parserLocal": "ローカル（Ollama / llama-server）",
+        "parserCloud": "クラウド（設定済みプロバイダー）"
       }
     },
     "permissions": {
@@ -3948,6 +3960,21 @@
       "reconnectNeededTitle": "再接続が必要です",
       "reconnectNeededGcal": "予定を作成するには Google カレンダーを再接続してください。",
       "reconnectNeededMcal": "予定を作成するには Outlook カレンダーを再接続してください。"
+    }
+  },
+  "commandMode": {
+    "statusParsing": "コマンドを解釈しています...",
+    "statusRunning": "PC で実行しています...",
+    "cancelled": "キャンセルしました。何も実行されていません。",
+    "disabled": "コマンドモードはオフです。",
+    "unsupported": "このコマンドは Windows でのみ利用できます。",
+    "resultPrefix": "コマンドモード",
+    "actions": {
+      "open_app": "アプリを開く: {{app}}",
+      "open_url": "リンクを開く: {{url}}",
+      "run_command": "コマンドを実行: {{command}}",
+      "type_text": "テキストを入力: {{text}}",
+      "guide": "画面上で探す: {{target}}"
     }
   },
   "agentMode": {

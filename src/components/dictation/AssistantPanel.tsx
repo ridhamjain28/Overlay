@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Plus, X } from "../icons";
 import { BrandMarkIcon } from "./BrandMarkIcon";
@@ -48,6 +48,7 @@ import {
   type AssistantResponseDelivery,
 } from "../../helpers/assistantResponseDelivery";
 import { buildAssistantCommandSendOptions } from "./assistantCommandOptions";
+import { runCommandModeIfEnabled } from "../../services/overlay/runCommandMode";
 import { ApprovalCard } from "../chat/ApprovalCard";
 import { approvalKey, useConnectorApprovalStore } from "../../stores/connectorApprovalStore";
 
@@ -148,6 +149,61 @@ export function AssistantPanel({
     createConversation,
     onSendingChange: setSubmissionInFlight,
   });
+  const commandModeEnabled = useSettingsStore((s) => s.commandModeEnabled);
+  const commandModeAutoRunTrusted = useSettingsStore((s) => s.commandModeAutoRunTrusted);
+  const commandModeParser = useSettingsStore((s) => s.commandModeParser);
+  const chatAgentModel = useSettingsStore((s) => s.chatAgentModel);
+  const chatAgentRemoteUrl = useSettingsStore((s) => s.chatAgentRemoteUrl);
+  const chatAgentProvider = useSettingsStore((s) => s.chatAgentProvider);
+  const commandSettings = useMemo(
+    () => ({
+      enabled: commandModeEnabled,
+      autoRunTrusted: commandModeAutoRunTrusted,
+      parser: commandModeParser,
+      model: chatAgentModel,
+      localBaseUrl: chatAgentRemoteUrl,
+      cloudProvider: chatAgentProvider,
+    }),
+    [
+      commandModeEnabled,
+      commandModeAutoRunTrusted,
+      commandModeParser,
+      chatAgentModel,
+      chatAgentRemoteUrl,
+      chatAgentProvider,
+    ]
+  );
+  const recordCommandTurn = useCallback(
+    async (text: string, message: string) => {
+      if (persistence.conversationId == null) await createConversation(text);
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: text,
+        isStreaming: false,
+      };
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: message,
+        isStreaming: false,
+      };
+      persistence.setMessages((messages) => [...messages, userMessage, assistantMessage]);
+      await persistence.saveUserMessage(text);
+      await persistence.saveAssistantMessage(message);
+    },
+    [createConversation, persistence]
+  );
+  const tryCommandMode = useCallback(
+    async (text: string): Promise<boolean> => {
+      if (!commandSettings.enabled) return false;
+      const outcome = await runCommandModeIfEnabled(text, commandSettings);
+      if (!outcome.handled) return false;
+      await recordCommandTurn(text, outcome.message);
+      return true;
+    },
+    [commandSettings, recordCommandTurn]
+  );
   const latestAssistantMessage = [...messages]
     .reverse()
     .find((message) => message.role === "assistant");
@@ -237,7 +293,37 @@ export function AssistantPanel({
       setSelectedContext(null);
       onSelectionContextChange(null);
     }
-    void sendMessage(pendingCommand.text, sendOptions)
+    void (async () => {
+      setSubmissionInFlight(true);
+      try {
+        if (await tryCommandMode(pendingCommand.text)) {
+          onCommandConsumed(commandId);
+          onCommandSettled(commandId, { showPanel: true });
+          return;
+        }
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error && error.message
+            ? error.message
+            : error == null
+              ? t("common.unknownError")
+              : String(error);
+        onCommandDiscarded(commandId);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: `${t("agentMode.chat.errorPrefix")}: ${errorMessage}`,
+            isStreaming: false,
+          },
+        ]);
+        onCommandSettled(commandId, { showPanel: true });
+        return;
+      } finally {
+        setSubmissionInFlight(false);
+      }
+      await sendMessage(pendingCommand.text, sendOptions)
       .then((sent) => {
         if (sent) {
           onCommandConsumed(commandId);
@@ -266,6 +352,7 @@ export function AssistantPanel({
         ]);
       })
       .finally(() => onCommandSettled(commandId, { showPanel: !wasDelivered() }));
+    })();
   }, [
     historyReady,
     submissionInFlight,
@@ -279,6 +366,7 @@ export function AssistantPanel({
     sendMessage,
     setMessages,
     t,
+    tryCommandMode,
   ]);
 
   const approvalEntries = useConnectorApprovalStore((state) => state.entries);
@@ -356,9 +444,17 @@ export function AssistantPanel({
       if (!historyReady) return;
       const context = selectedContext;
       if (context) clearSelectedContext();
-      void sendMessage(text, context ? { selectedContext: context } : undefined);
+      void (async () => {
+        setSubmissionInFlight(true);
+        try {
+          if (await tryCommandMode(text)) return;
+        } finally {
+          setSubmissionInFlight(false);
+        }
+        await sendMessage(text, context ? { selectedContext: context } : undefined);
+      })();
     },
-    [clearSelectedContext, historyReady, selectedContext, sendMessage]
+    [clearSelectedContext, historyReady, selectedContext, sendMessage, tryCommandMode]
   );
 
   const showEmptyState =

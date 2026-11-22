@@ -2518,6 +2518,18 @@
         "forgetConfirm": "Oublier",
         "forgetDone": "C'est fait. L'assistant a oublié vos discussions passées.",
         "forgetFailed": "Impossible d'effacer la mémoire pour le moment. Réessayez dans un instant."
+      },
+      "commandMode": {
+        "title": "Mode commande",
+        "description": "Dites ou saisissez une commande et Overlay l’exécute sur votre PC : ouvrir une appli ou un lien, taper du texte, lancer une commande, ou indiquer un bouton à l’écran.",
+        "enabled": "Activer le mode commande",
+        "enabledDescription": "Lorsqu’il est activé, Overlay traite les demandes à l’assistant comme des commandes du bureau quand c’est possible. Désactivé par défaut.",
+        "autoRunTrusted": "Exécuter automatiquement les actions de confiance",
+        "autoRunTrustedDescription": "Passer la confirmation pour ouvrir une appli ou un lien, taper du texte et afficher un guide à l’écran. Les commandes du terminal demandent toujours confirmation.",
+        "parser": "Analyse de l’intention",
+        "parserDescription": "Comment Overlay transforme vos mots en commande. Local utilise le modèle déjà lancé sur ce PC (Ollama ou llama-server) et n’a besoin d’aucune API cloud. Cloud utilise le fournisseur déjà configuré dans les réglages.",
+        "parserLocal": "Local (Ollama / llama-server)",
+        "parserCloud": "Cloud (fournisseur configuré)"
       }
     },
     "permissions": {
@@ -4120,6 +4132,21 @@
       "reconnectNeededTitle": "Reconnexion requise",
       "reconnectNeededGcal": "Reconnectez Google Agenda pour créer des événements.",
       "reconnectNeededMcal": "Reconnectez Outlook pour créer des événements."
+    }
+  },
+  "commandMode": {
+    "statusParsing": "Analyse de la commande...",
+    "statusRunning": "Action en cours sur votre PC...",
+    "cancelled": "Annulé. Rien n’a été exécuté.",
+    "disabled": "Le mode commande est désactivé.",
+    "unsupported": "Cette commande n’est disponible que sous Windows.",
+    "resultPrefix": "Mode commande",
+    "actions": {
+      "open_app": "Ouvrir l’appli : {{app}}",
+      "open_url": "Ouvrir le lien : {{url}}",
+      "run_command": "Exécuter la commande : {{command}}",
+      "type_text": "Saisir le texte : {{text}}",
+      "guide": "Trouver à l’écran : {{target}}"
     }
   },
   "agentMode": {
