@@ -5,6 +5,9 @@
 //   overlay-answer-stream-start    -> stream an answer from OpenClaw or Gemini
 //   overlay-answer-stream-cancel   -> stop that stream
 //   overlay-system-action          -> run one allowlisted laptop action
+//   overlay-command-parse          -> turn speech/text into a Command-mode intent
+//   overlay-command-execute        -> run one Command-mode action (confirm-gated)
+//   overlay-set-command-mode-prefs -> enable flag and auto-run trusted actions
 //   overlay-requirements-check     -> first-run checklist (what this PC still needs)
 //   overlay-requirements-install   -> install one checklist item, hidden, with live output
 //   overlay-hinglish-status        -> is the Hinglish speech server ready
@@ -28,6 +31,12 @@ const {
   listOllamaModels,
 } = require("./answerSources");
 const { createSystemActions } = require("./systemActions");
+const {
+  parseIntent,
+  parseIntentHeuristic,
+  createIntentCompleter,
+  createCommandDispatcher,
+} = require("./commandMode");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
 const { createRequirements } = require("./requirements");
 const { createHinglishServer } = require("./hinglishServer");
@@ -100,6 +109,47 @@ function findNircmd() {
   );
 }
 
+function showGuideHighlight(BrowserWindow, bounds) {
+  if (!bounds || process.platform !== "win32" || !BrowserWindow) return;
+  const pad = 4;
+  const x = Math.round(Number(bounds.x) || 0) - pad;
+  const y = Math.round(Number(bounds.y) || 0) - pad;
+  const width = Math.max(8, Math.round(Number(bounds.w) || 0) + pad * 2);
+  const height = Math.max(8, Math.round(Number(bounds.h) || 0) + pad * 2);
+  const win = new BrowserWindow({
+    x,
+    y,
+    width,
+    height,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    resizable: false,
+    movable: false,
+    hasShadow: false,
+    fullscreenable: false,
+    backgroundColor: "#00000000",
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  });
+  try {
+    win.setIgnoreMouseEvents(true, { forward: true });
+    win.setAlwaysOnTop(true, "screen-saver");
+  } catch {
+    // Older Electron builds may not support the level or forward flag.
+  }
+  const html =
+    "<!doctype html><html><body style=\"margin:0;background:transparent\">" +
+    "<div style=\"box-sizing:border-box;width:100%;height:100%;border:3px solid #ff5a36;" +
+    "border-radius:6px;box-shadow:0 0 0 2px rgba(255,255,255,.7),0 0 12px rgba(255,90,54,.8)\">" +
+    "</div></body></html>";
+  win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
+  setTimeout(() => {
+    if (!win.isDestroyed()) win.close();
+  }, 4000);
+}
+
 function registerOverlayIpc({
   ipcMain,
   shell,
@@ -112,7 +162,9 @@ function registerOverlayIpc({
   googleCalendarManager,
   microsoftCalendarManager,
   databaseManager,
+  clipboardManager,
 }) {
+  let commandModePrefs = { enabled: false, autoRunTrusted: false };
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
 
   ipcMain.on("overlay-set-keep-assistant-on-top", (_event, enabled) => {
@@ -377,6 +429,91 @@ function registerOverlayIpc({
   ipcMain.handle("overlay-system-action", async (_event, request) => {
     const result = await actions.perform(request);
     debugLogger?.info?.("Overlay system action", {
+      action: request?.action,
+      success: result.success,
+      code: result.code,
+    });
+    return result;
+  });
+
+  ipcMain.on("overlay-set-command-mode-prefs", (_event, prefs = {}) => {
+    commandModePrefs = {
+      enabled: prefs?.enabled === true,
+      autoRunTrusted: prefs?.autoRunTrusted === true,
+    };
+  });
+
+  const commandConfirm = async (message) => {
+    const parent = BrowserWindow?.getFocusedWindow?.() || undefined;
+    const options = {
+      type: "question",
+      buttons: ["Cancel", "Allow"],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+      title: "Overlay Command mode",
+      message: "Overlay wants to run this command on your laptop",
+      detail: String(message || ""),
+    };
+    const result = parent
+      ? await dialog.showMessageBox(parent, options)
+      : await dialog.showMessageBox(options);
+    return result.response === 1;
+  };
+
+  const commandDispatcher = createCommandDispatcher({
+    execFile: execFileAsync,
+    openPath: (p) => shell.openPath(p),
+    openExternal: (url) => shell.openExternal(url),
+    confirm: commandConfirm,
+    pasteText: async (text, options) => {
+      if (!clipboardManager?.pasteText) throw new Error("Typing into apps is not available");
+      return clipboardManager.pasteText(text, {
+        restoreClipboard: true,
+        silentAccessibilityCheck: true,
+        ...options,
+      });
+    },
+    showHighlight: (bounds) => showGuideHighlight(BrowserWindow, bounds),
+    isEnabled: () => commandModePrefs.enabled === true,
+    getAutoRunTrusted: () => commandModePrefs.autoRunTrusted === true,
+  });
+
+  ipcMain.handle("overlay-command-parse", async (_event, payload = {}) => {
+    const text = String(payload?.text || "");
+    const completer = createIntentCompleter({
+      parser: payload?.parser === "cloud" ? "cloud" : "local",
+      model: MODEL_TAG.test(payload?.model || "") ? payload.model : undefined,
+      localBaseUrl: payload?.localBaseUrl,
+      cloudProvider: payload?.cloudProvider,
+    });
+    const llmComplete = async (prompt) => {
+      try {
+        return await completer(prompt);
+      } catch (error) {
+        debugLogger?.warn?.("Command mode parser fallback to heuristic", {
+          error: error?.message,
+        });
+        return "";
+      }
+    };
+    try {
+      return await parseIntent(text, { llmComplete });
+    } catch (error) {
+      debugLogger?.warn?.("Command mode parse failed", { error: error?.message });
+      return parseIntentHeuristic(text);
+    }
+  });
+
+  ipcMain.handle("overlay-command-execute", async (_event, request = {}) => {
+    const result = await commandDispatcher.perform(
+      { action: request?.action, args: request?.args || request },
+      {
+        confirmed: request?.confirmed === true,
+        autoRunTrusted: request?.autoRunTrusted === true || commandModePrefs.autoRunTrusted,
+      }
+    );
+    debugLogger?.info?.("Overlay command mode", {
       action: request?.action,
       success: result.success,
       code: result.code,

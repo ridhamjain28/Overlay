@@ -1953,6 +1953,21 @@
       "reconnectNeededMcal": "أعد توصيل تقويم Outlook للسماح بإنشاء الأحداث."
     }
   },
+  "commandMode": {
+    "statusParsing": "جارٍ فهم الأمر...",
+    "statusRunning": "جارٍ التنفيذ على جهازك...",
+    "cancelled": "تم الإلغاء. لم يُنفَّذ أي شيء.",
+    "disabled": "وضع الأوامر متوقف.",
+    "unsupported": "هذا الأمر متاح على Windows فقط.",
+    "resultPrefix": "وضع الأوامر",
+    "actions": {
+      "open_app": "فتح التطبيق: {{app}}",
+      "open_url": "فتح الرابط: {{url}}",
+      "run_command": "تشغيل الأمر: {{command}}",
+      "type_text": "كتابة النص: {{text}}",
+      "guide": "البحث على الشاشة: {{target}}"
+    }
+  },
   "agentMode": {
     "settings": {
       "systemPrompt": "مطالبة النظام",
@@ -4150,6 +4165,18 @@
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
         "testFailed": "Couldn't speak the test line. Check the API key and try again."
+      },
+      "commandMode": {
+        "title": "وضع الأوامر",
+        "description": "قل أو اكتب أمرًا وسينفّذه Overlay على جهازك: فتح تطبيق أو رابط، كتابة نص، تشغيل أمر، أو الإشارة إلى زر على الشاشة.",
+        "enabled": "تفعيل وضع الأوامر",
+        "enabledDescription": "عند التفعيل، يعامل Overlay طلبات المساعد كأوامر لسطح المكتب عندما يستطيع. يبقى متوقفًا حتى تشغّله.",
+        "autoRunTrusted": "تشغيل الإجراءات الموثوقة تلقائيًا",
+        "autoRunTrustedDescription": "تجاوز خطوة التأكيد عند فتح التطبيقات والروابط وكتابة النص والإرشاد على الشاشة. أوامر الصدفة تطلب التأكيد دائمًا.",
+        "parser": "تحليل النية",
+        "parserDescription": "كيف يحوّل Overlay كلامك إلى أمر. الوضع المحلي يستخدم النموذج العامل على هذا الجهاز (Ollama أو llama-server) دون واجهة سحابية. السحابة تستخدم المزوّد الذي أعددته في الإعدادات.",
+        "parserLocal": "محلي (Ollama / llama-server)",
+        "parserCloud": "سحابي (المزوّد المُعدّ)"
       }
     },
     "permissions": {

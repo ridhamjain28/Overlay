@@ -2251,6 +2251,18 @@
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
         "testFailed": "Couldn't speak the test line. Check the API key and try again."
+      },
+      "commandMode": {
+        "title": "命令模式",
+        "description": "说出或输入一条命令，Overlay 就会在电脑上执行：打开应用或链接、输入文字、运行命令，或指出屏幕上的按钮。",
+        "enabled": "启用命令模式",
+        "enabledDescription": "开启后，Overlay 会在可以识别时把对助手的请求当作桌面命令。默认关闭。",
+        "autoRunTrusted": "自动执行受信任的操作",
+        "autoRunTrustedDescription": "打开应用或链接、输入文字以及屏幕指引时跳过确认。Shell 命令始终会先询问你。",
+        "parser": "意图解析",
+        "parserDescription": "Overlay 如何把你的话变成命令。本地使用这台电脑上已在运行的模型（Ollama 或 llama-server），无需云端 API。云端则使用你已在设置中配置的服务商。",
+        "parserLocal": "本地（Ollama / llama-server）",
+        "parserCloud": "云端（已配置的服务商）"
       }
     },
     "permissions": {
@@ -3976,6 +3988,21 @@
       "reconnectNeededTitle": "需要重新连接",
       "reconnectNeededGcal": "请重新连接 Google 日历以创建事件。",
       "reconnectNeededMcal": "请重新连接 Outlook 日历以创建事件。"
+    }
+  },
+  "commandMode": {
+    "statusParsing": "正在理解这条命令...",
+    "statusRunning": "正在你的电脑上执行...",
+    "cancelled": "已取消，没有执行任何操作。",
+    "disabled": "命令模式已关闭。",
+    "unsupported": "此命令仅在 Windows 上可用。",
+    "resultPrefix": "命令模式",
+    "actions": {
+      "open_app": "打开应用：{{app}}",
+      "open_url": "打开链接：{{url}}",
+      "run_command": "运行命令：{{command}}",
+      "type_text": "输入文字：{{text}}",
+      "guide": "在屏幕上查找：{{target}}"
     }
   },
   "agentMode": {

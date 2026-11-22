@@ -2546,6 +2546,18 @@
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
         "testFailed": "Couldn't speak the test line. Check the API key and try again."
+      },
+      "commandMode": {
+        "title": "Command mode",
+        "description": "Say or type a command and Overlay will do it on your PC: open an app or link, type text, run a command, or point to a button on the screen.",
+        "enabled": "Enable Command mode",
+        "enabledDescription": "When on, Overlay treats assistant requests as desktop commands when it can. This stays off until you turn it on.",
+        "autoRunTrusted": "Auto-run trusted actions",
+        "autoRunTrustedDescription": "Skip the confirmation step for opening apps, opening links, typing text, and on-screen guidance. Shell commands always ask first.",
+        "parser": "Intent parser",
+        "parserDescription": "How Overlay turns your words into a command. Local uses the model already running on this PC (Ollama or llama-server) and needs no cloud API. Cloud uses the provider you already configured in Settings.",
+        "parserLocal": "Local (Ollama / llama-server)",
+        "parserCloud": "Cloud (configured provider)"
       }
     },
     "permissions": {
@@ -4148,6 +4160,21 @@
       "reconnectNeededTitle": "Reconnect required",
       "reconnectNeededGcal": "Reconnect Google Calendar to allow creating events.",
       "reconnectNeededMcal": "Reconnect Outlook Calendar to allow creating events."
+    }
+  },
+  "commandMode": {
+    "statusParsing": "Figuring out that command...",
+    "statusRunning": "Doing that on your PC...",
+    "cancelled": "Cancelled. Nothing was run.",
+    "disabled": "Command mode is turned off.",
+    "unsupported": "This command is only available on Windows.",
+    "resultPrefix": "Command mode",
+    "actions": {
+      "open_app": "Open app: {{app}}",
+      "open_url": "Open link: {{url}}",
+      "run_command": "Run command: {{command}}",
+      "type_text": "Type text: {{text}}",
+      "guide": "Find on screen: {{target}}"
     }
   },
   "agentMode": {

@@ -2255,6 +2255,18 @@
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
         "testFailed": "Couldn't speak the test line. Check the API key and try again."
+      },
+      "commandMode": {
+        "title": "Режим команд",
+        "description": "Скажите или введите команду, и Overlay выполнит её на компьютере: откроет приложение или ссылку, наберёт текст, запустит команду или укажет на кнопку на экране.",
+        "enabled": "Включить режим команд",
+        "enabledDescription": "Если включено, Overlay по возможности воспринимает запросы к ассистенту как команды рабочего стола. По умолчанию выключено.",
+        "autoRunTrusted": "Автоматически выполнять доверенные действия",
+        "autoRunTrustedDescription": "Не спрашивать подтверждение при открытии приложений и ссылок, вводе текста и подсказках на экране. Команды оболочки всегда требуют подтверждения.",
+        "parser": "Разбор намерения",
+        "parserDescription": "Как Overlay превращает ваши слова в команду. Локально используется модель на этом компьютере (Ollama или llama-server) без облачного API. Облако использует уже настроенного в параметрах провайдера.",
+        "parserLocal": "Локально (Ollama / llama-server)",
+        "parserCloud": "Облако (настроенный провайдер)"
       }
     },
     "permissions": {
@@ -4020,6 +4032,21 @@
       "reconnectNeededTitle": "Требуется переподключение",
       "reconnectNeededGcal": "Переподключите Google Календарь для создания событий.",
       "reconnectNeededMcal": "Переподключите Outlook для создания событий."
+    }
+  },
+  "commandMode": {
+    "statusParsing": "Разбираю команду...",
+    "statusRunning": "Выполняю на вашем ПК...",
+    "cancelled": "Отменено. Ничего не было выполнено.",
+    "disabled": "Режим команд выключен.",
+    "unsupported": "Эта команда доступна только в Windows.",
+    "resultPrefix": "Режим команд",
+    "actions": {
+      "open_app": "Открыть приложение: {{app}}",
+      "open_url": "Открыть ссылку: {{url}}",
+      "run_command": "Выполнить команду: {{command}}",
+      "type_text": "Ввести текст: {{text}}",
+      "guide": "Найти на экране: {{target}}"
     }
   },
   "agentMode": {

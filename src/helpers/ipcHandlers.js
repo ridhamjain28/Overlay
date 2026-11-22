@@ -11154,6 +11154,7 @@ class IPCHandlers {
       googleCalendarManager: this.googleCalendarManager,
       microsoftCalendarManager: this.microsoftCalendarManager,
       databaseManager: this.databaseManager,
+      clipboardManager: this.clipboardManager,
     });
 
     ipcMain.handle(

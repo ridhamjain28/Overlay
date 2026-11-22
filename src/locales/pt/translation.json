@@ -2230,6 +2230,18 @@
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
         "testFailed": "Couldn't speak the test line. Check the API key and try again."
+      },
+      "commandMode": {
+        "title": "Modo de comando",
+        "description": "Diga ou escreva um comando e o Overlay executa no seu PC: abrir um app ou link, digitar texto, correr um comando ou apontar para um botão no ecrã.",
+        "enabled": "Ativar o modo de comando",
+        "enabledDescription": "Quando está ligado, o Overlay trata os pedidos ao assistente como comandos do ambiente de trabalho sempre que consegue. Fica desligado até o ativar.",
+        "autoRunTrusted": "Executar automaticamente ações de confiança",
+        "autoRunTrustedDescription": "Saltar a confirmação para abrir apps e ligações, escrever texto e mostrar uma guia no ecrã. Os comandos da consola pedem sempre confirmação.",
+        "parser": "Análise da intenção",
+        "parserDescription": "Como o Overlay transforma as suas palavras num comando. Local usa o modelo que já corre neste PC (Ollama ou llama-server) e não precisa de API na nuvem. Nuvem usa o fornecedor já configurado nas Definições.",
+        "parserLocal": "Local (Ollama / llama-server)",
+        "parserCloud": "Nuvem (fornecedor configurado)"
       }
     },
     "permissions": {
@@ -3976,6 +3988,21 @@
       "reconnectNeededTitle": "Reconexão necessária",
       "reconnectNeededGcal": "Reconecte o Google Agenda para criar eventos.",
       "reconnectNeededMcal": "Reconecte o Calendário do Outlook para criar eventos."
+    }
+  },
+  "commandMode": {
+    "statusParsing": "A perceber esse comando...",
+    "statusRunning": "A fazer isso no seu PC...",
+    "cancelled": "Cancelado. Nada foi executado.",
+    "disabled": "O modo de comando está desligado.",
+    "unsupported": "Este comando só está disponível no Windows.",
+    "resultPrefix": "Modo de comando",
+    "actions": {
+      "open_app": "Abrir app: {{app}}",
+      "open_url": "Abrir ligação: {{url}}",
+      "run_command": "Executar comando: {{command}}",
+      "type_text": "Escrever texto: {{text}}",
+      "guide": "Encontrar no ecrã: {{target}}"
     }
   },
   "agentMode": {

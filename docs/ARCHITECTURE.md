@@ -54,7 +54,13 @@ The model can ask to run a tool called `system_action` (`src/services/tools/syst
 - There is a **fixed allowlist** (volume, media keys, open app, open http(s) URL, time, brightness, screenshot, lock). An unknown action is rejected with an error listing what _is_ allowed.
 - Parameters are checked (volume 0–100, only `http`/`https` URLs, app names resolved from a built-in list and your Start-menu shortcuts).
 - **Risky actions** (lock, screenshot, brightness) open a confirmation dialog in the main process. The model cannot click "Yes" for you.
-- There is deliberately no "run a command" action, and nothing for shutdown, restart or deleting files.
+- There is deliberately no "run a command" action in this always-on tool, and nothing for shutdown, restart or deleting files.
+
+## 4b. Command mode (opt-in)
+
+Command mode is **off by default** and is toggled in Settings. When it is on, a spoken or typed assistant request is first parsed into a structured intent (`open_app`, `open_url`, `run_command`, `type_text`, or `guide`) in the main process (`src/helpers/overlay/commandMode/`). Parsing uses a fast heuristic, then — only if needed — the local Ollama / llama-server model, or the user's configured cloud provider.
+
+The renderer never performs the OS action; it sends the intent over IPC. A confirmation dialog is shown before anything runs, except trusted actions (open app, open link, type text, on-screen guide) when the user has enabled **Auto-run trusted actions**. `run_command` always asks first and is refuse-listed for destructive patterns. On-screen guidance is best-effort on Windows: Overlay looks for a named control and can highlight it briefly.
 
 ## 5. Settings and keys
 
