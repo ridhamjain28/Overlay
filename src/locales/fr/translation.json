@@ -4,7 +4,7 @@
       "sectionTitle": "Langue",
       "sectionDescription": "Configurez séparément la langue de l'interface et de la transcription",
       "uiLabel": "Langue de l'interface",
-      "uiDescription": "Choisissez la langue utilisée dans l'interface OpenWhispr",
+      "uiDescription": "Choisissez la langue utilisée dans l'interface Overlay",
       "transcriptionLabel": "Langue de transcription",
       "transcriptionDescription": "Choisissez la langue que vous parlez pour une transcription plus précise",
       "chineseScriptLabel": "Écriture chinoise (dictée)",
@@ -64,12 +64,12 @@
     },
     "openControlPanel": "Ouvrir le panneau de contrôle",
     "hideControlPanel": "Masquer le panneau de contrôle",
-    "quit": "Quitter OpenWhispr",
-    "tooltip": "OpenWhispr - Dictée vocale"
+    "quit": "Quitter Overlay",
+    "tooltip": "Overlay - Dictée vocale"
   },
   "menu": {
-    "appLabel": "OpenWhispr",
-    "quit": "Quitter OpenWhispr",
+    "appLabel": "Overlay",
+    "quit": "Quitter Overlay",
     "speech": "Parole",
     "settings": "Réglages…",
     "help": "Aide",
@@ -87,8 +87,8 @@
       "message": "Impossible d'ouvrir le lien dans votre navigateur :\n{{url}}\n\nErreur : {{error}}"
     },
     "loadFailure": {
-      "title": "Échec du chargement d'OpenWhispr",
-      "message": "OpenWhispr n'a pas pu charger son interface.",
+      "title": "Échec du chargement d'Overlay",
+      "message": "Overlay n'a pas pu charger son interface.",
       "detail": {
         "window": "Fenêtre : {{windowName}}",
         "error": "Erreur {{errorCode}} : {{errorDescription}}",
@@ -99,17 +99,17 @@
   },
   "startup": {
     "error": {
-      "title": "Erreur de démarrage OpenWhispr",
+      "title": "Erreur de démarrage Overlay",
       "message": "Échec du démarrage de l'application :\n\n{{error}}\n\nVeuillez signaler ce problème."
     },
     "globeHotkey": {
       "title": "Raccourci Globe indisponible",
-      "message": "OpenWhispr n'a pas pu activer la touche Globe.",
+      "message": "Overlay n'a pas pu activer la touche Globe.",
       "details": {
         "unknown": "Erreur inconnue lors du démarrage de l'écouteur Globe.",
         "fallback": "Le raccourci Globe restera désactivé ; les raccourcis actuels continueront de fonctionner.",
         "devHint": "Exécutez `npm run compile:globe` puis reconstruisez l'application pour régénérer le binaire.",
-        "reinstallHint": "Réinstallez OpenWhispr ou contactez le support si le problème persiste."
+        "reinstallHint": "Réinstallez Overlay ou contactez le support si le problème persiste."
       }
     }
   },
@@ -142,21 +142,6 @@
     "screenRecording": "Les réglages d'enregistrement de l'écran ne sont pas disponibles sur cette plateforme.",
     "loginItems": "Les réglages des éléments d'ouverture ne sont pas disponibles sur cette plateforme."
   },
-  "upgradePrompt": {
-    "paymentFailed": "Nous n'avons pas pu traiter votre paiement",
-    "weeklyLimit": "Vous avez atteint votre limite cloud hebdomadaire",
-    "pastDueDescription": "Vous êtes temporairement sur le plan gratuit — pas de souci, vous avez encore {{limit}} mots par semaine.\nMettez à jour votre moyen de paiement pour revenir à Pro illimité.",
-    "limitDescription": "{{used}} de {{limit}} mots utilisés.\nVotre transcription a été sauvegardée et collée.",
-    "updatePayment": "Mettre à jour le moyen de paiement",
-    "updatePaymentDescription": "Retrouvez les transcriptions Pro illimitées.",
-    "upgradeToPro": "Passer à Pro",
-    "upgradeDescription": "Transcriptions illimitées à partir de $8/mois.",
-    "useApiKey": "Utiliser votre propre clé API",
-    "useApiKeyDescription": "Apportez votre propre clé pour un usage illimité.",
-    "switchToLocal": "Passer en local",
-    "switchToLocalDescription": "Transcription hors ligne. Sans limites.",
-    "rollingWeeklyLimit": "Limite hebdomadaire glissante"
-  },
   "windowControls": {
     "minimize": "Réduire",
     "maximize": "Agrandir",
@@ -164,7 +149,7 @@
     "close": "Fermer"
   },
   "windows": {
-    "pttUnavailable": "L'écouteur de touches d'OpenWhispr n'est pas disponible."
+    "pttUnavailable": "L'écouteur de touches d'Overlay n'est pas disponible."
   },
   "common": {
     "continue": "Continuer",
@@ -222,7 +207,7 @@
   "onboarding": {
     "rehaul": {
       "permissions": {
-        "title": "Configurez OpenWhispr en 3 minutes",
+        "title": "Configurez Overlay en 3 minutes",
         "microphoneDescription": "N’écoute que pendant l’enregistrement.",
         "accessibilityDescription": "Colle le texte dans vos apps.",
         "systemAudioTitle": "Audio Système",
@@ -235,7 +220,7 @@
         "title": "Quelles langues parlez-vous ?",
         "titleLineOne": "Quelles langues",
         "titleLineTwo": "parlez-vous ?",
-        "description": "Sélectionnez toutes les langues concernées. Cela aide OpenWhispr à reconnaître plus précisément les changements de langue."
+        "description": "Sélectionnez toutes les langues concernées. Cela aide Overlay à reconnaître plus précisément les changements de langue."
       },
       "dictationHotkey": {
         "title": "Choisissez votre raccourci de dictée",
@@ -245,10 +230,10 @@
         "activation": "Appuyer ou maintenir ?"
       },
       "assistantHotkey": {
-        "title": "Configurer OpenWhispr Assistant",
+        "title": "Configurer Overlay Assistant",
         "titleLineOne": "Configurez",
-        "titleLineTwo": "OpenWhispr Assistant",
-        "description": "Formulez une demande. OpenWhispr Assistant rédige le résultat pour vous."
+        "titleLineTwo": "Overlay Assistant",
+        "description": "Formulez une demande. Overlay Assistant rédige le résultat pour vous."
       },
       "hotkey": {
         "capture": "Appuyez sur la touche que vous souhaitez utiliser",
@@ -260,15 +245,15 @@
         "title": "Essayez votre première dictée",
         "titleLineOne": "Essayez votre",
         "titleLineTwo": "première dictée",
-        "description": "Appuyez sur {{hotkey}} et parlez. OpenWhispr transformera votre voix en texte.",
-        "founder": "Bonjour, je suis Gabe, le fondateur. Merci d’essayer OpenWhispr !",
-        "prompt": "Cliquez dans le champ ci-dessous, appuyez sur votre raccourci et dites-moi : qu’aimeriez-vous qu’OpenWhispr fasse pour vous ?",
-        "placeholder": "Cliquez ici, puis appuyez sur votre raccourci. OpenWhispr écrit dans n’importe quel champ de texte."
+        "description": "Appuyez sur {{hotkey}} et parlez. Overlay transformera votre voix en texte.",
+        "founder": "Bonjour, je suis Gabe, le fondateur. Merci d’essayer Overlay !",
+        "prompt": "Cliquez dans le champ ci-dessous, appuyez sur votre raccourci et dites-moi : qu’aimeriez-vous qu’Overlay fasse pour vous ?",
+        "placeholder": "Cliquez ici, puis appuyez sur votre raccourci. Overlay écrit dans n’importe quel champ de texte."
       },
       "assistantDemo": {
-        "title": "Découvrez OpenWhispr Assistant",
+        "title": "Découvrez Overlay Assistant",
         "titleLineOne": "Découvrez",
-        "titleLineTwo": "OpenWhispr Assistant",
+        "titleLineTwo": "Overlay Assistant",
         "email": {
           "subject": "Un café la semaine prochaine ?",
           "senderName": "Maria Alvarez",
@@ -302,13 +287,13 @@
         "typing": "Saisie en cours…"
       },
       "notes": {
-        "title": "Enregistrez vos réunions sans bot avec OpenWhispr Notes",
+        "title": "Enregistrez vos réunions sans bot avec Overlay Notes",
         "titleLineOne": "Enregistrez vos réunions sans bot",
-        "titleLineTwoPrefix": "avec OpenWhispr",
+        "titleLineTwoPrefix": "avec Overlay",
         "titleLineTwoBrand": "Notes",
-        "description": "OpenWhispr transforme votre conversation en notes claires. Aucun bot de réunion ne rejoint votre appel.",
+        "description": "Overlay transforme votre conversation en notes claires. Aucun bot de réunion ne rejoint votre appel.",
         "hero": {
-          "description": "Enregistrez votre réunion et laissez OpenWhispr transformer la conversation en notes claires et organisées.",
+          "description": "Enregistrez votre réunion et laissez Overlay transformer la conversation en notes claires et organisées.",
           "chat": "Discutez avec vos notes de réunion",
           "transcript": "Consultez la transcription complète",
           "speakers": "Voyez qui a dit quoi"
@@ -324,16 +309,16 @@
         }
       },
       "setupChoice": {
-        "title": "Choisissez votre configuration OpenWhispr",
+        "title": "Choisissez votre configuration Overlay",
         "titleLineOne": "Choisissez votre",
-        "titleLineTwo": "configuration OpenWhispr",
+        "titleLineTwo": "configuration Overlay",
         "description": "Choisissez l’option qui correspond à votre façon de travailler.",
         "unavailable": {
           "title": "Aucune option de configuration disponible",
           "description": "La politique de votre espace de travail n’autorise pas une configuration complète de la transcription et de l’IA. Contactez votre administrateur."
         },
         "cloud": {
-          "title": "OpenWhispr Cloud",
+          "title": "Overlay",
           "description": "Bénéficiez de 2 000 mots gratuits par semaine. Vos réglages restent synchronisés entre vos appareils.",
           "continue": "Continuer gratuitement",
           "signIn": "Connectez-vous pour utiliser Cloud",
@@ -481,14 +466,14 @@
       "accessibilityTitle": "Accessibilité",
       "accessibilityDescription": "Saisit le texte final directement dans l'application où vous êtes : documents, e-mail, chat.",
       "testAndGrant": "Tester et autoriser",
-      "requiredForApp": "Nécessaire pour le bon fonctionnement d'OpenWhispr",
+      "requiredForApp": "Nécessaire pour le bon fonctionnement d'Overlay",
       "microphoneRequired": "Accès microphone requis",
       "openSystemSettings": "Ouvrir les Réglages Système",
       "systemAudioTitle": "Audio Système",
       "systemAudioDescription": "Permet à l'enregistreur de réunion d'entendre vos interlocuteurs : réunions, cours, podcasts. Activable plus tard dans les Réglages.",
       "optional": "Facultatif",
       "recommended": "Recommandé",
-      "accessibilityTroubleshooting": "Dans Réglages Système → Accessibilité, désactivez le bouton d'OpenWhispr puis réactivez-le. Si OpenWhispr n'apparaît pas du tout dans la liste, cliquez sur + et ajoutez-le depuis le dossier Applications. Toujours bloqué ? Écrivez à support@openwhispr.com."
+      "accessibilityTroubleshooting": "Dans Réglages Système → Accessibilité, désactivez le bouton d'Overlay puis réactivez-le. Si Overlay n'apparaît pas du tout dans la liste, cliquez sur + et ajoutez-le depuis le dossier Applications."
     },
     "transcription": {
       "title": "Configuration de la transcription",
@@ -508,18 +493,18 @@
       "textareaPlaceholder": "Cliquez ici puis utilisez votre raccourci pour dicter..."
     },
     "connectivity": {
-      "title": "Impossible d'atteindre OpenWhispr Cloud depuis ce réseau",
+      "title": "Impossible d'atteindre Overlay depuis ce réseau",
       "body": "{{cause}} Vous pouvez basculer sur le moteur local, ou continuer et réessayer plus tard.",
       "useLocal": "Utiliser le moteur local",
       "continue": "Continuer quand même"
     },
     "useCase": {
-      "title": "Comment utiliserez-vous OpenWhispr ?",
+      "title": "Comment utiliserez-vous Overlay ?",
       "titleLineOne": "Comment utiliserez-vous",
-      "titleLineTwo": "OpenWhispr ?",
+      "titleLineTwo": "Overlay ?",
       "description": "Choisissez tout ce qui s'applique. Nous adapterons votre configuration.",
       "noteLabel": "Autre chose à nous dire ?",
-      "notePlaceholder": "Dites-nous comment vous comptez utiliser OpenWhispr (facultatif)",
+      "notePlaceholder": "Dites-nous comment vous comptez utiliser Overlay (facultatif)",
       "proceedToSetup": "Continuer la configuration",
       "options": {
         "dictation": {
@@ -552,13 +537,13 @@
     "meeting": {
       "title": "Notes de réunion",
       "description": "Capturez et résumez vos réunions",
-      "autoDetect": "OpenWhispr détecte automatiquement quand vous êtes en réunion et vous propose de démarrer des notes — rien n'est enregistré sans vous.",
+      "autoDetect": "Overlay détecte automatiquement quand vous êtes en réunion et vous propose de démarrer des notes — rien n'est enregistré sans vous.",
       "hotkeyLabel": "Raccourci réunion",
       "hotkeyHint": "Facultatif — appuyez dessus pendant une réunion pour démarrer une note instantanément."
     },
     "finish": {
       "title": "Tout est prêt",
-      "cloudDescription": "Vous êtes sur OpenWhispr Cloud : rapide, précis, zéro conservation des données et 2 000 mots gratuits par semaine. Vous préférez tout garder sur votre appareil ? Passez au traitement local dans les Réglages.",
+      "cloudDescription": "Vous êtes sur Overlay : rapide, précis, zéro conservation des données et 2 000 mots gratuits par semaine. Vous préférez tout garder sur votre appareil ? Passez au traitement local dans les Réglages.",
       "localDescription": "Vous êtes configuré avec le traitement local ou votre propre clé. Ajustez le traitement de votre audio à tout moment dans les Réglages.",
       "cleanupNote": "Le nettoyage de texte par IA utilise des réglages par défaut raisonnables. Vous pouvez l'ajuster dans les Réglages.",
       "openSettings": "Ouvrir les Réglages",
@@ -593,22 +578,22 @@
       "return": "Revenir à la configuration",
       "missingApp": "Ou sélectionnez l’app avec +",
       "failed": "Impossible de vérifier l’accès.",
-      "microphone": "Activez OpenWhispr dans Microphone.",
-      "accessibility": "Glissez OpenWhispr dans Accessibilité, puis activez-le.",
-      "systemAudio": "Activez OpenWhispr sous Enregistrement audio du système uniquement.",
-      "screenContext": "Glissez OpenWhispr dans Enregistrement de l’écran et de l’audio système, puis activez-le.",
+      "microphone": "Activez Overlay dans Microphone.",
+      "accessibility": "Glissez Overlay dans Accessibilité, puis activez-le.",
+      "systemAudio": "Activez Overlay sous Enregistrement audio du système uniquement.",
+      "screenContext": "Glissez Overlay dans Enregistrement de l’écran et de l’audio système, puis activez-le.",
       "settings": "Réglages",
       "check": "Vérifier",
       "restart": "Relancer l’app",
-      "restartRequired": "Redémarrez OpenWhispr pour appliquer l’accès à l’écran."
+      "restartRequired": "Redémarrez Overlay pour appliquer l’accès à l’écran."
     }
   },
   "streaming": {
     "errors": {
       "cloudUnreachable": {
-        "title": "Impossible d'atteindre OpenWhispr Cloud",
+        "title": "Impossible d'atteindre Overlay",
         "generic": "La requête réseau a échoué. Vérifiez votre connexion.",
-        "dnsBlocked": "Le DNS ne résout pas openwhispr.com — un bloqueur de publicités ou un filtre le bloque peut-être.",
+        "dnsBlocked": "Le DNS ne résout pas le serveur — un bloqueur de publicités ou un filtre le bloque peut-être.",
         "refused": "La connexion a été refusée — probablement un pare-feu ou un VPN.",
         "timeout": "Délai réseau dépassé — VPN, portail captif ou connexion instable.",
         "tls": "Échec du handshake TLS — vérifiez l'horloge système ou un proxy d'entreprise.",
@@ -619,13 +604,13 @@
   "controlPanel": {
     "updateRequiredByOrg": {
       "title": "Mise à jour requise",
-      "description": "Votre organisation exige OpenWhispr {{version}} ou une version plus récente. Veuillez mettre à jour l'application."
+      "description": "Votre organisation exige Overlay {{version}} ou une version plus récente. Veuillez mettre à jour l'application."
     },
     "update": {
       "readyTitle": "Mise à jour prête à installer",
       "readyDescription": "Cliquez sur « Installer la mise à jour » pour redémarrer avec la dernière version.",
       "installTitle": "Installer la mise à jour",
-      "installDescription": "OpenWhispr va redémarrer pour appliquer la mise à jour. Le travail en cours sera sauvegardé.",
+      "installDescription": "Overlay va redémarrer pour appliquer la mise à jour. Le travail en cours sera sauvegardé.",
       "couldNotInstallTitle": "Impossible d'installer la mise à jour",
       "couldNotInstallDescription": "Une erreur est survenue. Veuillez réessayer.",
       "couldNotDownloadTitle": "Impossible de télécharger la mise à jour",
@@ -640,7 +625,7 @@
     },
     "accessibilityMissing": {
       "title": "Autorisations d'accessibilité nécessaires",
-      "description": "Nous avons détecté qu'OpenWhispr a besoin des autorisations d'accessibilité pour fonctionner correctement. Veuillez les activer ci-dessous."
+      "description": "Nous avons détecté qu'Overlay a besoin des autorisations d'accessibilité pour fonctionner correctement. Veuillez les activer ci-dessous."
     },
     "billing": {
       "pastDueTitle": "Nous n'avons pas pu traiter votre paiement",
@@ -736,7 +721,7 @@
     },
     "cloudNudge": {
       "title": "Vous êtes connecté",
-      "description": "La dictée utilise toujours votre propre configuration. Vous pouvez passer à OpenWhispr Cloud à tout moment.",
+      "description": "La dictée utilise toujours votre propre configuration. Vous pouvez passer à Overlay à tout moment.",
       "action": "Ouvrir les Réglages"
     }
   },
@@ -848,7 +833,7 @@
           "modelNotFound": "AWS Bedrock n’a pas trouvé le modèle sélectionné dans la région {{region}}. Vérifiez l’ID du modèle et sa disponibilité dans cette région.",
           "configurationRejected": "AWS Bedrock a refusé la configuration du modèle pour la région {{region}}. Vérifiez l’ID du modèle, le profil d’inférence et la région.",
           "notConfigured": "AWS Bedrock n’est pas configuré correctement. Vérifiez la région et les identifiants AWS.",
-          "serviceUnavailable": "AWS Bedrock est temporairement indisponible en raison d’une forte demande. Il s’agit d’un problème du service AWS, et non d’une panne d’OpenWhispr. Réessayez dans quelques minutes.",
+          "serviceUnavailable": "AWS Bedrock est temporairement indisponible en raison d’une forte demande. Il s’agit d’un problème du service AWS, et non d’une panne d’Overlay. Réessayez dans quelques minutes.",
           "throttled": "AWS Bedrock limite temporairement les requêtes car il en reçoit trop. Patientez un instant et réessayez. Si le problème persiste, demandez à votre administrateur AWS de vérifier l’utilisation et les quotas Bedrock.",
           "timeout": "AWS Bedrock n’a pas répondu à temps. Réessayez. Si le problème persiste, vérifiez votre connexion Internet et l’état du service AWS Bedrock.",
           "network": "AWS Bedrock est inaccessible. Vérifiez votre connexion Internet et réessayez.",
@@ -928,7 +913,7 @@
   },
   "hooks": {
     "audioRecording": {
-      "cleanupSignedOut": "Le nettoyage IA utilise OpenWhispr Cloud, mais vous n'êtes pas connecté.",
+      "cleanupSignedOut": "Le nettoyage IA utilise Overlay, mais vous n'êtes pas connecté.",
       "cleanupUnconfigured": "Le nettoyage IA est activé, mais aucun modèle de nettoyage n'est configuré.",
       "errorTitles": {
         "sessionExpired": "Session expirée",
@@ -963,7 +948,7 @@
         "description": "Une partie de l'enregistrement n'a pas pu être transcrite."
       },
       "errorDescriptions": {
-        "sessionExpired": "Votre session OpenWhispr Cloud est indisponible. Reconnectez-vous depuis Paramètres.",
+        "sessionExpired": "Votre session Overlay est indisponible. Reconnectez-vous depuis Paramètres.",
         "offline": "Vous êtes hors ligne. La transcription cloud nécessite une connexion Internet.",
         "dailyLimitReached": "Vous avez atteint votre limite de transcription du jour. Réessayez demain ou améliorez votre forfait.",
         "providerRateLimited": "Votre fournisseur de transcription a limité la requête. Patientez un instant et réessayez.",
@@ -975,7 +960,7 @@
         "managedRouteInvalid": "La transcription gérée n'a pas pu démarrer en raison d'une incohérence de configuration. Réessayez ou contactez votre administrateur.",
         "managedAuthRejected": "Les identifiants de transcription gérée de votre organisation ont été refusés. Contactez votre administrateur.",
         "managedRequestRejected": "Le service de transcription de votre organisation a refusé cet audio (HTTP {{status}}). Réessayez ou contactez votre administrateur.",
-        "managedResponseMalformed": "Le service de transcription de votre organisation a envoyé une réponse qu'OpenWhispr n'a pas pu lire. Réessayez ou contactez votre administrateur.",
+        "managedResponseMalformed": "Le service de transcription de votre organisation a envoyé une réponse qu'Overlay n'a pas pu lire. Réessayez ou contactez votre administrateur.",
         "managedChunkTooLarge": "Cet audio n'a pas pu être découpé en parties assez petites pour le service de transcription de votre organisation. Contactez votre administrateur.",
         "streamingOnlyProvider": "Ce fournisseur ne prend en charge que la transcription en direct. Choisissez un autre fournisseur pour les imports de fichiers et les nouvelles tentatives.",
         "providerKeyMissing": "Aucune clé API n'est définie pour votre fournisseur de transcription. Ajoutez-la dans Réglages → Parole en texte.",
@@ -1003,22 +988,22 @@
         "notAppliedTitle": "Modification de la sélection non appliquée",
         "changed": "Le texte sélectionné ou l’application cible a changé pendant le traitement. Rien n’a été remplacé.",
         "expired": "La modification a expiré. Sélectionnez de nouveau le texte et réessayez.",
-        "pasteFailed": "OpenWhispr a généré la modification, mais n’a pas pu remplacer le texte sélectionné.",
-        "modifiersHeld": "OpenWhispr a généré la modification, mais une touche de modification (comme Ctrl ou Maj) était encore enfoncée, elle n'a donc pas été appliquée. La modification est dans le presse-papiers.",
-        "modifiersHeldClipboardFailed": "OpenWhispr a généré la modification, mais une touche de modification (comme Ctrl ou Maj) était encore enfoncée, elle n'a donc pas été appliquée, et elle n'a pas pu être copiée dans le presse-papiers non plus.",
-        "unavailable": "OpenWhispr n’a pas pu lire la sélection en toute sécurité. Vérifiez les autorisations d’accessibilité ou d’automatisation.",
+        "pasteFailed": "Overlay a généré la modification, mais n’a pas pu remplacer le texte sélectionné.",
+        "modifiersHeld": "Overlay a généré la modification, mais une touche de modification (comme Ctrl ou Maj) était encore enfoncée, elle n'a donc pas été appliquée. La modification est dans le presse-papiers.",
+        "modifiersHeldClipboardFailed": "Overlay a généré la modification, mais une touche de modification (comme Ctrl ou Maj) était encore enfoncée, elle n'a donc pas été appliquée, et elle n'a pas pu être copiée dans le presse-papiers non plus.",
+        "unavailable": "Overlay n’a pas pu lire la sélection en toute sécurité. Vérifiez les autorisations d’accessibilité ou d’automatisation.",
         "tooLarge": "La sélection est trop grande. Sélectionnez au maximum 6 000 caractères.",
         "reasoningFailed": "L’IA n’a pas pu terminer la modification. Le texte d’origine n’a pas été modifié.",
         "invalidResponse": "L’IA a renvoyé une réponse de modification invalide. Rien n’a été remplacé. Sélectionnez le texte et réessayez.",
         "emptyResponse": "L’IA a renvoyé une modification vide. Rien n’a été remplacé. Essayez une instruction plus précise.",
         "truncatedResponse": "L’IA s’est arrêtée avant de terminer la modification. Rien n’a été remplacé. Essayez de sélectionner moins de texte.",
-        "wlCopyMissing": "OpenWhispr a généré la modification, mais sur ce bureau les applications Wayland ne peuvent lire le texte collé que via wl-copy. Installez wl-clipboard pour appliquer les modifications.",
-        "wlCopyFailed": "OpenWhispr a généré la modification, mais wl-copy n'a pas pu la copier pour les applications Wayland, elle n'a donc pas été appliquée."
+        "wlCopyMissing": "Overlay a généré la modification, mais sur ce bureau les applications Wayland ne peuvent lire le texte collé que via wl-copy. Installez wl-clipboard pour appliquer les modifications.",
+        "wlCopyFailed": "Overlay a généré la modification, mais wl-copy n'a pas pu la copier pour les applications Wayland, elle n'a donc pas été appliquée."
       },
       "pastePermission": {
         "title": "Autoriser le collage automatique",
-        "description": "Activez OpenWhispr dans Réglages Système → Confidentialité et sécurité → Accessibilité.",
-        "settingsFailed": "Impossible d’ouvrir les réglages. Ouvrez Réglages Système → Confidentialité et sécurité → Accessibilité et activez OpenWhispr.",
+        "description": "Activez Overlay dans Réglages Système → Confidentialité et sécurité → Accessibilité.",
+        "settingsFailed": "Impossible d’ouvrir les réglages. Ouvrez Réglages Système → Confidentialité et sécurité → Accessibilité et activez Overlay.",
         "manualPaste": "Copiez votre texte ci-dessous, puis appuyez sur {{shortcut}} pour le coller.",
         "openSettings": "Ouvrir les réglages",
         "copyToClipboard": "Copier le texte",
@@ -1029,7 +1014,7 @@
       "pasteFailed": {
         "title": "Collage automatique impossible"
       },
-      "interruptedRecordingRecovered": "Récupérée après la fermeture d'OpenWhispr avant la fin de cette dictée.",
+      "interruptedRecordingRecovered": "Récupérée après la fermeture d'Overlay avant la fin de cette dictée.",
       "waylandClipboard": {
         "title": "Transcription non collée",
         "wlCopyMissing": "Sur ce bureau, les applications Wayland ne peuvent lire le texte collé que via wl-copy. Installez wl-clipboard pour coller vos dictées.",
@@ -1106,7 +1091,7 @@
       "micErrors": {
         "accessFailed": "L'accès au microphone a échoué. Veuillez réessayer.",
         "noMicrophones": "Aucun micro détecté. Connectez ou sélectionnez un micro dans {{settingsPath}}.",
-        "permissionDenied": "Autorisation refusée. Ouvrez {{privacyPath}} et autorisez OpenWhispr.",
+        "permissionDenied": "Autorisation refusée. Ouvrez {{privacyPath}} et autorisez Overlay.",
         "couldNotStart": "Impossible de démarrer le micro sélectionné. Choisissez une entrée dans {{settingsPath}} puis relancez le test.",
         "noActiveInput": "Aucune entrée audio active trouvée. Choisissez un micro dans {{settingsPath}}.",
         "unknown": "Accès au micro échoué : {{error}}. Choisissez un autre appareil et réessayez.",
@@ -1135,8 +1120,8 @@
         "accessibilityNeeded": "Accordez les permissions d'accessibilité dans les paramètres système pour activer le collage automatique.",
         "windowsReady": "Windows ne demande pas de permissions spéciales pour le collage automatique. Tout est prêt !",
         "linuxReadyWithMethod": "Le collage automatique est disponible via {{method}}. Tout est prêt !",
-        "waylandClipboardMode": "Le collage automatique n'est pas disponible dans cette session Wayland. OpenWhispr copiera le texte dans le presse-papiers et vous pourrez coller avec Ctrl+V.",
-        "optionalPasteTool": "Pour le collage automatique, installez {{tool}} :\n\n{{installCmd}}{{waylandNote}}\n\nSans cela, vous pouvez quand même utiliser OpenWhispr : le texte sera copié dans le presse-papiers et vous pourrez coller avec Ctrl+V."
+        "waylandClipboardMode": "Le collage automatique n'est pas disponible dans cette session Wayland. Overlay copiera le texte dans le presse-papiers et vous pourrez coller avec Ctrl+V.",
+        "optionalPasteTool": "Pour le collage automatique, installez {{tool}} :\n\n{{installCmd}}{{waylandNote}}\n\nSans cela, vous pouvez quand même utiliser Overlay : le texte sera copié dans le presse-papiers et vous pourrez coller avec Ctrl+V."
       },
       "alerts": {
         "accessibilityNeeded": "Permissions d'accessibilité requises ! Veuillez les accorder dans les paramètres système."
@@ -1149,7 +1134,7 @@
         "defaultPasteTool": "xdotool",
         "xdotoolXwayland": "xdotool (apps XWayland)"
       },
-      "accessibilityTestText": "Test d'accessibilité OpenWhispr",
+      "accessibilityTestText": "Test d'accessibilité Overlay",
       "warning": {
         "messages": {
           "macos": "Vérifiez les réglages Son pour choisir votre périphérique d'entrée",
@@ -1226,7 +1211,7 @@
       "emailRequired": "Saisissez votre e-mail professionnel pour utiliser le SSO.",
       "failed": "Échec de l’authentification unique. Veuillez réessayer.",
       "companySignInTitle": "Utiliser la connexion de votre entreprise",
-      "requiredDescription": "{{domain}} exige le SSO pour OpenWhispr.",
+      "requiredDescription": "{{domain}} exige le SSO pour Overlay.",
       "availableDescription": "Votre compte {{domain}} est prêt pour le SSO de l'entreprise.",
       "useEmailInstead": "Utiliser plutôt l'e-mail et le mot de passe"
     },
@@ -1238,169 +1223,10 @@
       "protocolUnavailable": "Connexion par navigateur indisponible — réenregistrez le protocole openwhispr:// dans les paramètres Applications par défaut du système."
     },
     "welcomeSubtitle": "Le pouvoir de votre voix. À vos conditions.",
-    "welcomeTitle": "Bienvenue sur OpenWhispr",
+    "welcomeTitle": "Bienvenue sur Overlay",
     "sessionExpired": "Session expirée. Veuillez relancer le processus d'inscription."
   },
-  "calendar": {
-    "title": "Google Agenda",
-    "status": "Statut",
-    "connected": "Connecté",
-    "disconnected": "Déconnecté",
-    "notConnectedDescription": "Connecter pour détecter et enregistrer les réunions",
-    "connectCta": {
-      "title": "Intégration du Calendrier",
-      "description": "Détecter automatiquement les réunions et enregistrer les transcriptions"
-    },
-    "connect": "Connecter Google Agenda",
-    "connecting": "Connexion...",
-    "disconnect": "Déconnecter",
-    "disconnecting": "Déconnexion...",
-    "sync": "Synchroniser",
-    "syncing": "Synchronisation...",
-    "calendarsTitle": "Calendriers",
-    "upcomingTitle": "À venir",
-    "noUpcoming": "Aucun événement à venir",
-    "meetingStarting": "La réunion commence maintenant",
-    "today": "Aujourd'hui",
-    "tomorrow": "Demain"
-  },
-  "upcoming": {
-    "now": "En cours",
-    "untitledEvent": "Événement sans titre",
-    "joinAndTranscribe": "Rejoindre et transcrire",
-    "takeNotes": "Prendre des notes",
-    "noEventsToday": "Plus de réunions aujourd'hui",
-    "emptyDayDescription": "L'heure d'aller toucher un peu d'herbe",
-    "touchGrass": "Toucher l'herbe",
-    "touchGrassLabel": "Un carré d'herbe. Effleurez-le avec le pointeur ou les touches fléchées. Appuyez sur Échap pour revenir.",
-    "noUpcomingEvents": "Aucun événement à venir",
-    "moreCalendarsHint": "Vous voulez d'autres calendriers ?",
-    "connectHere": "Connectez-les ici",
-    "openMeetingLink": "Ouvrir le lien de la réunion",
-    "systemAudioRequired": "L'autorisation Audio Système est nécessaire pour capturer l'audio des autres participants.",
-    "openSettings": "Ouvrir les Réglages Système",
-    "connectCalendar": "Connectez votre calendrier",
-    "connectCalendarDescription": "Consultez vos réunions et rejoignez-les sans quitter OpenWhispr.",
-    "connectCalendarButton": "Connecter le calendrier"
-  },
   "cleanupPrompt": "Correction",
-  "developerSection": {
-    "currentLogFile": "Fichier journal actuel",
-    "debugMode": {
-      "disabledDescription": "Activez pour capturer des informations de diagnostic détaillées",
-      "enabledDescription": "Enregistrement du traitement audio, des requêtes API et des opérations système",
-      "label": "Mode débogage"
-    },
-    "description": "Capturez des journaux détaillés pour diagnostiquer les problèmes",
-    "openLogsFolder": "Ouvrir le dossier des journaux",
-    "performanceNote": {
-      "description": "La journalisation de débogage écrit sur le disque en continu et peut légèrement affecter les performances. Désactivez-la lorsque vous ne résolvez pas de problème.",
-      "label": "Note"
-    },
-    "sharing": {
-      "footer": "Les journaux ne contiennent pas de clés API ni de données sensibles",
-      "steps": {
-        "0": "Reproduisez le problème avec le mode débogage activé",
-        "1": "Cliquez sur « Ouvrir le dossier des journaux » ci-dessus",
-        "2": "Joignez le fichier journal le plus récent à votre rapport de bug"
-      },
-      "title": "Partager les journaux pour le support"
-    },
-    "title": "Journalisation de débogage",
-    "toasts": {
-      "copied": {
-        "description": "Chemin du fichier journal copié dans le presse-papiers",
-        "title": "Copié"
-      },
-      "copyFailed": {
-        "description": "Un problème est survenu lors de la copie dans le presse-papiers.",
-        "title": "Impossible de copier"
-      },
-      "debugDisabled": {
-        "description": "La journalisation de débogage a été désactivée",
-        "title": "Journalisation de débogage désactivée"
-      },
-      "debugEnabled": {
-        "description": "Des journaux détaillés sont maintenant écrits sur le disque",
-        "title": "Journalisation de débogage activée"
-      },
-      "loadFailed": {
-        "description": "Un problème est survenu. Essayez de rouvrir les Paramètres.",
-        "title": "Impossible de charger les paramètres de débogage"
-      },
-      "openLogsFailed": {
-        "description": "Un problème est survenu lors de l'ouverture du dossier des journaux.",
-        "title": "Impossible d'ouvrir le dossier des journaux"
-      },
-      "updateFailed": {
-        "description": "Un problème est survenu. Veuillez réessayer.",
-        "title": "Impossible de mettre à jour la journalisation de débogage"
-      }
-    },
-    "whatGetsLogged": {
-      "items": {
-        "apiRequests": "Requêtes API",
-        "audioProcessing": "Traitement audio",
-        "errorDetails": "Détails des erreurs",
-        "ffmpegOperations": "Opérations FFmpeg",
-        "systemDiagnostics": "Diagnostics système",
-        "transcriptionPipeline": "Pipeline de transcription"
-      },
-      "title": "Ce qui est enregistré"
-    }
-  },
-  "apiKeysSection": {
-    "title": "Clés API",
-    "description": "Créez des clés pour accéder à l'API OpenWhispr de manière programmatique.",
-    "empty": "Aucune clé API pour le moment",
-    "createButton": "Créer une clé API",
-    "create": {
-      "title": "Créer une clé API",
-      "nameLabel": "Nom de la clé",
-      "namePlaceholder": "ex. Mon intégration",
-      "scopesLabel": "Autorisations",
-      "expiryLabel": "Expiration",
-      "expiryOptions": {
-        "never": "N'expire jamais",
-        "30days": "30 jours",
-        "60days": "60 jours",
-        "90days": "90 jours",
-        "1year": "1 an"
-      },
-      "submit": "Créer",
-      "cancel": "Annuler"
-    },
-    "created": {
-      "title": "Clé API créée",
-      "warning": "Copiez cette clé maintenant. Elle ne sera plus affichée.",
-      "copied": "Copié !",
-      "copyButton": "Copier dans le presse-papiers",
-      "done": "Terminé"
-    },
-    "scopes": {
-      "notesRead": "Lire les notes",
-      "notesWrite": "Créer et modifier les notes",
-      "transcriptionsRead": "Lire les transcriptions",
-      "dictionaryRead": "Lire le dictionnaire",
-      "dictionaryWrite": "Modifier le dictionnaire",
-      "snippetsRead": "Lire les snippets",
-      "snippetsWrite": "Modifier les snippets",
-      "transcriptionsWrite": "Transcrire l'audio"
-    },
-    "revoke": {
-      "button": "Révoquer",
-      "confirm": "Révoquer cette clé ? Les intégrations qui l'utilisent cesseront de fonctionner.",
-      "success": "Clé API révoquée"
-    },
-    "neverUsed": "Jamais utilisée",
-    "lastUsed": "Dernière utilisation {{time}}",
-    "maxKeysReached": "Maximum de {{max}} clés autorisées",
-    "errors": {
-      "loadFailed": "Impossible de charger les clés API",
-      "createFailed": "Impossible de créer la clé API",
-      "revokeFailed": "Impossible de révoquer la clé API"
-    }
-  },
   "dictionarySuffix": "Suffixe du dictionnaire",
   "emailVerification": {
     "checkEmailDescription": "Nous avons envoyé un lien de vérification à votre adresse :",
@@ -1556,15 +1382,15 @@
     "recheckChecking": "Vérification...",
     "title": "Collage automatique",
     "usingMethodPrefix": "Utilisation de",
-    "waylandClipboardDescription": "Le collage automatique n'est pas disponible dans cette session Wayland. OpenWhispr copiera le texte dans le presse-papiers et vous pourrez coller manuellement avec Ctrl+V.",
+    "waylandClipboardDescription": "Le collage automatique n'est pas disponible dans cette session Wayland. Overlay copiera le texte dans le presse-papiers et vous pourrez coller manuellement avec Ctrl+V.",
     "waylandClipboardTitle": "Mode presse-papiers sur Wayland",
     "windowsReady": "Windows prend en charge le collage automatique nativement. Aucune configuration requise !",
-    "withoutToolPrefix": "Sans cet outil, OpenWhispr copiera le texte dans le presse-papiers. Vous pourrez ensuite coller manuellement avec Ctrl+V.",
+    "withoutToolPrefix": "Sans cet outil, Overlay copiera le texte dans le presse-papiers. Vous pourrez ensuite coller manuellement avec Ctrl+V.",
     "wtypeCosmicTerminalsDescription": "Sous COSMIC, les terminaux comme Warp ne reçoivent le texte collé que via wtype. Les autres applications collent déjà sans lui.",
     "wtypeFallbackDescription": "wtype est la méthode de collage automatique recommandée pour ce compositeur wlroots. Une solution de repli est disponible, mais elle peut être moins fiable.",
     "xwaylandAppsOnly": "le collage automatique fonctionne uniquement pour les apps XWayland",
     "wlClipboardTitle": "Installez wl-clipboard pour coller dans les applications Wayland",
-    "wlClipboardDescription": "Sur ce bureau, les applications Wayland ne peuvent lire le texte copié par OpenWhispr que via wl-copy. Pour y coller votre dictée, installez wl-clipboard :"
+    "wlClipboardDescription": "Sur ce bureau, les applications Wayland ne peuvent lire le texte copié par Overlay que via wl-copy. Pour y coller votre dictée, installez wl-clipboard :"
   },
   "promptStudio": {
     "common": {
@@ -1613,7 +1439,7 @@
       "none": "Aucun",
       "outputLabel": "Sortie",
       "processing": "Traitement...",
-      "openwhisprCloud": "OpenWhispr Cloud",
+      "openwhisprCloud": "Overlay",
       "providerLabel": "Fournisseur",
       "run": "Lancer le test",
       "customEndpoint": "Endpoint personnalisé",
@@ -1685,461 +1511,6 @@
     "title": "Paramètres"
   },
   "settingsPage": {
-    "workspace": {
-      "title": "Espace de travail",
-      "description": "Collaborez, partagez des notes et gérez l'accès à l'espace de travail au même endroit.",
-      "empty": {
-        "title": "Créez votre premier espace de travail",
-        "description": "Les espaces de travail vous permettent de collaborer et partager des notes.",
-        "create": "Créer un espace"
-      },
-      "loadError": {
-        "title": "Impossible de charger les espaces de travail",
-        "description": "Vérifiez votre connexion et réessayez.",
-        "retry": "Réessayer"
-      },
-      "staleList": "Impossible de joindre OpenWhispr. Vos espaces de travail sont affichés tels qu'ils étaient lors de votre dernière connexion.",
-      "tab": {
-        "general": "Général",
-        "members": "Membres",
-        "teams": "Groupes",
-        "developer": "Développeur"
-      },
-      "role": {
-        "owner": "Propriétaire",
-        "admin": "Administrateur",
-        "member": "Membre"
-      },
-      "general": {
-        "nameLabel": "Nom",
-        "saved": "Espace mis à jour",
-        "dangerTitle": "Supprimer l'espace",
-        "dangerDescription": "Toutes les notes, dossiers et intégrations partagés seront supprimés. Cette action est irréversible.",
-        "delete": "Supprimer l'espace",
-        "confirmTitle": "Supprimer {{name}} ?",
-        "confirmDescription": "Cela annule l'abonnement et supprime définitivement toutes les données.",
-        "deleting": "Suppression…",
-        "deleted": "Espace supprimé",
-        "leaveTitle": "Quitter l'espace",
-        "leaveDescription": "Vous perdrez l'accès à cet espace et à ses notes partagées.",
-        "leave": "Quitter l'espace",
-        "leaving": "Départ…",
-        "leaveConfirm": {
-          "title": "Quitter {{name}} ?",
-          "description": "Vous perdrez l'accès immédiatement. Un administrateur pourra vous réinviter."
-        },
-        "left": "Vous avez quitté {{name}}"
-      },
-      "members": {
-        "title": "Membres",
-        "description": "{{count}} sur {{seats}} sièges utilisés.",
-        "invite": "Inviter",
-        "empty": "Aucun membre pour l'instant.",
-        "loadError": "Impossible de charger les membres.",
-        "roleUpdated": "Rôle mis à jour",
-        "removed": "{{name}} retiré",
-        "promote": "Promouvoir administrateur",
-        "demote": "Rétrograder membre",
-        "transferOwnership": "Transférer la propriété",
-        "remove": "Retirer de l'espace",
-        "removeConfirm": {
-          "title": "Retirer ce membre ?",
-          "description": "{{name}} perdra immédiatement l'accès à {{workspace}}."
-        },
-        "transferConfirm": {
-          "title": "Transférer la propriété ?",
-          "description": "{{name}} devient propriétaire de {{workspace}}. Votre rôle passe à administrateur et seul le nouveau propriétaire pourra la retransférer."
-        }
-      },
-      "joinRequests": {
-        "title": "Demandes d'accès",
-        "approve": "Approuver",
-        "deny": "Refuser",
-        "approved": "{{name}} a rejoint l'espace de travail",
-        "denied": "Demande refusée",
-        "errorTitle": "Impossible de mettre à jour la demande"
-      },
-      "teams": {
-        "title": "Groupes",
-        "description": "Groupes de membres du workspace auxquels on peut donner accès aux espaces d'équipe en une fois.",
-        "new": "Nouveau groupe",
-        "empty": "Pas encore de groupes.",
-        "createFirst": "Créez votre premier groupe",
-        "addMembersLabel": "Ajouter des membres",
-        "createTitle": "Créer un groupe",
-        "nameLabel": "Nom du groupe",
-        "memberCount_one": "{{count}} membre",
-        "memberCount_other": "{{count}} membres",
-        "membersButton": "Membres",
-        "grantsAccessToSpaces_one": "Donne accès à {{count}} espace",
-        "grantsAccessToSpaces_other": "Donne accès à {{count}} espaces",
-        "couldNotCreate": "Impossible de créer le groupe",
-        "created": "{{team}} créée",
-        "deleted": "{{team}} supprimée",
-        "deleteConfirmTitle": "Supprimer {{team}} ?",
-        "deleteConfirmDescription": "Cela archive le groupe. Ses membres perdent l'accès qu'il accordait.",
-        "deleteConfirmSpaceAccess_one": "Ce groupe donne accès à {{count}} espace. Ses membres perdront cet accès.",
-        "deleteConfirmSpaceAccess_other": "Ce groupe donne accès à {{count}} espaces. Ses membres perdront cet accès.",
-        "members": {
-          "title": "Membres de {{team}}",
-          "removeConfirm": "Retirer {{name}} de {{team}} ?",
-          "leave": "Quitter le groupe",
-          "leftTeam": "Vous avez quitté {{team}}",
-          "leaveConfirm": "Quitter {{team}} ?",
-          "leaveConfirmDescription": "Vous perdrez l'accès aux espaces auxquels ce groupe est rattaché, sauf si vous y avez été ajouté directement ou si un autre groupe vous inclut."
-        }
-      },
-      "invites": {
-        "title": "Invitations en attente",
-        "expiresIn_one": "Expire dans {{count}} jour",
-        "expiresIn_other": "Expire dans {{count}} jours",
-        "expired": "Expirée",
-        "loadError": "Impossible de charger les invitations.",
-        "resend": "Renvoyer",
-        "resending": "Renvoi…",
-        "revoke": "Révoquer",
-        "resent": "Invitation renvoyée",
-        "resentNoEmail": "Invitation mise à jour, mais l'e-mail n'a pas pu être délivré.",
-        "revoked": "Invitation révoquée",
-        "revokeFailed": "Impossible de révoquer l'invitation",
-        "revokeConfirm": {
-          "title": "Révoquer cette invitation ?",
-          "description": "Le lien d'invitation pour {{email}} cessera de fonctionner."
-        }
-      },
-      "billing": {
-        "plan": "Plan",
-        "seats": "Sièges",
-        "ownerOnly": "Seul le propriétaire de l'espace de travail peut gérer l'abonnement.",
-        "nextInvoice": "Prochaine facture",
-        "manageStripe": "Gérer dans Stripe",
-        "startSubscription": "Démarrer l'abonnement",
-        "planLabel": {
-          "business": "Business",
-          "pro": "Pro",
-          "free": "Gratuit",
-          "enterprise": "Enterprise"
-        },
-        "status": {
-          "active": "Actif",
-          "trialing": "Période d'essai",
-          "past_due": "En retard",
-          "canceled": "Annulé",
-          "incomplete": "Incomplet",
-          "unpaid": "Impayé"
-        }
-      },
-      "developer": {
-        "title": "Clés API",
-        "description": "Accès programmatique limité à cet espace.",
-        "empty": "Aucune clé API. Créez-en une pour vous intégrer.",
-        "loadError": "Impossible de charger les clés API.",
-        "new": "Nouvelle clé",
-        "create": "Créer la clé",
-        "createTitle": "Créer une clé API",
-        "createDescription": "Choisissez les permissions. Vous pouvez la révoquer à tout moment.",
-        "nameLabel": "Nom de la clé",
-        "namePlaceholder": "Intégration production",
-        "revoke": "Révoquer la clé",
-        "revoked": "Clé {{name}} révoquée",
-        "lastUsed": "Dernière utilisation {{date}}",
-        "neverUsed": "Jamais utilisée",
-        "keyCreatedTitle": "Clé API créée",
-        "keyCreatedDescription": "Copiez cette clé maintenant — vous ne pourrez plus la voir.",
-        "revokeConfirm": {
-          "title": "Révoquer cette clé ?",
-          "description": "{{name}} cessera de fonctionner immédiatement. Toute intégration qui l'utilise commencera à échouer."
-        },
-        "scopes": {
-          "notes": {
-            "title": "Notes",
-            "read": "Lire les notes",
-            "write": "Modifier les notes"
-          },
-          "folders": {
-            "title": "Dossiers",
-            "read": "Lire les dossiers",
-            "write": "Modifier les dossiers"
-          },
-          "transcriptions": {
-            "title": "Transcriptions",
-            "read": "Lire les transcriptions"
-          },
-          "members": {
-            "title": "Membres",
-            "read": "Lire les membres",
-            "write": "Gérer les membres"
-          },
-          "billing": {
-            "title": "Facturation",
-            "read": "Lire la facturation"
-          },
-          "full": {
-            "title": "Accès complet",
-            "admin": "Administrateur de l'espace"
-          }
-        }
-      },
-      "enterpriseConsole": {
-        "title": "Console Enterprise",
-        "description": "Gérez le SSO, les politiques et les membres sur le web",
-        "open": "Ouvrir la console"
-      }
-    },
-    "unifiedBilling": {
-      "workspaceTitle": "Facturation de l'espace de travail",
-      "workspaceDescription": "Chaque espace de travail a son propre plan, ses sièges et son responsable de facturation.",
-      "billableSeat": "Votre siège est facturable",
-      "nonBillableSeat": "Accès administrateur uniquement · aucun siège payant",
-      "managedBy": "La facturation est gérée par {{owner}}.",
-      "addSeat": "Ajouter un siège",
-      "seatUpdated_one": "Capacité de l'espace de travail mise à jour : {{count}} siège",
-      "seatUpdated_other": "Capacité de l'espace de travail mise à jour : {{count}} sièges",
-      "seatUpdateFailed": "Impossible de mettre à jour les sièges de l'espace de travail",
-      "businessWorkspaceOnly": "Disponible pour les espaces de travail",
-      "personalPlanTitle": "Plan personnel",
-      "providedBy": "Plan personnel : Gratuit · Accès payant fourni par {{workspaces}}",
-      "confirmSeats": {
-        "title": "Ajouter un siège à l'espace de travail ?",
-        "description_one": "Passer {{workspace}} à {{count}} siège. Stripe calculera le changement au prorata.",
-        "description_other": "Passer {{workspace}} à {{count}} sièges. Stripe calculera le changement au prorata.",
-        "newCapacity": "Nouvelle capacité",
-        "chargeToday": "Montant facturé aujourd'hui",
-        "confirm": "Ajouter un siège"
-      }
-    },
-    "account": {
-      "badges": {
-        "free": "Gratuit",
-        "limitReached": "Limite cloud atteinte",
-        "pastDue": "Paiement en retard",
-        "pro": "Pro",
-        "business": "Business",
-        "trial": "Essai"
-      },
-      "billing": {
-        "couldNotOpenDescription": "Nous avons eu un problème pour ouvrir la page de facturation. Veuillez réessayer.",
-        "couldNotOpenTitle": "Impossible d'ouvrir la facturation",
-        "manageBilling": "Gérer la facturation",
-        "opening": "Ouverture...",
-        "updatePaymentMethod": "Mettre à jour le moyen de paiement",
-        "contactOwnerTitle": "Contactez le propriétaire de l'espace de travail",
-        "contactOwnerDescription": "Seul le propriétaire de l'espace de travail peut modifier sa facturation.",
-        "manageInAppStore": "Gérer dans l'App Store",
-        "manageInGooglePlay": "Gérer dans Google Play",
-        "managedInMobileStore": "Facturé via la boutique d'applications de votre téléphone. Gérez-le depuis votre téléphone."
-      },
-      "checkout": {
-        "couldNotOpenDescription": "Nous avons eu un problème pour ouvrir la page de paiement. Veuillez réessayer.",
-        "couldNotOpenTitle": "Impossible d'ouvrir le paiement",
-        "opening": "Ouverture...",
-        "upgradeToPro": "Passer à Pro"
-      },
-      "disabled": "Désactivé",
-      "featuresDisabled": "Fonctionnalités du compte désactivées",
-      "featuresDisabledDescription": "Définissez VITE_AUTH_URL dans votre fichier .env pour activer les fonctionnalités du compte.",
-      "notConfigured": "L'authentification n'est pas configurée",
-      "notSignedIn": "Non connecté",
-      "notSignedInDescription": "Créez un compte pour débloquer les fonctionnalités premium.",
-      "offline": "Hors ligne",
-      "pastDue": {
-        "description": "Vous êtes temporairement sur le plan gratuit. Mettez à jour votre moyen de paiement pour revenir à Pro.",
-        "title": "Nous n'avons pas pu traiter votre paiement"
-      },
-      "planDescriptions": {
-        "freeUsage": "{{used}} / {{limit}} mots sur OpenWhispr Cloud cette semaine",
-        "byokUnlimited": "Vos propres clés API et les modèles locaux restent utilisables sans limite.",
-        "nextBilling": "Prochaine facturation : {{date}}",
-        "pastDue": "{{used}} / {{limit}} mots sur OpenWhispr Cloud cette semaine - mettez à jour le paiement pour restaurer Pro",
-        "trial": "{{days}} jours restants - transcriptions illimitées",
-        "unlimited": "Illimité",
-        "accessUntil": "Accès jusqu'au {{date}}",
-        "storePaymentIssue": "Votre boutique d'applications n'a pas pu renouveler cet abonnement. Mettez-y à jour votre moyen de paiement pour conserver votre forfait."
-      },
-      "planLabels": {
-        "free": "Gratuit",
-        "pro": "Pro",
-        "business": "Business",
-        "trial": "Essai"
-      },
-      "pricing": {
-        "title": "Forfaits",
-        "billedYearly": "Facturation annuelle",
-        "free": {
-          "name": "Free",
-          "price": "$0",
-          "period": "pour toujours",
-          "features": [
-            "## OpenWhispr Cloud",
-            "2 000 mots/semaine de transcription",
-            "5 heures d'enregistrements de réunions/mois",
-            "## Toujours gratuit",
-            "Modèles d'IA locaux illimités",
-            "Transcription cloud illimitée avec vos propres clés API",
-            "Plus de 100 langues prises en charge",
-            "Dictionnaire personnalisé",
-            "Aucune conservation de données",
-            "Support communautaire"
-          ]
-        },
-        "pro": {
-          "name": "Pro",
-          "monthlyPrice": "$8",
-          "monthlyPeriod": "/mois",
-          "annualPrice": "$80",
-          "annualPeriod": "/an",
-          "annualEquivalent": "$6.67",
-          "includesPrefix": "Toutes les fonctionnalités Free +",
-          "features": [
-            "Transcription cloud illimitée",
-            "20 heures d'enregistrements de réunions/mois",
-            "Synchronisation entre appareils",
-            "Partagez des notes via des liens publics",
-            "Accès personnel à l'API",
-            "Intégration MCP dans toutes vos apps",
-            "Application mobile",
-            "Support par e-mail"
-          ],
-          "cta": "Commencer",
-          "switchToAnnual": "Passer à l'annuel"
-        },
-        "business": {
-          "name": "Business",
-          "monthlyPrice": "$16",
-          "monthlyPeriod": "/mois",
-          "annualPrice": "$160",
-          "annualPeriod": "/an",
-          "annualEquivalent": "$13.33",
-          "includesPrefix": "Toutes les fonctionnalités Pro +",
-          "badge": "Le plus populaire",
-          "features": [
-            "Enregistrements de réunions illimités",
-            "Rôles et gestion des membres de l'espace de travail",
-            "Mode assistant",
-            "Discutez avec vos données",
-            "Support prioritaire"
-          ],
-          "cta": "Commencer",
-          "switchToAnnual": "Passer à l'annuel"
-        },
-        "enterprise": {
-          "name": "Enterprise",
-          "price": "Sur devis",
-          "subtitle": "Pour une sécurité avancée et un support dédié",
-          "includesPrefix": "Toutes les fonctionnalités Business +",
-          "features": [
-            "Crédits API gérés",
-            "Synchronisation cloud entre appareils",
-            "Fonctionnalités d'équipe et administration",
-            "SSO et conformité",
-            "Support dédié"
-          ],
-          "cta": "Contacter les ventes",
-          "upgradeCta": "Passer à Enterprise",
-          "askOwner": "Demandez à {{name}} de mettre à niveau votre espace de travail."
-        },
-        "currentPlan": "Forfait actuel",
-        "coveredByWorkspace": "Inclus dans votre plan d'espace de travail",
-        "upgrade": "Passer au supérieur",
-        "downgrade": "Rétrograder",
-        "planSwitched": "Forfait mis à jour avec succès",
-        "confirmSwitch": {
-          "title": "Confirmer le changement",
-          "description": "Passer à {{plan}} ({{interval}})",
-          "monthly": "mensuel",
-          "yearly": "annuel",
-          "chargeToday": "Montant aujourd'hui",
-          "accountCredit": "Crédit sur le compte",
-          "newPrice": "Nouveau prix",
-          "nextBilling": "Prochaine facturation",
-          "mo": "mo",
-          "yr": "yr",
-          "cancel": "Annuler",
-          "confirm": "Confirmer"
-        }
-      },
-      "rollingWeeklyLimit": "Limite hebdomadaire glissante",
-      "signOut": {
-        "endMeetingDescription": "La déconnexion arrête l'enregistrement de la réunion en cours. Ce qui a déjà été capturé reste dans sa note.",
-        "endMeetingTitle": "Arrêter l'enregistrement de la réunion ?",
-        "failedDescription": "Un problème est survenu lors de la déconnexion. Veuillez réessayer.",
-        "failedTitle": "Impossible de se déconnecter",
-        "signOut": "Se déconnecter",
-        "signingOut": "Déconnexion..."
-      },
-      "title": "Compte",
-      "toasts": {
-        "approachingLimit": {
-          "description": "Vous avez utilisé {{used}} mots sur {{limit}} dans OpenWhispr Cloud cette semaine. Passez à Pro pour une utilisation illimitée.",
-          "title": "Limite de mots cloud bientôt atteinte"
-        }
-      },
-      "trialCta": {
-        "button": "Créer un compte gratuit",
-        "description": "Transcriptions illimitées, traitement prioritaire et plus encore.",
-        "title": "Essayez Pro gratuitement pendant 7 jours"
-      },
-      "signedOutPlans": {
-        "button": "Créer un compte gratuit"
-      },
-      "user": "Utilisateur",
-      "wordsRemaining": "{{remaining}} restants",
-      "deleteAccount": {
-        "label": "Supprimer le compte",
-        "labelDescription": "Supprimer définitivement votre compte et vos données cloud personnelles. Les autres utilisateurs locaux et le contenu des espaces de travail sont conservés.",
-        "button": "Supprimer mon compte",
-        "deleting": "Suppression...",
-        "title": "Supprimer votre compte ?",
-        "description": "Cela supprime définitivement votre compte OpenWhispr et vos données personnelles. Le contenu des espaces de travail et les données des autres utilisateurs locaux restent sur cet appareil.",
-        "confirmText": "Supprimer le compte",
-        "eraseDeviceLabel": "Effacer aussi toutes les données de cet appareil",
-        "eraseDeviceDescription": "Supprime les notes et caches d’espaces de tous les utilisateurs locaux, les modèles téléchargés, paramètres, calendriers, identifiants et enregistrements.",
-        "eraseDeviceWarning": "Cet effacement de l’appareil est irréversible et affecte tous les utilisateurs locaux.",
-        "successTitle": "Compte supprimé",
-        "successDescription": "Votre compte et vos données personnelles ont été supprimés. Les autres utilisateurs locaux, espaces de travail, modèles et paramètres ont été conservés.",
-        "partialCleanupDescription": "Votre compte a été supprimé, mais une partie du nettoyage local n’a pas pu aboutir. Les autres utilisateurs et le contenu des espaces de travail ont été conservés.",
-        "failedTitle": "Échec de la suppression",
-        "failedDescription": "La suppression du compte n’a pas pu aboutir. Aucun effacement global de l’appareil n’a été lancé. Veuillez réessayer."
-      },
-      "profile": {
-        "name": {
-          "label": "Nom affiché",
-          "placeholder": "Votre nom",
-          "save": "Enregistrer",
-          "saving": "Enregistrement...",
-          "saved": "Nom affiché mis à jour",
-          "error": "Impossible de mettre à jour votre nom"
-        },
-        "password": {
-          "label": "Mot de passe",
-          "description": "Modifiez le mot de passe que vous utilisez pour vous connecter.",
-          "change": "Changer le mot de passe",
-          "dialogTitle": "Changer le mot de passe",
-          "dialogDescription": "Saisissez votre mot de passe actuel et choisissez-en un nouveau.",
-          "currentLabel": "Mot de passe actuel",
-          "newLabel": "Nouveau mot de passe",
-          "confirmLabel": "Confirmer le nouveau mot de passe",
-          "minLength": "Le mot de passe doit contenir au moins 8 caractères",
-          "mismatch": "Les mots de passe ne correspondent pas",
-          "revokeOthers": "Déconnecter les autres appareils",
-          "submit": "Mettre à jour le mot de passe",
-          "saving": "Mise à jour...",
-          "cancel": "Annuler",
-          "saved": "Mot de passe mis à jour"
-        },
-        "errors": {
-          "invalidPassword": "Votre mot de passe actuel est incorrect.",
-          "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
-          "passwordTooLong": "Le mot de passe est trop long.",
-          "noPassword": "Aucun mot de passe n'est défini pour ce compte.",
-          "generic": "Une erreur est survenue. Veuillez réessayer."
-        }
-      },
-      "planUnavailable": {
-        "title": "Forfait indisponible",
-        "description": "Nous n'avons pas pu charger votre forfait pour le moment. Votre accès reste inchangé."
-      }
-    },
     "agentConfig": {
       "agentName": "Nom de l'assistant",
       "description": "Nommez votre assistant IA pour pouvoir l'interpeller directement pendant la dictée",
@@ -2168,7 +1539,7 @@
       "enableTextCleanup": "Activer la correction de texte",
       "enableTextCleanupDescription": "L'IA supprime les mots de remplissage, corrige la grammaire et la ponctuation",
       "modes": {
-        "openwhispr": "OpenWhispr Cloud",
+        "openwhispr": "Overlay",
         "providers": "Apportez votre propre clé",
         "local": "Local",
         "selfHosted": "Auto-hébergé",
@@ -2179,13 +1550,13 @@
         "selfHostedDesc": "Votre serveur sur votre réseau.",
         "enterpriseDesc": "Utilisez le compte cloud de votre organisation (AWS, Azure, GCP)."
       },
-      "openwhisprCloud": "OpenWhispr Cloud",
+      "openwhisprCloud": "Overlay",
       "openwhisprCloudDescription": "Résultats fiables. Aucune configuration requise.",
       "title": "Amélioration du texte par IA",
       "toasts": {
         "switchedCloud": {
-          "description": "L'amélioration de texte utilisera le service cloud OpenWhispr.",
-          "title": "Basculé vers OpenWhispr Cloud"
+          "description": "L'amélioration de texte utilisera le service cloud Overlay.",
+          "title": "Basculé vers Overlay"
         },
         "switchedCustom": {
           "description": "Configurez votre propre fournisseur et clé API.",
@@ -2218,62 +1589,11 @@
         "useManaged": "Utiliser la version gérée"
       }
     },
-    "developer": {
-      "clearCache": "Vider le cache",
-      "dataManagementDescription": "Gérez les modèles en cache et les données de l'application",
-      "dataManagementTitle": "Gestion des données",
-      "modelCache": "Cache des modèles",
-      "open": "Ouvrir",
-      "removeModels": {
-        "confirmText": "Supprimer les modèles",
-        "description": "Cela supprime tous les modèles Whisper mis en cache localement ({{path}}) et libère de l'espace disque. Vous pouvez les retélécharger depuis le sélecteur de modèles.",
-        "failedDescription": "Un problème est survenu lors de la suppression des modèles. Veuillez réessayer.",
-        "failedDescriptionShort": "Impossible de supprimer les modèles en cache.",
-        "failedTitle": "Impossible de supprimer les modèles",
-        "successDescription": "Tous les modèles en cache ont été supprimés.",
-        "successTitle": "Modèles supprimés",
-        "title": "Supprimer les modèles téléchargés ?"
-      },
-      "removing": "Suppression...",
-      "resetAll": {
-        "confirmText": "Tout supprimer",
-        "description": "Cela supprimera définitivement tous les paramètres locaux, transcriptions, enregistrements audio, modèles IA téléchargés, connexions de calendrier et données en cache. Les données cloud et votre compte ne seront pas affectés. L'application redémarrera après la réinitialisation.",
-        "failedDescription": "Un problème est survenu. Veuillez réessayer ou réinstaller l'application.",
-        "failedTitle": "Impossible de réinitialiser",
-        "successDescription": "Tout a été réinitialisé. L'application va redémarrer.",
-        "successTitle": "Terminé",
-        "title": "Réinitialiser toutes les données de l'application"
-      },
-      "resetAppData": "Réinitialiser les données de l'application",
-      "resetAppDataDescription": "Supprimer définitivement tous les paramètres locaux, transcriptions, enregistrements audio, modèles téléchargés et données en cache"
-    },
-    "dictionary": {
-      "title": "Dictionnaire personnalisé",
-      "description": "Apprenez à l'IA votre vocabulaire — noms, jargon et termes qu'elle pourrait autrement manquer",
-      "addWordOrPhrase": "Ajouter un mot ou une expression",
-      "placeholder": "Ajouter un mot ou une expression...",
-      "add": "Ajouter",
-      "pressEnterToAdd": "Appuyez sur Entrée pour ajouter",
-      "autoLearnTitle": "Apprentissage automatique à partir des corrections",
-      "autoLearnDescription": "Lorsque vous corrigez une transcription dans l'application cible, le mot corrigé est automatiquement ajouté à votre dictionnaire.",
-      "yourWords": "Vos mots",
-      "clearDictionaryTitle": "Effacer le dictionnaire ?",
-      "clearDictionaryDescription": "Cela supprimera tous les mots de votre dictionnaire personnalisé. Cette action est irréversible.",
-      "clearAll": "Tout effacer",
-      "agentNameAutoManaged": "Géré automatiquement — synchronisé avec le nom de l'assistant",
-      "removeWord": "Supprimer le mot",
-      "noWords": "Aucun mot pour l'instant",
-      "wordsAppearHere": "Les mots que vous ajoutez apparaîtront ici",
-      "howItWorksTitle": "Comment ça fonctionne",
-      "howItWorksDescription": "Les mots sont fournis comme indices de contexte au modèle vocal, l'aidant à reconnaître les termes peu courants. Pour les mots difficiles, essayez d'ajouter du contexte comme « The word is Synty » en plus du mot lui-même.",
-      "tipLabel": "Astuce",
-      "tipDescription": "Séparez plusieurs mots par des virgules. Ajoutez des phrases de contexte comme « The word is Synty » pour une meilleure reconnaissance."
-    },
     "general": {
       "appearance": {
         "auto": "Auto",
         "dark": "Sombre",
-        "description": "Contrôlez l'apparence d'OpenWhispr",
+        "description": "Contrôlez l'apparence d'Overlay",
         "light": "Clair",
         "theme": "Thème",
         "themeDescription": "Choisissez clair, sombre ou suivre le système",
@@ -2303,8 +1623,8 @@
         "linuxPttSetupDescription": "Votre utilisateur a besoin d'accéder aux périphériques de saisie clavier.",
         "linuxPttSetupNote": "Après avoir exécuté la commande, déconnectez-vous et reconnectez-vous.",
         "hyprlandConfigWriteWarningTitle": "Les raccourcis Hyprland ne seront pas conservés",
-        "hyprlandConfigWriteWarningDescription": "OpenWhispr ne peut pas écrire dans {{path}} ; les raccourcis ne survivront donc pas à un rechargement de la configuration Hyprland. Vérifiez que le fichier existe et qu'il est accessible en écriture.",
-        "hyprlandUnbindDescription": "Sous Hyprland, OpenWhispr réserve le raccourci sélectionné. Tout raccourci Hyprland existant utilisant la même combinaison de touches sera supprimé quand OpenWhispr enregistrera son raccourci."
+        "hyprlandConfigWriteWarningDescription": "Overlay ne peut pas écrire dans {{path}} ; les raccourcis ne survivront donc pas à un rechargement de la configuration Hyprland. Vérifiez que le fichier existe et qu'il est accessible en écriture.",
+        "hyprlandUnbindDescription": "Sous Hyprland, Overlay réserve le raccourci sélectionné. Tout raccourci Hyprland existant utilisant la même combinaison de touches sera supprimé quand Overlay enregistrera son raccourci."
       },
       "meetingHotkey": {
         "title": "Raccourci mode réunion",
@@ -2330,7 +1650,7 @@
       },
       "notifications": {
         "title": "Notifications",
-        "description": "Choisissez les notifications qu'OpenWhispr peut afficher",
+        "description": "Choisissez les notifications qu'Overlay peut afficher",
         "disableAll": "Désactiver toutes les notifications",
         "disableAllDescription": "Tout couper sauf les messages d'erreur",
         "meetingDetection": "Détection de réunion",
@@ -2347,14 +1667,14 @@
       },
       "startup": {
         "launchAtLogin": "Lancer au démarrage",
-        "launchAtLoginDescription": "Lancer OpenWhispr en arrière-plan à l'ouverture de session",
+        "launchAtLoginDescription": "Lancer Overlay en arrière-plan à l'ouverture de session",
         "title": "Démarrage",
-        "description": "Contrôlez le comportement d'OpenWhispr au lancement",
+        "description": "Contrôlez le comportement d'Overlay au lancement",
         "startMinimized": "Démarrer réduit",
         "startMinimizedDescription": "Lancer sans afficher la fenêtre du panneau de contrôle",
         "needsApproval": {
           "title": "Autorisation requise dans Réglages Système",
-          "description": "macOS a enregistré OpenWhispr comme élément d'ouverture, mais attend que vous l'autorisiez dans Éléments d'ouverture.",
+          "description": "macOS a enregistré Overlay comme élément d'ouverture, mais attend que vous l'autorisiez dans Éléments d'ouverture.",
           "action": "Ouvrir Éléments d'ouverture"
         },
         "launchAtLoginWindows": "Start with Windows",
@@ -2411,7 +1731,7 @@
           "group": {
             "step1Title": "Ajouter votre utilisateur au groupe input",
             "step2Title": "Se déconnecter et se reconnecter",
-            "step2Desc": "Les modifications de groupe ne prennent effet qu'après une nouvelle session. Déconnectez-vous de votre bureau, reconnectez-vous et rouvrez OpenWhispr."
+            "step2Desc": "Les modifications de groupe ne prennent effet qu'après une nouvelle session. Déconnectez-vous de votre bureau, reconnectez-vous et rouvrez Overlay."
           },
           "service": {
             "step1Title": "Créer le répertoire du service",
@@ -2435,7 +1755,7 @@
           "manualTitle": "Ajoutez ceci à votre configuration",
           "manualDesc": "Configurez-le vous-même, puis reconstruisez.",
           "flakeTitle": "Vous installez via notre flake ?",
-          "flakeDesc": "Si vous installez OpenWhispr depuis le flake, programs.openwhispr.enable active ydotool, le module uinput et les appartenances aux groupes pour vous.",
+          "flakeDesc": "Si vous installez Overlay depuis le flake, programs.openwhispr.enable active ydotool, le module uinput et les appartenances aux groupes pour vous.",
           "rebuildNote": "Exécutez sudo nixos-rebuild switch, puis déconnectez-vous et reconnectez-vous pour que le changement de groupe et la règle /dev/uinput prennent effet. Remplacez <you> par votre nom d'utilisateur."
         },
         "wlCopyDesc": "Outil de presse-papiers dans lequel les applications Wayland lisent le texte collé sur ce bureau"
@@ -2471,7 +1791,7 @@
           },
           "installUpdate": {
             "confirmText": "Installer et redémarrer",
-            "description": "OpenWhispr va redémarrer pour appliquer la mise à jour.",
+            "description": "Overlay va redémarrer pour appliquer la mise à jour.",
             "title": "Installer la mise à jour"
           },
           "noUpdates": {
@@ -2567,13 +1887,13 @@
     "permissions": {
       "accessibilityDescription": "Requis pour que le collage automatique fonctionne après la transcription",
       "accessibilityTitle": "Accessibilité",
-      "description": "Testez et gérez les permissions système requises pour le bon fonctionnement d'OpenWhispr",
+      "description": "Testez et gérez les permissions système requises pour le bon fonctionnement d'Overlay",
       "microphoneDescription": "Capture votre voix pour la dictée et la transcription",
       "microphoneTitle": "Microphone",
       "resetAccessibility": {
-        "description": "Cela supprimera OpenWhispr des permissions d'accessibilité. Vous devrez accorder l'accès à nouveau dans Paramètres système > Confidentialité et sécurité > Accessibilité.",
+        "description": "Cela supprimera Overlay des permissions d'accessibilité. Vous devrez accorder l'accès à nouveau dans Paramètres système > Confidentialité et sécurité > Accessibilité.",
         "label": "Réinitialiser les permissions d'accessibilité",
-        "rowDescription": "Corrigez les problèmes après une réinstallation ou une recompilation en supprimant puis en rajoutant OpenWhispr dans les paramètres système",
+        "rowDescription": "Corrigez les problèmes après une réinstallation ou une recompilation en supprimant puis en rajoutant Overlay dans les paramètres système",
         "title": "Réinitialiser les permissions d'accessibilité"
       },
       "optional": "Facultatif",
@@ -2602,7 +1922,7 @@
       "leaderboardRequiresAccount": "Connectez-vous pour gérer votre participation aux classements.",
       "leaderboardRequiresHistory": "Activez la conservation des données avant de rejoindre les classements.",
       "usageAnalytics": "Analyse d'utilisation",
-      "usageAnalyticsDescription": "Aidez-nous à améliorer OpenWhispr en partageant des métriques de performance anonymes. Nous n'envoyons jamais le contenu de vos transcriptions — uniquement des données de performance et d'erreurs.",
+      "usageAnalyticsDescription": "Aidez-nous à améliorer Overlay en partageant des métriques de performance anonymes. Nous n'envoyons jamais le contenu de vos transcriptions — uniquement des données de performance et d'erreurs.",
       "audioRetention": "Conservation de l'audio",
       "audioRetentionDescription": "Stocke l'audio de dictée localement pour la retranscription et le téléchargement. Les fichiers sont automatiquement supprimés après la période de conservation. L'audio des réunions n'est jamais stocké.",
       "audioRetentionDisabled": "Désactivé",
@@ -2658,9 +1978,9 @@
     "transcription": {
       "customSetup": "Configuration personnalisée",
       "customSetupDescription": "Utilisez votre propre fournisseur et clé API.",
-      "description": "Choisissez comment OpenWhispr transcrit votre voix",
+      "description": "Choisissez comment Overlay transcrit votre voix",
       "modes": {
-        "openwhispr": "OpenWhispr Cloud",
+        "openwhispr": "Overlay",
         "providers": "Fournisseurs cloud",
         "local": "Local",
         "selfHosted": "Auto-hébergé",
@@ -2671,13 +1991,13 @@
         "enterprise": "Cloud d'entreprise",
         "enterpriseDesc": "L'audio est envoyé vers le cloud de votre organisation."
       },
-      "openwhisprCloud": "OpenWhispr Cloud",
+      "openwhisprCloud": "Overlay",
       "openwhisprCloudDescription": "Résultats fiables. Aucune configuration requise.",
       "title": "Reconnaissance vocale",
       "toasts": {
         "switchedCloud": {
-          "description": "La transcription utilisera le service cloud OpenWhispr.",
-          "title": "Basculé vers OpenWhispr Cloud"
+          "description": "La transcription utilisera le service cloud Overlay.",
+          "title": "Basculé vers Overlay"
         },
         "switchedCustom": {
           "description": "Configurez votre propre fournisseur et clé API.",
@@ -2763,7 +2083,7 @@
         }
       },
       "meetingEnterpriseOnly": "Votre organisation n'autorise que la transcription cloud d'entreprise, qui ne couvre pas encore l'enregistrement des réunions.",
-      "meetingCloudSignedOut": "Les enregistrements de notes ne peuvent pas démarrer avec OpenWhispr Cloud tant que vous êtes déconnecté. Choisissez un autre moteur ci-dessus."
+      "meetingCloudSignedOut": "Les enregistrements de notes ne peuvent pas démarrer avec Overlay tant que vous êtes déconnecté. Choisissez un autre moteur ci-dessus."
     },
     "intelligence": {
       "gpuDevice": {
@@ -2775,34 +2095,6 @@
       "endpointUrl": "URL du point d'accès",
       "serverUrl": "URL du serveur",
       "apiKeyOptional": "Clé API (facultative)"
-    },
-    "enterpriseCheckout": {
-      "title": "Passer à Enterprise",
-      "description": "Choisissez l'espace de travail, les sièges et le cycle de facturation. Le paiement s'effectue dans Stripe Checkout.",
-      "allSubscribed": "Les espaces de travail que vous possédez sont déjà sur Enterprise ou ne peuvent pas être modifiés ici. Pour tout changement de plan, contactez le service commercial.",
-      "workspaceLabel": "Espace de travail",
-      "seatsLabel": "Sièges",
-      "seatsHint_one": "{{count}} siège actuellement utilisé",
-      "seatsHint_other": "{{count}} sièges actuellement utilisés",
-      "intervalLabel": "Cycle de facturation",
-      "interval": {
-        "monthly": "Mensuel",
-        "annual": "Annuel"
-      },
-      "proratedCharge": "Montant au prorata",
-      "prorationNote": "La différence au prorata est ajoutée à votre prochaine facture.",
-      "errors": {
-        "previewFailed": "Impossible de charger l'aperçu de la mise à niveau.",
-        "alreadyEnterprise": "Cet espace de travail est déjà sur Enterprise.",
-        "subscriptionInactive": "L'abonnement de cet espace de travail n'est pas actif. Mettez à jour vos informations de facturation et réessayez.",
-        "priceNotConfigured": "Les tarifs Enterprise ne sont pas disponibles pour le moment. Veuillez contacter le service commercial."
-      },
-      "priceNote": "Le prix final est affiché lors du paiement.",
-      "continueCta": "Continuer vers le paiement",
-      "upgradeDescription": "Passez {{workspace}} de {{plan}} à Enterprise. Les sièges et le cycle de facturation sont conservés ; le changement prend effet immédiatement.",
-      "upgradeCta": "Mettre à niveau",
-      "upgradedTitle": "Mise à niveau effectuée",
-      "upgradedDescription": "{{workspace}} est maintenant sur Enterprise."
     }
   },
   "models": {
@@ -2976,132 +2268,6 @@
       "localModelBusy": "Le modèle local traite encore une autre requête. Attendez qu'elle se termine, puis réessayez."
     }
   },
-  "insights": {
-    "title": "Statistiques",
-    "yourUsage": "Votre utilisation",
-    "description": "Une vue privée de vos habitudes de dictée et de votre régularité.",
-    "wordsSpoken": "Mots dictés",
-    "currentStreak": "Série en cours",
-    "wordsPerMinute": "Mots par minute",
-    "dictations": "Dictées",
-    "allTime": "Depuis le début",
-    "days_one": "{{count}} jour",
-    "days_other": "{{count}} jours",
-    "longestStreak_one": "Record : {{count}} jour",
-    "longestStreak_other": "Record : {{count}} jours",
-    "wpmCoverage": "Basé sur {{count}} % des mots mesurés",
-    "activity": "Activité de dictée",
-    "activityDescription": "Mots dictés au cours des 6 derniers mois",
-    "activityLabel": "Carte de chaleur de l'activité de dictée sur 6 mois",
-    "activityLess": "Moins",
-    "activityMore": "Plus",
-    "dayTooltip_one": "{{date}} : {{count}} mot",
-    "dayTooltip_other": "{{date}} : {{count}} mots",
-    "dataRetentionDisabled": "La conservation des données est désactivée : les nouvelles dictées ne sont comptabilisées dans les Statistiques ni sur cet appareil ni dans votre compte. Les compteurs déjà synchronisés restent dans votre compte.",
-    "onDevice": "Sur cet appareil",
-    "onDevicePrivacy": "Ces statistiques sont calculées sur cet appareil afin de protéger votre vie privée.",
-    "synced": "Synchronisé entre les appareils",
-    "syncFallback": "Données de l'appareil affichées — synchronisation indisponible",
-    "syncPrompt": "Synchronisez des compteurs sans contenu pour combiner l'activité locale et cloud sur tous vos appareils.",
-    "enableSync": "Activer la synchronisation",
-    "syncEnableError": "La synchronisation d’Insights n’a pas pu être activée. Réessayez.",
-    "claimTitle": "Inclure les dictées antérieures ?",
-    "claimDescription_one": "Synchronisez l’utilisation de {{count}} dictée antérieure. Les transcriptions restent privées.",
-    "claimDescription_other": "Synchronisez l’utilisation de {{count}} dictées antérieures. Les transcriptions restent privées.",
-    "claimInclude": "Inclure",
-    "claimSkip": "Pas maintenant",
-    "enableTitle": "Activer la synchronisation d'Insights ?",
-    "enableConfirm": "Activer la synchronisation",
-    "enableDescription_one": "Synchronisez l’utilisation de {{count}} dictée existante. Les transcriptions restent privées.",
-    "enableDescription_other": "Synchronisez l’utilisation de {{count}} dictées existantes. Les transcriptions restent privées.",
-    "emptyTitle": "Aucune dictée pour l'instant",
-    "emptyBody": "Commencez à dicter : vos mots, vos séries et votre activité quotidienne apparaîtront ici.",
-    "loadError": "Impossible de lire les Insights depuis cet appareil.",
-    "leaderboard": {
-      "title": "Classement",
-      "inviteCta": "Inviter des collègues",
-      "soloTitle": "Invitez votre premier collègue",
-      "soloDescription": "Votre classement est prêt. Invitez quelqu’un dans {{scope}} pour commencer à comparer l’activité et progresser ensemble.",
-      "soloHint": "Cette personne apparaîtra ici après avoir rejoint le classement.",
-      "topPerformers": "Meilleurs classements",
-      "refreshCadence": "Actualisé chaque heure",
-      "moreActions": "Plus d’actions du classement",
-      "setupTitle": "Créez le classement de votre équipe",
-      "setupDescription": "Créez un espace de travail, puis invitez des collègues pour comparer votre activité et progresser ensemble.",
-      "setupDomainDescription_one": "{{count}} personne chez {{domain}} participe aux classements. Créez un espace de travail et invitez-la.",
-      "setupDomainDescription_other": "{{count}} personnes chez {{domain}} participent aux classements. Créez un espace de travail et invitez-les.",
-      "setupCta": "Créer un espace de travail",
-      "accessError": "Nous n'avons pas pu vérifier votre accès au classement.",
-      "signInTitle": "Connectez-vous pour voir votre classement",
-      "signInDescription": "Les classements vous comparent aux coéquipiers de votre compte. Connectez-vous pour voir si le vôtre est disponible.",
-      "requestJoinTitle": "Votre équipe est déjà là",
-      "requestJoinDescription_one": "{{workspace}} compte {{count}} membre. Demandez à un administrateur de vous ajouter.",
-      "requestJoinDescription_other": "{{workspace}} compte {{count}} membres. Demandez à un administrateur de vous ajouter.",
-      "requestJoinCta": "Demander à rejoindre",
-      "requestSent": "Demande envoyée",
-      "requesting": "Envoi de la demande…",
-      "acceptInviteTitle": "Vous êtes invité dans {{workspace}}",
-      "acceptInviteDescription": "{{inviter}} vous a invité. Rejoignez l'espace pour voir le classement de l'équipe.",
-      "acceptInviteDescriptionNoInviter": "Rejoignez {{workspace}} pour voir le classement de l'équipe.",
-      "acceptInviteCta": "Rejoindre l’équipe",
-      "joining": "Connexion en cours…",
-      "inviteAcceptedTitle": "Espace de travail rejoint",
-      "inviteAcceptedDescription": "Vous pouvez maintenant voir le classement de {{workspace}}.",
-      "inviteAcceptError": "Impossible de rejoindre cet espace de travail",
-      "invitedList": "Invités : {{emails}}",
-      "chooseBoard": "Choisir un classement",
-      "emptyStrip_one": "{{count}} coéquipier n'a pas encore rejoint le classement. Le classement commencera ensuite.",
-      "emptyStrip_other": "{{count}} coéquipiers n'ont pas encore rejoint le classement. Le classement commencera ensuite.",
-      "copyNudge": "Copier un rappel",
-      "nudgeText": "Rejoignez le classement dans OpenWhispr → Insights pour que nous puissions voir le classement de l'équipe.",
-      "nudgeCopied": "Rappel copié",
-      "nudgeCopyError": "Impossible de copier le rappel",
-      "joinTitle": "Découvrez votre classement dans {{scope}}",
-      "joinDescription": "Votre nom, votre e-mail et votre activité figurent dans tous vos classements d’espaces et domaines professionnels. Les transcriptions restent privées et vous pouvez partir à tout moment.",
-      "joinCta": "Participer aux classements",
-      "joiningLeaderboard": "Inscription…",
-      "joinPolicyBlocked": "La politique de votre espace de travail n'autorise pas la participation aux classements.",
-      "activationError": "Nous n’avons pas pu vérifier votre participation au classement. Vérifiez votre connexion et réessayez.",
-      "disabled": "Le classement est désactivé",
-      "leave": "Quitter les classements",
-      "leavePending": "Vous quitterez les classements dès votre retour en ligne.",
-      "allTime": "Depuis toujours",
-      "thisWeek": "Cette semaine",
-      "wpmValue": "{{count}} MPM",
-      "dayValue_one": "{{count}} jour",
-      "dayValue_other": "{{count}} jours",
-      "share": "Partager",
-      "refresh": "Actualiser le classement",
-      "error": "Le classement n’a pas pu être chargé.",
-      "retry": "Réessayer",
-      "rank": "Rang",
-      "member": "Membre",
-      "you": "(vous)",
-      "jumpToMe": "Aller à mon rang",
-      "jumpUnavailable": "Votre compte n’a pas pu être identifié dans ce classement.",
-      "previous": "Page précédente",
-      "jumpToRank": "Aller au rang",
-      "next": "Page suivante",
-      "metrics": {
-        "total_words": "Nombre total de mots",
-        "words_per_minute": "Mots par minute",
-        "current_daily_streak": "Série quotidienne actuelle",
-        "desktop_words": "Mots sur ordinateur",
-        "mobile_words": "Mots sur mobile"
-      },
-      "shareText": "Découvrez mon classement sur OpenWhispr.",
-      "shareTitle": "Partager le classement",
-      "shareDescription": "Copiez ou téléchargez cette carte, ou copiez-la avant d’ouvrir un éditeur de publication.",
-      "copyImage": "Copier l’image",
-      "download": "Télécharger",
-      "shareX": "Partager sur X",
-      "shareLinkedIn": "Partager sur LinkedIn",
-      "copied": "Image copiée — collez-la dans votre publication.",
-      "saved": "Image téléchargée.",
-      "failed": "La carte de partage n’a pas pu être créée.",
-      "unnamedMember": "Coéquipier"
-    }
-  },
   "sidebar": {
     "insights": "Statistiques",
     "home": "Accueil",
@@ -3126,84 +2292,6 @@
     "chat": "Chat",
     "collapse": "Réduire la barre latérale",
     "expand": "Développer la barre latérale"
-  },
-  "workspaces": {
-    "switcher": {
-      "workspaces": "Espaces de travail",
-      "create": "Créer un espace de travail…",
-      "add": "Ajouter un espace de travail",
-      "invitePeople": "Inviter des personnes"
-    },
-    "create": {
-      "title": "Créer un espace de travail",
-      "description": "Un espace de travail réunit les membres et la facturation de votre organisation. Créez-y des espaces d'équipe pour les notes partagées.",
-      "nameLabel": "Nom de l'espace de travail",
-      "namePlaceholder": "Acme Corp",
-      "submit": "Créer l'espace",
-      "submitting": "Création…",
-      "errorTitle": "Impossible de créer l'espace"
-    },
-    "created": {
-      "title": "Espace de travail créé",
-      "description": "Vous êtes maintenant propriétaire de {{name}}."
-    },
-    "invite": {
-      "title": "Inviter dans {{workspace}}",
-      "description": "Ajoutez des coéquipiers par e-mail. Ils recevront un lien pour rejoindre.",
-      "emailLabel": "E-mail",
-      "emailPlaceholder": "collegue@exemple.com",
-      "roleLabel": "Rôle",
-      "seatUsage": "{{used}} sur {{seats}} sièges utilisés",
-      "seatCost": "En cas d’acceptation, un siège sera ajouté à votre offre · facturation au prorata estimée à {{amount}}.",
-      "submit": "Envoyer l'invitation",
-      "submitting": "Envoi…",
-      "sentTitle": "Invitation envoyée",
-      "sentDescription": "Nous avons envoyé une invitation à {{email}}.",
-      "sentNoEmailTitle": "Invitation créée, mais non envoyée par e-mail",
-      "sentNoEmailDescription": "{{email}} a été invité, mais l'e-mail n'a pas pu être délivré. Renvoyez-le plus tard ou partagez le lien d'invitation autrement.",
-      "errorTitle": "Impossible d'envoyer l'invitation",
-      "role": {
-        "admin": "Administrateur",
-        "member": "Membre"
-      },
-      "roleDescription": {
-        "admin": "Gère les membres et la facturation",
-        "member": "Utilise l'espace de travail"
-      }
-    },
-    "join": {
-      "title": "Rejoignez votre équipe",
-      "domainTitle": "Votre équipe est déjà sur OpenWhispr",
-      "description": "Ces espaces de travail comptent quelqu'un de votre domaine e-mail.",
-      "invitedDescription": "Vous avez été invité à un espace de travail.",
-      "invitedBy": "Invité par {{inviter}} en tant que {{role}}",
-      "memberCount_one": "{{count}} membre",
-      "memberCount_other": "{{count}} membres",
-      "join": "Rejoindre",
-      "requestErrorTitle": "Impossible d'envoyer la demande",
-      "requestedDescription": "Un administrateur de {{workspace}} l'examinera.",
-      "requestedTitle": "Demande envoyée",
-      "requested": "Demandé",
-      "request": "Demander l'accès",
-      "notNow": "Pas maintenant",
-      "successTitle": "Vous avez rejoint",
-      "successDescription": "Vous êtes désormais membre de {{workspace}}.",
-      "errorTitle": "Impossible de rejoindre"
-    },
-    "accept": {
-      "title": "Rejoindre l'espace",
-      "description": "{{inviter}} vous a invité à rejoindre {{workspace}} en tant que {{role}}.",
-      "loading": "Chargement…",
-      "accept": "Accepter l'invitation",
-      "accepting": "Acceptation…",
-      "signInToAccept": "Connectez-vous pour accepter",
-      "switchAccount": "Changer de compte",
-      "successTitle": "Vous êtes membre",
-      "successDescription": "Vous êtes membre de {{name}}. Gérez-le dans Paramètres → Espace de travail.",
-      "errorTitle": "Impossible d'accepter l'invitation",
-      "sentTo": "Invitation envoyée à {{email}}",
-      "wrongAccount": "Cette invitation a été envoyée à {{email}}. Vous êtes connecté en tant que {{current}}."
-    }
   },
   "chat": {
     "newChat": "Nouveau chat",
@@ -3232,78 +2320,6 @@
       "todos": "Liste mes tâches récentes",
       "meeting": "Prépare-moi pour ma prochaine réunion",
       "sharedNotes": "Mets en avant mes notes partagées"
-    }
-  },
-  "referral": {
-    "title": "Parrainez et gagnez des récompenses",
-    "modalTitle": "Parrainez et gagnez des récompenses",
-    "subtitle": "Offrez un mois. Recevez un mois.",
-    "tabs": {
-      "refer": "Parrainer",
-      "pastInvites": "Invitations passées"
-    },
-    "howItWorks": {
-      "shareLink": "Partagez votre lien d'invitation",
-      "theySignUp": "Ils s'inscrivent et obtiennent un ",
-      "freeMonthOfPro": "mois gratuit de Pro",
-      "youGet": "Vous recevez un ",
-      "freeMonth": "mois gratuit",
-      "whenTheyDictate": " lorsqu'ils dictent 2 000 mots"
-    },
-    "inviteLink": {
-      "title": "Votre lien d'invitation",
-      "copy": "Copier",
-      "copied": "Copié"
-    },
-    "sendInvites": {
-      "title": "Envoyer des invitations",
-      "placeholder": "friend@example.com",
-      "send": "Envoyer",
-      "sending": "Envoi en cours"
-    },
-    "stats": {
-      "referred": "Parrainés",
-      "converted": "Convertis",
-      "monthsEarned": "Mois gagnés"
-    },
-    "status": {
-      "converted": "Converti",
-      "opened": "Ouvert",
-      "failed": "Échoué",
-      "sent": "Envoyé"
-    },
-    "friends": {
-      "title": "Amis",
-      "completed": "Complété",
-      "sentInvites": "Invitations envoyées"
-    },
-    "empty": {
-      "title": "Aucune invitation envoyée",
-      "description": "Partagez votre lien ou envoyez une invitation pour commencer"
-    },
-    "toasts": {
-      "copiedTitle": "Copié !",
-      "copiedDescription": "Lien de parrainage copié dans le presse-papiers",
-      "copyFailedTitle": "Échec de la copie",
-      "copyFailedDescription": "Impossible de copier le lien dans le presse-papiers",
-      "invalidEmailTitle": "E-mail invalide",
-      "invalidEmailDescription": "Veuillez entrer une adresse e-mail valide",
-      "inviteSentTitle": "Invitation envoyée !",
-      "inviteSentDescription": "Invitation envoyée à {{email}}",
-      "sendFailedTitle": "Échec de l'envoi",
-      "sendFailedDescription": "Impossible d'envoyer l'invitation. Veuillez réessayer."
-    },
-    "errors": {
-      "unableToLoad": "Impossible de charger les données de parrainage",
-      "unableToLoadStats": "Impossible de charger les statistiques de parrainage. Veuillez réessayer plus tard."
-    },
-    "tryAgain": "Réessayer",
-    "card": {
-      "brand": "OpenWhispr",
-      "signalId": "Signal ID",
-      "audioSignature": "Votre signature audio",
-      "stop": "Arrêter",
-      "playSignal": "Lire le signal"
     }
   },
   "notes": {
@@ -3446,7 +2462,7 @@
     },
     "structureIntro": {
       "title": "Où se trouvent vos notes",
-      "description": "OpenWhispr sépare les idées privées du travail partagé afin que les bonnes personnes voient les bonnes notes.",
+      "description": "Overlay sépare les idées privées du travail partagé afin que les bonnes personnes voient les bonnes notes.",
       "personal": {
         "title": "Espace personnel",
         "description": "Vous seul pouvez voir les dossiers et les notes qui s'y trouvent."
@@ -3606,7 +2622,7 @@
       "newFolder": "Nouveau dossier",
       "folderName": "Nom du dossier",
       "create": "Créer",
-      "openwhisprCloud": "OpenWhispr Cloud",
+      "openwhisprCloud": "Overlay",
       "custom": "Personnalisé",
       "selectFolder": "Sélectionner un dossier",
       "transcriptionFailed": "Échec de la transcription",
@@ -3616,17 +2632,17 @@
       "noProviderDescription": "Ajoutez une clé API ou téléchargez un modèle local pour commencer à transcrire.",
       "noProviderAction": "Ouvrir les paramètres de transcription",
       "fileTooLarge": "Ce fichier dépasse la limite de 500 MB.",
-      "paidPlanRequired": "La transcription cloud pour les fichiers de plus de 25 Mo nécessite un abonnement payant. Les fichiers volumineux sont traités avec OpenWhispr Cloud pour des résultats fiables et de haute qualité.",
+      "paidPlanRequired": "La transcription cloud pour les fichiers de plus de 25 Mo nécessite un abonnement payant. Les fichiers volumineux sont traités avec Overlay pour des résultats fiables et de haute qualité.",
       "largeFileNote": "Les fichiers volumineux sont découpés et transcrits en parallèle.",
       "chunkProgress": "Transcription de la partie {{completed}} sur {{total}}...",
       "byokTooLarge": "Les clés API tierces ne prennent en charge que les fichiers jusqu'à {{size}} Mo.",
-      "byokTooLargeDetail": "Pour les fichiers de plus de {{size}} Mo, OpenWhispr Cloud gère le découpage, le traitement parallèle et le réassemblage — pour des résultats fiables sans dépendre des limites des fournisseurs tiers.",
-      "byokTooLargeNeedsAccount": "Créez un compte et passez à un abonnement payant pour transcrire des fichiers plus volumineux avec OpenWhispr Cloud.",
-      "byokTooLargeNeedsUpgrade": "Passez à un abonnement payant pour transcrire des fichiers plus volumineux avec OpenWhispr Cloud.",
-      "switchToCloudForLargeFiles": "Passez à OpenWhispr Cloud pour transcrire ce fichier.",
+      "byokTooLargeDetail": "Pour les fichiers de plus de {{size}} Mo, Overlay gère le découpage, le traitement parallèle et le réassemblage — pour des résultats fiables sans dépendre des limites des fournisseurs tiers.",
+      "byokTooLargeNeedsAccount": "Créez un compte et passez à un abonnement payant pour transcrire des fichiers plus volumineux avec Overlay.",
+      "byokTooLargeNeedsUpgrade": "Passez à un abonnement payant pour transcrire des fichiers plus volumineux avec Overlay.",
+      "switchToCloudForLargeFiles": "Passez à Overlay pour transcrire ce fichier.",
       "createAccount": "Créer un compte",
       "upgrade": "Mettre à niveau",
-      "switchToCloud": "OpenWhispr Cloud",
+      "switchToCloud": "Overlay",
       "orDivider": "ou",
       "urlPlaceholder": "Collez une URL YouTube ou audio",
       "urlDownloading": "Téléchargement de l'audio...",
@@ -3686,7 +2702,7 @@
       },
       "systemAudioStopped": {
         "title": "Son de la réunion arrêté",
-        "description": "OpenWhispr ne capte plus les autres participants. Arrêtez l'enregistrement puis relancez-le, ou vérifiez votre périphérique de sortie audio."
+        "description": "Overlay ne capte plus les autres participants. Arrêtez l'enregistrement puis relancez-le, ou vérifiez votre périphérique de sortie audio."
       },
       "systemAudioQuiet": {
         "title": "L'audio de la réunion est devenu silencieux",
@@ -3978,7 +2994,7 @@
     "clearTitle": "Vider le dictionnaire ?",
     "clearDescription": "Cela supprimera tous les mots de votre dictionnaire personnalisé. Cette action est irréversible.",
     "addWord": "Ajouter un mot",
-    "addPlaceholder": "Ajoutez des mots séparés par des virgules — OpenWhispr, Supabase, John Snow, ARR",
+    "addPlaceholder": "Ajoutez des mots séparés par des virgules — Overlay, Supabase, John Snow, ARR",
     "removeWord": "Supprimer {{word}}",
     "clearAll": "Tout effacer",
     "add": "Ajouter",
@@ -4010,7 +3026,7 @@
       "duplicate": "Un snippet avec ce déclencheur existe déjà",
       "emptyTitle": "Ce que vous ne devriez pas avoir à dire",
       "emptyTitleAccent": "deux fois",
-      "emptyDescription": "Prononcez un mot déclencheur et OpenWhispr le remplace par ce que vous avez enregistré : URL, intros, signatures, prompts.",
+      "emptyDescription": "Prononcez un mot déclencheur et Overlay le remplace par ce que vous avez enregistré : URL, intros, signatures, prompts.",
       "new": "Nouveau snippet",
       "examples": {
         "linkedinTrigger": "Mon LinkedIn",
@@ -4024,18 +3040,6 @@
     "emptyDescription": "Ajoutez les mots que {{agentName}} doit toujours reconnaître : noms, outils, acronymes.",
     "addFirstWord": "Ajoutez votre premier mot",
     "agentDefault": "Ajouté par défaut"
-  },
-  "support": {
-    "documentation": "Documentation",
-    "joinDiscord": "Rejoindre Discord",
-    "contactSupport": "Contacter le support",
-    "submitBug": "Signaler un bug"
-  },
-  "postMigration": {
-    "title": "Bon retour sur OpenWhispr",
-    "description": "Vos notes et vos paramètres ont été conservés depuis la version précédente. macOS considère toutefois cette installation comme une nouvelle app, il faudra donc accorder à nouveau quelques permissions.",
-    "done": "Terminé",
-    "remindLater": "Me le rappeler plus tard"
   },
   "apiKeyInput": {
     "placeholder": "Collez votre clé API",
@@ -4061,11 +3065,11 @@
     "cudaDescription": "Accélération CUDA pour les GPU NVIDIA compatibles. Nécessite un pilote NVIDIA actuel et compatible.",
     "vulkanDescription": "Accélération Vulkan pour les GPU AMD, Intel et NVIDIA compatibles.",
     "activationFailed": "Accélération GPU indisponible",
-    "activationFailedDescription": "OpenWhispr est passé à la transcription par CPU.",
-    "reasoningActivationFailedDescription": "OpenWhispr est passé au traitement par CPU.",
+    "activationFailedDescription": "Overlay est passé à la transcription par CPU.",
+    "reasoningActivationFailedDescription": "Overlay est passé au traitement par CPU.",
     "retryActivation": "Réessayer l'accélération GPU",
     "redownloadNeeded": "Le pack GPU doit être retéléchargé",
-    "redownloadNeededDescription": "Cette version d'OpenWhispr ne peut pas utiliser votre pack GPU installé. Retéléchargez-le pour réactiver l'accélération GPU.",
+    "redownloadNeededDescription": "Cette version d'Overlay ne peut pas utiliser votre pack GPU installé. Retéléchargez-le pour réactiver l'accélération GPU.",
     "redownloadButton": "Retélécharger le pack GPU",
     "downloadFailed": "Impossible de télécharger le pack GPU.",
     "remove": "Supprimer",
@@ -4086,11 +3090,11 @@
       "undo": "Annuler",
       "accessibilityMissing": {
         "title": "Autorisations d'accessibilité requises",
-        "description": "OpenWhispr a besoin des autorisations d'accessibilité pour détecter votre raccourci et coller du texte. Veuillez les activer dans le Panneau de configuration."
+        "description": "Overlay a besoin des autorisations d'accessibilité pour détecter votre raccourci et coller du texte. Veuillez les activer dans le Panneau de configuration."
       },
       "gpuFallback": {
         "title": "Accélération GPU indisponible",
-        "description": "OpenWhispr est passé à la transcription par CPU.",
+        "description": "Overlay est passé à la transcription par CPU.",
         "retry": "Réessayer le GPU"
       },
       "gpuPackMigration": {
@@ -4135,7 +3139,7 @@
       "visionModelDescription": "Envoie les commandes incluant une capture vers un autre modèle capable de vision.",
       "permissionTitle": "Enregistrement de l'écran",
       "permissionDescription": "macOS exige l'autorisation d'enregistrement de l'écran pour capturer votre écran.",
-      "relaunchHint": "L'enregistrement d'écran a été autorisé pendant qu'OpenWhispr était en cours d'exécution. Quittez et rouvrez OpenWhispr pour commencer à capturer des captures d'écran."
+      "relaunchHint": "L'enregistrement d'écran a été autorisé pendant qu'Overlay était en cours d'exécution. Quittez et rouvrez Overlay pour commencer à capturer des captures d'écran."
     },
     "prompt": {
       "title": "Invite de l'assistant",
@@ -4250,12 +3254,12 @@
       "openNote": "Ouvrir la note",
       "unknownTool": "Outil inconnu : {{name}}",
       "invalidArgs": "Arguments d'outil invalides pour {{name}}",
-      "search_openwhispr_helpName": "Rechercher dans l’aide OpenWhispr",
-      "read_openwhispr_helpName": "Lire l’aide OpenWhispr",
-      "get_openwhispr_contextName": "Lire les paramètres OpenWhispr",
-      "search_openwhispr_helpStatus": "Recherche dans l’aide OpenWhispr...",
-      "read_openwhispr_helpStatus": "Lecture de l’aide OpenWhispr...",
-      "get_openwhispr_contextStatus": "Lecture des paramètres OpenWhispr..."
+      "search_openwhispr_helpName": "Rechercher dans l’aide Overlay",
+      "read_openwhispr_helpName": "Lire l’aide Overlay",
+      "get_openwhispr_contextName": "Lire les paramètres Overlay",
+      "search_openwhispr_helpStatus": "Recherche dans l’aide Overlay...",
+      "read_openwhispr_helpStatus": "Lecture de l’aide Overlay...",
+      "get_openwhispr_contextStatus": "Lecture des paramètres Overlay..."
     }
   },
   "assistant": {
@@ -4295,7 +3299,7 @@
       "disconnectConfirm": "Déconnecter {{email}} ?",
       "disconnectDescription": "Les notes de réunion ne seront plus enregistrées depuis ce calendrier.",
       "systemAudioRequired": "Autorisation Audio Système requise",
-      "systemAudioDescription": "Pour transcrire les réunions, OpenWhispr a besoin de l'autorisation Audio Système pour capturer l'audio des autres participants. Nous n'enregistrons jamais votre écran. Vous serez dirigé vers les Réglages Système pour l'activer.",
+      "systemAudioDescription": "Pour transcrire les réunions, Overlay a besoin de l'autorisation Audio Système pour capturer l'audio des autres participants. Nous n'enregistrons jamais votre écran. Vous serez dirigé vers les Réglages Système pour l'activer.",
       "openSettings": "Ouvrir les Réglages Système",
       "connectFailed": "Échec de la connexion",
       "connectFailedDescription": "Une erreur s'est produite lors de la connexion à Google Calendar. Veuillez réessayer."
@@ -4323,10 +3327,10 @@
       "disconnectConfirm": "Déconnecter le Calendrier Apple ?",
       "disconnectDescription": "Les notes de réunion ne seront plus enregistrées depuis votre Calendrier Apple.",
       "permissionDenied": "Accès au calendrier requis",
-      "permissionDeniedDescription": "OpenWhispr a besoin d'accéder au calendrier pour détecter les réunions. Activez OpenWhispr dans Réglages Système, sous Confidentialité et sécurité → Calendriers.",
+      "permissionDeniedDescription": "Overlay a besoin d'accéder au calendrier pour détecter les réunions. Activez Overlay dans Réglages Système, sous Confidentialité et sécurité → Calendriers.",
       "openSettings": "Ouvrir les Réglages Système",
       "connectFailed": "Échec de la connexion",
-      "connectFailedDescription": "Une erreur s'est produite lors de la connexion à Calendar.app. Redémarrez OpenWhispr et réessayez."
+      "connectFailedDescription": "Une erreur s'est produite lors de la connexion à Calendar.app. Redémarrez Overlay et réessayez."
     },
     "api": {
       "description": "Gérez les clés API pour un accès programmatique",
@@ -4336,13 +3340,13 @@
     },
     "mcp": {
       "description": "Discutez, recherchez et travaillez avec vos notes dans Claude, ChatGPT et Cursor.",
-      "step1": "Dans votre outil d'IA, ajoutez OpenWhispr MCP avec l'URL publique",
-      "proRequired": "Passez à un plan payant pour connecter OpenWhispr à Claude, ChatGPT et Cursor.",
+      "step1": "Dans votre outil d'IA, ajoutez Overlay MCP avec l'URL publique",
+      "proRequired": "Passez à un plan payant pour connecter Overlay à Claude, ChatGPT et Cursor.",
       "worksWith": "Fonctionne avec",
       "copyUrl": "Copier l'URL MCP",
       "copied": "Copié",
       "oauthTitle": "Se connecter avec OAuth",
-      "oauthDescription": "Dans un client compatible OAuth, ajoutez l’URL du serveur, puis connectez-vous à OpenWhispr et autorisez l’accès. Aucune clé API requise.",
+      "oauthDescription": "Dans un client compatible OAuth, ajoutez l’URL du serveur, puis connectez-vous à Overlay et autorisez l’accès. Aucune clé API requise.",
       "apiKeyTitle": "Utiliser une clé API",
       "apiKeyDescription": "Pour les clients acceptant les en-têtes de requête, créez une clé API personnelle avec les autorisations nécessaires et utilisez l’en-tête ci-dessous."
     },
@@ -4353,7 +3357,7 @@
       "local": {
         "label": "Local",
         "freeBadge": "Gratuit",
-        "description": "Lisez vos notes locales directement. Aucun compte ni clé API — fonctionne tant qu'OpenWhispr est ouvert."
+        "description": "Lisez vos notes locales directement. Aucun compte ni clé API — fonctionne tant qu'Overlay est ouvert."
       },
       "cloud": {
         "label": "Cloud",
@@ -4373,7 +3377,7 @@
       "upgrade": "Passer au supérieur"
     },
     "notABot": {
-      "description": "OpenWhispr capture l'audio directement depuis votre système — il ne rejoint jamais vos réunions en tant que participant. Connectez simplement votre calendrier et prenez vos notes normalement."
+      "description": "Overlay capture l'audio directement depuis votre système — il ne rejoint jamais vos réunions en tant que participant. Connectez simplement votre calendrier et prenez vos notes normalement."
     },
     "nav": {
       "label": "Sections des intégrations",
@@ -4438,7 +3442,7 @@
         "reconnect_needed": "Slack doit être reconnecté dans les Paramètres.",
         "connection_changed": "La connexion Slack a changé avant l'envoi, donc rien n'a été envoyé.",
         "rate_limited": "Slack est occupé. Réessayez sous peu.",
-        "missing_scope": "OpenWhispr n'a pas la permission de publier là-bas. Reconnectez Slack dans les Paramètres.",
+        "missing_scope": "Overlay n'a pas la permission de publier là-bas. Reconnectez Slack dans les Paramètres.",
         "msg_too_long": "Le message est trop long pour Slack (12 000 caractères maximum, une fois formaté).",
         "no_text": "Le message est vide.",
         "network": "Slack est injoignable. Rien n'a été envoyé.",
@@ -4453,9 +3457,9 @@
           "connection_changed": "La connexion GitHub a changé avant la publication, donc rien n'a été publié.",
           "credential_save_failed": "La connexion GitHub n'a pas pu être enregistrée sur cet ordinateur. Rien n'a été publié. Réessayez.",
           "generic": "Un problème est survenu. Rien n'a été publié sur GitHub.",
-          "not_installed": "L'application GitHub OpenWhispr n'est pas installée sur ce dépôt. Ajoutez-la dans les Paramètres. Rien n'a été publié.",
-          "repo_unlisted": "Impossible de confirmer que l'application GitHub OpenWhispr est installée sur ce dépôt. Vérifiez le nom du dépôt. Rien n'a été publié.",
-          "no_repositories": "Aucun dépôt n'est encore choisi pour l'application GitHub OpenWhispr. Choisissez-les dans les Paramètres. Rien n'a été publié.",
+          "not_installed": "L'application GitHub Overlay n'est pas installée sur ce dépôt. Ajoutez-la dans les Paramètres. Rien n'a été publié.",
+          "repo_unlisted": "Impossible de confirmer que l'application GitHub Overlay est installée sur ce dépôt. Vérifiez le nom du dépôt. Rien n'a été publié.",
+          "no_repositories": "Aucun dépôt n'est encore choisi pour l'application GitHub Overlay. Choisissez-les dans les Paramètres. Rien n'a été publié.",
           "forbidden": "Vous n'avez pas l'autorisation de faire cela dans ce dépôt. Rien n'a été publié.",
           "not_found": "L'issue ou la pull request est introuvable. Rien n'a été publié.",
           "issues_disabled": "Les issues sont désactivées dans ce dépôt. Rien n'a été publié.",
@@ -4500,7 +3504,7 @@
           "wrong_workspace": "Ce ticket se trouve dans un autre espace de travail Linear. Rien n'a été envoyé.",
           "invalid_reference": "Ce n'est pas un ticket Linear. Rien n'a été envoyé.",
           "refused": "Linear a refusé la demande. Rien n'a été envoyé.",
-          "unknown_action": "OpenWhispr ne peut pas faire cela dans Linear. Rien n'a été envoyé.",
+          "unknown_action": "Overlay ne peut pas faire cela dans Linear. Rien n'a été envoyé.",
           "generic": "Un problème est survenu. Rien n'a été envoyé à Linear."
         }
       },
@@ -4598,19 +3602,19 @@
         "oauth_denied": "Slack n'a pas été connecté car l'accès n'a pas été autorisé.",
         "oauth_timeout": "La connexion a pris trop de temps. Réessayez.",
         "oauth_state_mismatch": "Ce lien de connexion était périmé. Réessayez.",
-        "ports_busy": "Une autre application utilise les ports dont OpenWhispr a besoin pour se connecter. Fermez-la et réessayez.",
+        "ports_busy": "Une autre application utilise les ports dont Overlay a besoin pour se connecter. Fermez-la et réessayez.",
         "token_exchange_failed": "Slack n'a pas terminé la connexion. Réessayez.",
         "not_configured": "Slack n'est pas disponible dans cette version.",
         "connection_changed": "Votre compte ou la connexion Slack a changé pendant la connexion. Réessayez.",
-        "signed_out": "Connectez-vous à OpenWhispr pour connecter Slack.",
+        "signed_out": "Connectez-vous à Overlay pour connecter Slack.",
         "policy_blocked": "Votre organisation a désactivé les connecteurs.",
         "policy_unavailable": "Impossible de vérifier les paramètres de votre organisation. Réessayez."
       },
       "browser": {
         "connectedTitle": "Slack est connecté",
-        "connectedBody": "Vous pouvez fermer cet onglet et retourner à OpenWhispr.",
+        "connectedBody": "Vous pouvez fermer cet onglet et retourner à Overlay.",
         "failedTitle": "Slack n'a pas été connecté",
-        "failedBody": "Retournez à OpenWhispr pour réessayer."
+        "failedBody": "Retournez à Overlay pour réessayer."
       }
     },
     "github": {
@@ -4625,7 +3629,7 @@
       "connectedAs_unknown": "Connecté en tant que {{account}}",
       "needsReconnect": "GitHub doit être reconnecté.",
       "reviewOnGithub": "Vérifier sur GitHub",
-      "disconnectedHint": "Déconnecté de cet ordinateur. GitHub conserve l'autorisation d'OpenWhispr jusqu'à ce que vous la retiriez sur GitHub.",
+      "disconnectedHint": "Déconnecté de cet ordinateur. GitHub conserve l'autorisation d'Overlay jusqu'à ce que vous la retiriez sur GitHub.",
       "errors": {
         "connect_failed": "Impossible de connecter GitHub. Réessayez.",
         "disconnect_failed": "Impossible de déconnecter GitHub. Réessayez.",
@@ -4633,7 +3637,7 @@
         "token_exchange_failed": "GitHub n'a pas terminé la connexion. Réessayez.",
         "not_configured": "GitHub n'est pas disponible dans cette version.",
         "connection_changed": "Votre compte ou la connexion GitHub a changé pendant la connexion. Réessayez.",
-        "signed_out": "Connectez-vous à OpenWhispr pour connecter GitHub.",
+        "signed_out": "Connectez-vous à Overlay pour connecter GitHub.",
         "policy_blocked": "Votre organisation a désactivé les connecteurs.",
         "policy_unavailable": "Impossible de vérifier les paramètres de votre organisation. Réessayez.",
         "code_expired": "Le code a expiré. Réessayez.",
@@ -4659,32 +3663,32 @@
       "connect": "Connecter",
       "reconnect": "Reconnecter",
       "disconnect": "Déconnecter",
-      "connecting": "Terminez la connexion dans votre navigateur… Si Google indique que l'accès est bloqué, l'administrateur Google de votre organisation doit autoriser OpenWhispr.",
+      "connecting": "Terminez la connexion dans votre navigateur… Si Google indique que l'accès est bloqué, l'administrateur Google de votre organisation doit autoriser Overlay.",
       "connectedAs": "Connecté en tant que {{account}}",
       "needsReconnect": "Gmail doit être reconnecté.",
-      "grantKept": "Déconnecté. Google Agenda utilise la même autorisation Google : OpenWhispr reste donc listé dans votre compte Google jusqu'à ce que vous déconnectiez aussi Google Agenda.",
+      "grantKept": "Déconnecté. Google Agenda utilise la même autorisation Google : Overlay reste donc listé dans votre compte Google jusqu'à ce que vous déconnectiez aussi Google Agenda.",
       "errors": {
         "connect_failed": "Impossible de connecter Gmail. Réessayez.",
         "disconnect_failed": "Impossible de déconnecter Gmail. Réessayez.",
         "oauth_denied": "Gmail n'a pas été connecté car l'accès n'a pas été autorisé.",
-        "oauth_timeout": "La connexion a pris trop de temps. Si Google a indiqué que l'accès est bloqué, demandez à l'administrateur Google de votre organisation d'autoriser OpenWhispr. Sinon, réessayez.",
+        "oauth_timeout": "La connexion a pris trop de temps. Si Google a indiqué que l'accès est bloqué, demandez à l'administrateur Google de votre organisation d'autoriser Overlay. Sinon, réessayez.",
         "oauth_state_mismatch": "Ce lien de connexion était périmé. Réessayez.",
-        "ports_busy": "Une autre application utilise les ports dont OpenWhispr a besoin pour se connecter. Fermez-la et réessayez.",
+        "ports_busy": "Une autre application utilise les ports dont Overlay a besoin pour se connecter. Fermez-la et réessayez.",
         "token_exchange_failed": "Google n'a pas terminé la connexion. Réessayez.",
         "not_configured": "Gmail n'est pas disponible dans cette version.",
         "connection_changed": "Votre compte ou la connexion Gmail a changé pendant la connexion. Réessayez.",
-        "signed_out": "Connectez-vous à OpenWhispr pour connecter Gmail.",
+        "signed_out": "Connectez-vous à Overlay pour connecter Gmail.",
         "policy_blocked": "Votre organisation a désactivé les connecteurs.",
         "policy_unavailable": "Impossible de vérifier les paramètres de votre organisation. Réessayez.",
         "permission_not_granted": "Gmail n'a pas été connecté car l'autorisation d'envoyer des e-mails n'a pas été accordée. Reconnectez-vous en laissant cette autorisation cochée.",
         "email_not_verified": "Google n'a pas vérifié l'adresse e-mail de ce compte, Gmail n'a donc pas été connecté.",
-        "domain_policy": "L'administrateur Google de votre organisation a bloqué cette application. Demandez-lui d'autoriser OpenWhispr."
+        "domain_policy": "L'administrateur Google de votre organisation a bloqué cette application. Demandez-lui d'autoriser Overlay."
       },
       "browser": {
         "connectedTitle": "Gmail est connecté",
-        "connectedBody": "Vous pouvez fermer cet onglet et retourner à OpenWhispr.",
+        "connectedBody": "Vous pouvez fermer cet onglet et retourner à Overlay.",
         "failedTitle": "Gmail n'a pas été connecté",
-        "failedBody": "Retournez à OpenWhispr pour réessayer."
+        "failedBody": "Retournez à Overlay pour réessayer."
       }
     },
     "linear": {
@@ -4702,20 +3706,20 @@
         "oauth_denied": "Linear n'a pas été connecté car l'accès n'a pas été autorisé.",
         "oauth_timeout": "La connexion a pris trop de temps. Réessayez.",
         "oauth_state_mismatch": "Ce lien de connexion était périmé. Réessayez.",
-        "ports_busy": "Une autre application utilise les ports dont OpenWhispr a besoin pour se connecter. Fermez-la et réessayez.",
+        "ports_busy": "Une autre application utilise les ports dont Overlay a besoin pour se connecter. Fermez-la et réessayez.",
         "token_exchange_failed": "Linear n'a pas terminé la connexion. Réessayez.",
         "not_configured": "Linear n'est pas disponible dans cette version.",
         "connection_changed": "Votre compte ou la connexion Linear a changé pendant la connexion. Réessayez.",
-        "signed_out": "Connectez-vous à OpenWhispr pour connecter Linear.",
+        "signed_out": "Connectez-vous à Overlay pour connecter Linear.",
         "policy_blocked": "Votre organisation a désactivé les connecteurs.",
         "policy_unavailable": "Impossible de vérifier les paramètres de votre organisation. Réessayez.",
         "permission_not_granted": "Linear n'a pas été connecté car toutes les autorisations n'ont pas été accordées. Reconnectez-vous et autorisez-les toutes."
       },
       "browser": {
         "connectedTitle": "Linear est connecté",
-        "connectedBody": "Vous pouvez fermer cet onglet et retourner à OpenWhispr.",
+        "connectedBody": "Vous pouvez fermer cet onglet et retourner à Overlay.",
         "failedTitle": "Linear n'a pas été connecté",
-        "failedBody": "Retournez à OpenWhispr pour réessayer."
+        "failedBody": "Retournez à Overlay pour réessayer."
       },
       "notes": {
         "priority": {
@@ -4795,8 +3799,8 @@
           "connection_changed": "La connexion GitHub a changé.",
           "credential_save_failed": "Impossible d'enregistrer la connexion GitHub sur cet ordinateur.",
           "generic": "Cela n'a pas fonctionné sur GitHub.",
-          "not_installed": "L'application GitHub OpenWhispr n'y est pas installée.",
-          "repo_unlisted": "Impossible de confirmer que l'application GitHub OpenWhispr y est installée.",
+          "not_installed": "L'application GitHub Overlay n'y est pas installée.",
+          "repo_unlisted": "Impossible de confirmer que l'application GitHub Overlay y est installée.",
           "no_repositories": "Aucun dépôt GitHub choisi pour l'instant.",
           "forbidden": "Aucune autorisation dans ce dépôt.",
           "not_found": "Issue ou pull request introuvable.",
@@ -4857,249 +3861,6 @@
     "upsell": "Les connecteurs sont inclus dans les forfaits payants. Passez à un forfait payant pour que l'assistant agisse dans vos outils.",
     "locked": "Inclus dans les forfaits payants"
   },
-  "skills": {
-    "pane": {
-      "description": "Apprenez une fois vos méthodes de travail à l'assistant. Il les utilise dès qu'elles s'appliquent.",
-      "search": "Rechercher des compétences",
-      "manage": "Gérer les compétences",
-      "add": "Ajouter",
-      "addMenu": {
-        "create": "Créer une compétence",
-        "upload": "Importer une compétence"
-      },
-      "installed": "Installées",
-      "recommended": "Recommandées",
-      "seeOne": "Voir {{first}}",
-      "seeTwo": "Voir {{first}} et {{second}}",
-      "seeMore_one": "Voir {{first}}, {{second}} et {{count}} autre",
-      "seeMore_other": "Voir {{first}}, {{second}} et {{count}} autres",
-      "noMatches": "Aucune compétence installée ne correspond à « {{query}} ».",
-      "stateOn": "activée",
-      "stateOff": "désactivée",
-      "stateNeedsFix": "à corriger",
-      "off": "Désactivée",
-      "needsFix": "À corriger",
-      "cardLabel": "{{name}}, {{state}}. Ouvrir les détails",
-      "addRecommended": "Ajouter {{name}}",
-      "empty": {
-        "title": "Aucune compétence pour l'instant",
-        "description": "Créez-en une avec l'assistant, ou importez une compétence que vous avez déjà."
-      }
-    },
-    "breadcrumb": {
-      "label": "Fil d'Ariane",
-      "root": "Compétences"
-    },
-    "detail": {
-      "skillLabel": "Compétence",
-      "toggle": "Activer ou désactiver {{name}}",
-      "more": "Plus d'options pour {{name}}",
-      "files": "Fichiers",
-      "copyFile": "Copier {{path}}",
-      "neverRun": "OpenWhispr n'exécute jamais de scripts",
-      "uninstall": "Désinstaller",
-      "uninstallConfirm": "Désinstaller {{name}} ? Elle sera supprimée de cet ordinateur.",
-      "problem": "Cette compétence ne peut pas être utilisée tant qu'elle n'est pas corrigée : {{reason}}"
-    },
-    "menu": {
-      "copyMarkdown": "Copier le Markdown",
-      "uninstall": "Désinstaller"
-    },
-    "toasts": {
-      "added": "Compétence ajoutée : {{name}}",
-      "created": "Compétence créée : {{name}}",
-      "uploaded_one": "{{count}} compétence importée",
-      "uploaded_other": "{{count}} compétences importées",
-      "uninstalled": "Compétence désinstallée : {{name}}",
-      "removedFromComputer": "Supprimée de cet ordinateur.",
-      "copiedMarkdown": "Markdown copié",
-      "copyFailed": "Impossible de copier",
-      "revealFailed": "Impossible de trouver le dossier de la compétence",
-      "writeFailed": "Impossible d'enregistrer la compétence",
-      "writeFailedNoSpace": "Votre disque est plein.",
-      "writeFailedPermission": "OpenWhispr ne peut pas écrire dans son dossier de compétences.",
-      "loadFailed": "Impossible de lire vos compétences"
-    },
-    "manage": {
-      "title": "Gérer les compétences",
-      "description": "Activez ou désactivez des compétences, ou supprimez celles que vous n'utilisez pas. Chacune est enregistrée sur cet ordinateur.",
-      "noMatches": "Aucune compétence ne correspond à « {{query}} ».",
-      "none": "Aucune compétence pour l'instant."
-    },
-    "upload": {
-      "title": "Importer une compétence",
-      "description": "Ajoutez des compétences créées ailleurs, par exemple dans Claude ou Codex.",
-      "crumb": "Importer une compétence",
-      "drop": "Faites glisser des fichiers de compétence ici, ou parcourez",
-      "dropActive": "Déposez pour ajouter",
-      "several": "Vous pouvez en ajouter plusieurs à la fois.",
-      "ruleMd": "Les fichiers .md doivent commencer par un nom et une description",
-      "ruleZip": "Les fichiers .zip et .skill doivent contenir un SKILL.md",
-      "fileCount_one": "{{count}} fichier",
-      "fileCount_other": "{{count}} fichiers",
-      "ready": "Prête",
-      "duplicate": "Vous avez déjà cette compétence",
-      "replace": "Remplacer",
-      "willReplace": "Remplacera votre compétence actuelle",
-      "willReplaceCopy": "Sera utilisé à la place de l'autre fichier",
-      "alsoInUpload": "Un autre fichier de cet import contient la même compétence",
-      "skipped": "Ignorée",
-      "undo": "Annuler",
-      "chooseFile": "Choisissez un fichier pour continuer.",
-      "submit": "Importer",
-      "submitCount_one": "Importer {{count}} compétence",
-      "submitCount_other": "Importer {{count}} compétences"
-    },
-    "create": {
-      "title": "Créer une compétence",
-      "description": "Rédigez-la vous-même. L'assistant l'utilise dès qu'une demande correspond à la description.",
-      "crumb": "Créer une compétence",
-      "name": "Nom",
-      "namePlaceholder": "Rapport d'avancement hebdomadaire",
-      "nameMissing": "Ajoutez un nom.",
-      "descriptionLabel": "Description",
-      "descriptionPlaceholder": "Ce qu'elle fait et quand l'utiliser. Par exemple : Rédige mon point hebdomadaire à partir des notes de la semaine. À utiliser quand je demande un point hebdomadaire.",
-      "descriptionHint": "L'assistant lit ce texte pour décider quand utiliser la compétence.",
-      "descriptionMissing": "Ajoutez une description pour que l'assistant sache quand l'utiliser.",
-      "instructions": "Instructions",
-      "instructionsPlaceholder": "## Quand l'utiliser\nQuand je demande mon point hebdomadaire.\n\n## Étapes\n1. Lire les notes de la semaine.\n2. Les classer en réussites, blocages et semaine prochaine.\n\n## Format de sortie\nTrois listes courtes.",
-      "instructionsMissing": "Ajoutez les instructions.",
-      "addFile": "Ajouter un fichier",
-      "filesTooLarge": "Les fichiers d'une compétence ne peuvent pas dépasser 25 Mo au total.",
-      "removeFile": "Retirer {{path}}",
-      "submit": "Créer",
-      "unsaved": "Vous avez des modifications non enregistrées",
-      "keepEditing": "Continuer à modifier",
-      "discard": "Abandonner"
-    },
-    "problems": {
-      "missingName": "Il manque un nom en haut",
-      "missingDescription": "Il manque une description en haut",
-      "frontmatterMissing": "Il manque un nom et une description en haut",
-      "frontmatterInvalid": "Les informations en haut sont illisibles",
-      "frontmatterNotMapping": "Les informations en haut n'ont pas le format attendu",
-      "nameFormat": "Le nom ne peut contenir que des lettres minuscules, des chiffres et des tirets simples",
-      "nameTooLong": "Le nom dépasse 64 caractères",
-      "descriptionTooLong": "La description dépasse {{max}} caractères",
-      "descriptionAngleBrackets": "La description ne peut pas contenir < ou >",
-      "noSkillFile": "Il n'y a pas de SKILL.md à l'intérieur",
-      "multipleSkillFiles": "Il y a plus d'un SKILL.md à l'intérieur",
-      "skillFileTooDeep": "SKILL.md doit être à la racine, ou dans un seul dossier",
-      "unsafePath": "Il contient un nom de fichier ou un chemin non autorisé",
-      "symlink": "Il contient un lien vers un autre fichier, ce qui n'est pas autorisé",
-      "tooLarge": "Il dépasse 25 Mo",
-      "tooManyFiles": "Il contient plus de 500 fichiers",
-      "unsupportedFile": "Seuls les fichiers .md, .zip et .skill peuvent être ajoutés",
-      "unreadableArchive": "Impossible d'ouvrir ce fichier",
-      "nameMismatch": "Le nom dans SKILL.md ne correspond pas à son dossier",
-      "unreadable": "Les fichiers de la compétence sont illisibles",
-      "skillFileNotUtf8": "SKILL.md doit être enregistré en texte UTF-8",
-      "placeholder": "Remplacez d'abord l'espace réservé [TODO: …]",
-      "nameTaken": "Vous avez déjà une compétence nommée {{name}}"
-    },
-    "warnings": {
-      "folderRenamed": "Le dossier est renommé pour correspondre au nom de la compétence",
-      "reservedWord": "Les noms contenant « claude » ou « anthropic » ne peuvent pas être importés dans Claude",
-      "longBody": "Les instructions dépassent 500 lignes, ce qui peut ralentir l'assistant",
-      "longDescription": "La description dépasse 300 caractères ; les plus courtes sont choisies de façon plus fiable",
-      "unknownKeys": "Il y a en haut des informations supplémentaires qu'OpenWhispr conserve sans les utiliser"
-    },
-    "recommended": {
-      "action-items-to-linear": {
-        "title": "Actions vers Linear",
-        "description": "Extrait les actions d'une réunion et prépare des tickets Linear soumis à mon approbation. À utiliser après une réunion quand je demande les actions."
-      },
-      "meeting-summary-to-slack": {
-        "title": "Résumé de réunion vers Slack",
-        "description": "Rédige un court résumé de réunion et le prépare pour un canal Slack. À utiliser quand je demande de partager un résumé de réunion."
-      },
-      "one-on-one-prep": {
-        "title": "Préparation de 1:1",
-        "description": "Rassemble ce qui a changé depuis mon dernier entretien individuel avec quelqu'un. À utiliser quand je demande de préparer un 1:1."
-      },
-      "meeting-decisions": {
-        "title": "Décisions de réunion",
-        "description": "Retrouve les décisions dans les notes de mes réunions, avec la date et la réunion de chacune. À utiliser quand je demande ce que nous avons décidé."
-      }
-    }
-  },
-  "notesView": {
-    "searchPlaceholder": "Rechercher des notes…",
-    "newNote": "Nouvelle note",
-    "empty": {
-      "title": "Aucune note pour l'instant",
-      "description": "Créez votre première note pour commencer."
-    },
-    "searchEmpty": {
-      "title": "Aucun résultat",
-      "description": "Aucune note trouvée pour « {{query}} »."
-    },
-    "noteType": {
-      "personal": "personnel",
-      "meeting": "réunion",
-      "upload": "import"
-    }
-  },
-  "noteEditor": {
-    "saved": "Enregistré",
-    "deleteNote": "Supprimer la note",
-    "deleteConfirmTitle": "Supprimer la note ?",
-    "deleteConfirmDescription": "Cette note sera supprimée définitivement et ne pourra pas être récupérée.",
-    "deleteConfirm": "Supprimer",
-    "share": {
-      "button": "Partager",
-      "dialog": {
-        "title": "Partager la note",
-        "description": "Invitez des personnes par e-mail ou partagez un lien vers cette note.",
-        "searchPlaceholder": "Rechercher des personnes, dossiers ou e-mails",
-        "noResults": "Aucun résultat trouvé",
-        "emailLabel": "Personnes, dossiers ou e-mail",
-        "shareButton": "Partager",
-        "createLink": "Créer un lien",
-        "copyLink": "Copier le lien",
-        "copied": "Copié",
-        "replaceLink": {
-          "title": "Remplacer le lien de partage ?",
-          "description": "Cet appareil ne dispose pas du lien actuel : le copier implique d'en créer un nouveau. L'ancien lien cessera de fonctionner, y compris dans les e-mails d'invitation. Renvoyez chaque invitation pour que les personnes invitées puissent toujours ouvrir la note.",
-          "confirm": "Remplacer le lien"
-        },
-        "export": "Exporter",
-        "owner": "Propriétaire",
-        "editor": "Peut modifier",
-        "viewer": "Peut consulter",
-        "teamAudience": "Tous les membres de cet espace d'équipe",
-        "pending": "En attente",
-        "accepted": "A accès",
-        "resend": "Renvoyer l'invitation",
-        "revoke": "Retirer",
-        "invitationActions": "Actions de l'invitation",
-        "resendSent": "Invitation envoyée",
-        "resendThrottled": "Invitation envoyée récemment. Réessayez dans une minute.",
-        "syncPrompt": "Le partage conserve une copie de cette note dans votre cloud OpenWhispr. Vous seul pouvez la voir tant que vous n'avez pas choisi avec qui la partager.",
-        "syncAndShare": "Synchroniser la note",
-        "visibility": {
-          "label": "Visibilité",
-          "private": "Privée",
-          "privateOption": "Privée — vous uniquement",
-          "link": "Toute personne ayant le lien",
-          "domain": "Tout le monde chez {{domain}} avec le lien",
-          "invited": "Uniquement les personnes invitées"
-        },
-        "error": {
-          "invalidEmail": "Entrez une adresse e-mail valide",
-          "alreadyInvited": "{{email}} est déjà invité(e)",
-          "inviteFailed": "Impossible d'envoyer l'invitation. Réessayez.",
-          "visibilityFailed": "Impossible de modifier le partage. Réessayez.",
-          "copyFailed": "Impossible de copier le lien. Réessayez.",
-          "revokeFailed": "Impossible de retirer l'invitation. Réessayez.",
-          "resendFailed": "Impossible de renvoyer l'invitation. Réessayez.",
-          "syncFailed": "Impossible de synchroniser cette note. Réessayez.",
-          "loadFailed": "Impossible de charger les paramètres de partage",
-          "retry": "Réessayer"
-        }
-      }
-    }
-  },
   "commandSearch": {
     "allSpaces": "Tous les espaces",
     "title": "Rechercher",
@@ -5118,34 +3879,10 @@
       "dismiss": "Fermer"
     }
   },
-  "emojiPicker": {
-    "search": "Rechercher un emoji…",
-    "recent": "Récents",
-    "noResults": "Aucun emoji trouvé",
-    "remove": "Retirer",
-    "groups": {
-      "smileys": "Smileys et émotions",
-      "people": "Personnes et corps",
-      "animals": "Animaux et nature",
-      "food": "Nourriture et boissons",
-      "travel": "Voyages et lieux",
-      "activities": "Activités",
-      "objects": "Objets",
-      "symbols": "Symboles",
-      "flags": "Drapeaux"
-    }
-  },
   "permissionsGate": {
     "title": "Autorisations requises",
-    "description": "OpenWhispr a besoin de quelques autorisations pour fonctionner sur cet ordinateur.",
+    "description": "Overlay a besoin de quelques autorisations pour fonctionner sur cet ordinateur.",
     "continue": "Continuer"
-  },
-  "embeddedChat": {
-    "askPlaceholder": "Posez une question sur votre note",
-    "close": "Fermer le chat",
-    "newChat": "Nouvelle discussion",
-    "conversationSelector": "Changer de conversation",
-    "history": "Historique"
   },
   "transcriptionPreview": {
     "label": "Aperçu",
@@ -5335,20 +4072,20 @@
       }
     },
     "setup": {
-      "introTitle": "Faites écrire OpenWhispr\ncomme vous parlez",
+      "introTitle": "Faites écrire Overlay\ncomme vous parlez",
       "introDescription": "Définissez votre ton et votre style selon les apps.",
       "personalize": "Personnaliser",
-      "cleanupOffTitle": "Apprenez votre style\nà OpenWhispr",
+      "cleanupOffTitle": "Apprenez votre style\nà Overlay",
       "cleanupOffDescription": "Activez la correction de texte, puis définissez votre ton et votre style selon les apps.",
       "stepDescription": "Choisissez l'exemple qui vous ressemble le plus.",
       "progress": "Étape {{current}} sur {{total}}",
       "finish": "Terminer"
     },
     "banner": {
-      "title": "Apprenez à OpenWhispr comment vous écrivez",
+      "title": "Apprenez à Overlay comment vous écrivez",
       "description": "Choisissez votre ton préféré pour le travail, les amis et tout ce qu'il y a entre les deux.",
       "start": "Commencer",
-      "cleanupOffTitle": "Apprenez votre style à OpenWhispr",
+      "cleanupOffTitle": "Apprenez votre style à Overlay",
       "cleanupOffDescription": "Activez la correction de texte et choisissez un ton pour chaque app.",
       "notNow": "Pas maintenant",
       "decoration": "Vos mots devraient vous ressembler. Quoi que vous écriviez, pour qui que ce soit."
@@ -5441,7 +4178,7 @@
         "timeout": "Le fournisseur audio n’a pas répondu à temps. Vérifiez votre réseau ou votre VPN.",
         "credentialMissing": "Un identifiant requis pour cette connexion n’est pas provisionné sur cet appareil.",
         "configChanged": "Votre organisation a modifié cette configuration audio. Rouvrez la configuration et réessayez.",
-        "protocolFailed": "Le fournisseur audio a répondu dans un format qu’OpenWhispr ne prend pas en charge. Vérifiez le déploiement et le protocole.",
+        "protocolFailed": "Le fournisseur audio a répondu dans un format qu’Overlay ne prend pas en charge. Vérifiez le déploiement et le protocole.",
         "networkFailed": "Le fournisseur audio est injoignable. Vérifiez votre réseau, votre VPN et le DNS.",
         "secureStorageUnavailable": "Cet appareil n’a pas de stockage sécurisé des identifiants. Sous Linux, installez et déverrouillez un trousseau (comme GNOME Keyring ou KWallet), puis réessayez."
       },
@@ -5453,9 +4190,69 @@
         "rateLimited": "Trop de demandes de test. Patientez quelques minutes et réessayez."
       },
       "bootstrapNotProtected": "Le fichier d’amorçage doit vous appartenir et n’être lisible que par vous. Demandez à l’équipe informatique de le redéployer.",
-      "bootstrapUnreadable": "OpenWhispr ne peut pas lire le fichier d’amorçage. Demandez à l’équipe informatique de le rendre lisible par votre compte.",
+      "bootstrapUnreadable": "Overlay ne peut pas lire le fichier d’amorçage. Demandez à l’équipe informatique de le rendre lisible par votre compte.",
       "bootstrapMismatch": "Le fichier d’amorçage ne correspond pas à votre compte, à cet espace de travail ou à ses identifiants configurés.",
       "testLinkOtherWorkspace": "Ce lien de test concerne un autre espace de travail. Passez à cet espace de travail et rouvrez le lien."
+    }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "Dictée",
+      "description": "Maintenez le raccourci, parlez, relâchez. Le texte est collé au curseur puis le presse-papiers est restauré."
+    },
+    "customWords": {
+      "title": "Mots personnalisés",
+      "description": "Noms et termes à orthographier correctement.",
+      "placeholder": "Ajouter un mot ou un nom",
+      "add": "Ajouter",
+      "empty": "Aucun mot personnalisé pour l’instant.",
+      "remove": "Retirer {{word}}"
+    },
+    "command": {
+      "hotkeyTitle": "Raccourci de l’assistant et du mode Commande",
+      "hotkeyDescription": "Ouvre l’assistant. Dites ou tapez une commande comme « ouvre le Bloc-notes » pour l’exécuter sur votre PC."
+    },
+    "app": {
+      "title": "Application",
+      "description": "Démarrage, apparence et langue."
+    },
+    "llm": {
+      "title": "Modèle de langage",
+      "description": "Choisissez l’unique IA utilisée partout : nettoyage de la dictée, chat de l’assistant et mode Commande.",
+      "kinds": {
+        "local": "En local sur ce PC",
+        "localDescription": "Ollama ou llama-server sur cet ordinateur. Privé, gratuit et par défaut.",
+        "ownServer": "Votre propre serveur",
+        "ownServerDescription": "Tout serveur compatible OpenAI que vous exploitez, via son URL de base.",
+        "cloud": "Cloud avec votre clé d’API",
+        "cloudDescription": "OpenRouter, OpenAI, Groq, Gemini, Mistral, Anthropic et plus."
+      },
+      "autoSelect": "Choisir automatiquement le meilleur modèle pour ce PC",
+      "autoSelectDescription": "Choisit un modèle rapide qui tient en mémoire. Désactivez pour choisir vous-même.",
+      "model": "Modèle",
+      "noLocalModels": "Aucun modèle trouvé. Ollama est-il lancé ?",
+      "serverUrl": "URL du serveur",
+      "serverUrlDescription": "L’URL de base compatible OpenAI, finissant en général par /v1.",
+      "apiKeyOptional": "Clé d’API (facultative)",
+      "apiKeyDescription": "Stockée en sécurité sur ce PC et jamais réaffichée.",
+      "oneModelNote": "Ce modèle sert à toutes les tâches de langage. Il n’y a pas de réglage de modèle par fonction."
+    },
+    "stt": {
+      "title": "Reconnaissance vocale",
+      "description": "Comment votre voix est transformée en texte."
+    },
+    "data": {
+      "title": "Vos données",
+      "clearHistory": "Effacer l’historique de dictée",
+      "clearHistoryDescription": "Supprime les dictées enregistrées et leur audio de ce PC.",
+      "clearButton": "Effacer",
+      "confirmTitle": "Effacer tout l’historique de dictée ?",
+      "confirmDescription": "Les dictées et l’audio enregistrés seront supprimés définitivement de ce PC. Action irréversible.",
+      "done": "Historique effacé",
+      "failed": "Impossible d’effacer l’historique",
+      "forgetChats": "Oublier la mémoire de l’assistant",
+      "forgetChatsDescription": "L’assistant ne se souviendra plus des discussions passées. Elles restent dans Accueil.",
+      "forgetButton": "Oublier"
     }
   }
 }

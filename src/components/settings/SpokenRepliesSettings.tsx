@@ -21,7 +21,15 @@ const FALLBACK_VOICES: InworldVoiceOption[] = [
   { voiceId: "Alex", displayName: "Alex", description: "Energetic, expressive male voice" },
 ];
 
-export default function SpokenRepliesSettings() {
+/**
+ * "toggle": only the on/off row (main Settings). "config": voice, key and test
+ * without the toggle (Advanced). "all": both.
+ */
+export default function SpokenRepliesSettings({
+  mode = "all",
+}: {
+  mode?: "toggle" | "config" | "all";
+}) {
   const { t } = useTranslation();
   const assistantTtsProvider = useSettingsStore((state) => state.assistantTtsProvider);
   const setAssistantTtsProvider = useSettingsStore((state) => state.setAssistantTtsProvider);
@@ -111,18 +119,20 @@ export default function SpokenRepliesSettings() {
 
   return (
     <SettingsPanel>
-      <SettingsPanelRow>
-        <SettingsRow
-          label={t("settingsPage.general.spokenReplies.enabled")}
-          description={t("settingsPage.general.spokenReplies.enabledDescription")}
-        >
-          <Toggle
-            checked={enabled}
-            onChange={(checked: boolean) => setAssistantTtsProvider(checked ? "inworld" : "off")}
-          />
-        </SettingsRow>
-      </SettingsPanelRow>
-      {enabled && (
+      {mode !== "config" && (
+        <SettingsPanelRow>
+          <SettingsRow
+            label={t("settingsPage.general.spokenReplies.enabled")}
+            description={t("settingsPage.general.spokenReplies.enabledDescription")}
+          >
+            <Toggle
+              checked={enabled}
+              onChange={(checked: boolean) => setAssistantTtsProvider(checked ? "inworld" : "off")}
+            />
+          </SettingsRow>
+        </SettingsPanelRow>
+      )}
+      {mode !== "toggle" && (mode === "config" || enabled) && (
         <>
           <SettingsPanelRow>
             <SettingsRow

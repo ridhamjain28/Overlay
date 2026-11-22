@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+﻿import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Plus, X } from "../icons";
 import { BrandMarkIcon } from "./BrandMarkIcon";
@@ -49,6 +49,7 @@ import {
 } from "../../helpers/assistantResponseDelivery";
 import { buildAssistantCommandSendOptions } from "./assistantCommandOptions";
 import { runCommandModeIfEnabled } from "../../services/overlay/runCommandMode";
+import { resolveCommandParsing, useAiProvider } from "../../stores/aiProvider";
 import { commandReferencesSelection } from "../../helpers/overlay/commandMode/intentParser";
 import { touchAssistantChatActivity } from "../../helpers/overlay/assistantChatContinuity";
 import { ApprovalCard } from "../chat/ApprovalCard";
@@ -157,15 +158,15 @@ export function AssistantPanel({
   const chatAgentModel = useSettingsStore((s) => s.chatAgentModel);
   const chatAgentRemoteUrl = useSettingsStore((s) => s.chatAgentRemoteUrl);
   const chatAgentProvider = useSettingsStore((s) => s.chatAgentProvider);
+  const aiProvider = useAiProvider();
   const commandSettings = useMemo(
     () => ({
       enabled: commandModeEnabled,
       autoRunTrusted: commandModeAutoRunTrusted,
-      parser: commandModeParser,
-      model: chatAgentModel,
-      localBaseUrl: chatAgentRemoteUrl,
-      cloudProvider: chatAgentProvider,
+      ...resolveCommandParsing(undefined, aiProvider),
     }),
+    // The chat/parser settings are inputs of resolveCommandParsing from the store.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       commandModeEnabled,
       commandModeAutoRunTrusted,
@@ -173,6 +174,7 @@ export function AssistantPanel({
       chatAgentModel,
       chatAgentRemoteUrl,
       chatAgentProvider,
+      aiProvider,
     ]
   );
   const recordCommandTurn = useCallback(

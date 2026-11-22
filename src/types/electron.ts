@@ -2535,6 +2535,8 @@ declare global {
       saveDictationAgentVisionCustomKey?: (key: string) => Promise<void>;
       getChatAgentCustomKey?: () => Promise<string | null>;
       saveChatAgentCustomKey?: (key: string) => Promise<void>;
+      getAiGlobalCustomKey?: () => Promise<string | null>;
+      saveAiGlobalCustomKey?: (key: string) => Promise<void>;
 
       // Enterprise provider key persistence
       getBedrockRegion?: () => Promise<string | null>;
@@ -2810,7 +2812,7 @@ declare global {
         callback: (state: { generation: number; hasToken: boolean }) => void
       ) => () => void;
 
-      // OpenWhispr Cloud API
+      // Overlay cloud API
       cloudTranscribe?: (
         audioBuffer: ArrayBuffer,
         opts: {

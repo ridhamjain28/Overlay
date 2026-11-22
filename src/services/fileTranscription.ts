@@ -129,7 +129,7 @@ export async function transcribeFile(
   diarize: boolean,
   opts: { requestId?: string; timestamps?: boolean; purpose?: "dictation" | "upload" } = {}
 ): Promise<FileTranscriptionResult> {
-  // Managed enterprise STT outranks every personal lane, OpenWhispr Cloud and
+  // Managed enterprise STT outranks every personal lane, Overlay cloud and
   // local included: under managed_required no audio may leave the tenant.
   const managed = getManagedTranscriptionResolution();
   if (managed?.kind === "error") {

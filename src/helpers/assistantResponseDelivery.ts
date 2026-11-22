@@ -20,65 +20,40 @@ interface AssistantResponseDeliveryApi {
     text: string,
     options?: { restoreClipboard?: boolean; allowClipboardFallback?: boolean }
   ) => Promise<{ success: boolean }>;
-  writeClipboard?: (text: string) => Promise<{ success: boolean; xwaylandOnly?: boolean }>;
-}
-
-interface ClipboardWriter {
-  writeText: (text: string) => Promise<void>;
 }
 
 interface AssistantResponseDeliveryDependencies {
   electronAPI?: AssistantResponseDeliveryApi;
-  clipboard?: ClipboardWriter;
 }
 
+/**
+ * Assistant answers are never auto-copied. They stay in the panel (which has a
+ * Copy button). Only a captured caret target gets a paste, and that paste uses
+ * a temporary clipboard write that always restores the user's clipboard.
+ */
 export function createAssistantResponseDelivery({
   autoPasteEnabled,
   deliverySessionId,
   acceptsMarkdown,
   appCategory,
-  restoreClipboard,
-  allowClipboardFallback,
 }: {
   autoPasteEnabled: boolean;
   deliverySessionId?: string;
   acceptsMarkdown?: boolean;
   appCategory?: ToneAppCategory;
-  restoreClipboard: boolean;
-  allowClipboardFallback: boolean;
+  restoreClipboard?: boolean;
+  allowClipboardFallback?: boolean;
 }): AssistantResponseDelivery | null {
-  if (!autoPasteEnabled) return null;
-  if (!deliverySessionId) return { mode: "clipboard" };
+  if (!autoPasteEnabled || !deliverySessionId) return null;
 
   return {
     mode: "paste",
     sessionId: deliverySessionId,
-    restoreClipboard,
-    allowClipboardFallback,
+    restoreClipboard: true,
+    allowClipboardFallback: false,
     plainText: !acceptsMarkdown,
     ...(appCategory ? { appCategory } : {}),
   };
-}
-
-async function copyAssistantResponse(
-  content: string,
-  electronAPI: AssistantResponseDeliveryApi | undefined,
-  clipboard: ClipboardWriter | undefined
-): Promise<boolean> {
-  try {
-    const result = await electronAPI?.writeClipboard?.(content);
-    // The user's app still has focus, so it can't read this copy (#2621); the
-    // renderer's clipboard would land in the same place.
-    if (result?.xwaylandOnly) return false;
-    if (result?.success === true) return true;
-  } catch {}
-
-  try {
-    await clipboard?.writeText(content);
-    return Boolean(clipboard);
-  } catch {
-    return false;
-  }
 }
 
 // A run of em dashes with the spaces around it, on one line.
@@ -130,30 +105,22 @@ export async function deliverAssistantResponse(
   dependencies: AssistantResponseDeliveryDependencies = {}
 ): Promise<{ pasted: boolean; copied: boolean }> {
   const electronAPI = dependencies.electronAPI ?? window.electronAPI;
-  const clipboard = dependencies.clipboard ?? navigator.clipboard;
 
-  if (delivery.mode === "paste") {
-    // Both strips also cover the clipboard fallback (the user pastes into the
-    // same field by hand); an answer the markdown strip empties is pasted raw.
-    const body = delivery.plainText ? markdownToPlainText(content) || content : content;
-    const text = delivery.appCategory ? withoutEmDashes(body) : body;
-    try {
-      const result = await electronAPI?.pasteAtCapturedTarget?.(delivery.sessionId, text, {
-        restoreClipboard: delivery.restoreClipboard,
-        allowClipboardFallback: delivery.allowClipboardFallback,
-      });
-      if (result?.success === true) return { pasted: true, copied: false };
-    } catch {}
-    return {
-      pasted: false,
-      copied: await copyAssistantResponse(text, electronAPI, clipboard),
-    };
-  }
+  // A panel-only delivery writes nothing: the answer is shown in the panel and
+  // the user copies it with the Copy button.
+  if (delivery.mode !== "paste") return { pasted: false, copied: false };
 
-  // A clipboard-only delivery is shown in the panel as rendered markdown and
-  // its Copy button yields the raw markdown; keep the two copy paths equal.
-  return {
-    pasted: false,
-    copied: await copyAssistantResponse(content, electronAPI, clipboard),
-  };
+  // Both strips also cover a manual paste into the same field; an answer the
+  // markdown strip empties is pasted raw.
+  const body = delivery.plainText ? markdownToPlainText(content) || content : content;
+  const text = delivery.appCategory ? withoutEmDashes(body) : body;
+  try {
+    const result = await electronAPI?.pasteAtCapturedTarget?.(delivery.sessionId, text, {
+      restoreClipboard: true,
+      allowClipboardFallback: false,
+    });
+    if (result?.success === true) return { pasted: true, copied: false };
+  } catch {}
+  // A failed paste never falls back to the clipboard; the answer stays in the panel.
+  return { pasted: false, copied: false };
 }

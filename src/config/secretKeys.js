@@ -117,6 +117,13 @@ const BYOK_API_KEYS = [
     save: "saveChatAgentCustomKey",
     storeKey: "chatAgentCustomApiKey",
   },
+  {
+    base: "ai-global-custom",
+    env: "AI_GLOBAL_CUSTOM_API_KEY",
+    get: "getAiGlobalCustomKey",
+    save: "saveAiGlobalCustomKey",
+    storeKey: "aiGlobalCustomApiKey",
+  },
 ];
 
 module.exports = { BYOK_API_KEYS };

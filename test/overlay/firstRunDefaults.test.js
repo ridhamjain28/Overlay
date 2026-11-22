@@ -45,7 +45,8 @@ test("an existing profile is never overwritten by the first-run defaults", async
   const s = useSettingsStore.getState();
   assert.equal(s.chatAgentMode, "providers");
   assert.equal(s.chatAgentProvider, "openai");
-  assert.equal(s.overlayModelAutoSelect, false);
+  // Hardware auto-select is on by default for every profile now.
+  assert.equal(s.overlayModelAutoSelect, true);
 });
 
 test("the fallback model is used only when the default is missing from Ollama", async (t) => {

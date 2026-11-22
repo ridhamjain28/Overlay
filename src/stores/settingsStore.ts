@@ -543,7 +543,7 @@ migrateMeetingFollowFlags();
 // persists is available to copy. Before this context existed the upload page
 // used the base dictation settings, so copy each value the user actually set
 // into the matching `upload*` key. Fresh installs have no base keys persisted,
-// so nothing is copied and the upload context falls through to its OpenWhispr
+// so nothing is copied and the upload context falls through to its Overlay
 // Cloud defaults.
 const UPLOAD_TRANSCRIPTION_PAIRS: ReadonlyArray<[string, string]> = [
   ["useLocalWhisper", "uploadUseLocalWhisper"],
@@ -813,7 +813,7 @@ seedDictationAgentScopeFromChat();
 // The two modes fail differently when absent, so they are healed differently.
 // `meetingTranscriptionMode` has no fallback: selectResolvedMeetingTranscription
 // passes it straight through and the store default sends note recordings to
-// OpenWhispr Cloud, so every mode is reconstructed from the snapshot the copy
+// Overlay cloud, so every mode is reconstructed from the snapshot the copy
 // did write — with the same functions migrateProviderSettings() uses, not from
 // today's dictation keys, which the user may have changed since.
 // `noteFormattingMode` does have one: an absent mode reads "openwhispr", but
@@ -943,7 +943,7 @@ function migrateRetiredCloudModels() {
 
 migrateRetiredCloudModels();
 
-// Overlay: on a brand-new profile, the one-time OpenWhispr migrations above
+// Overlay: on a brand-new profile, the one-time Overlay migrations above
 // derive "openwhispr" (cloud) modes from absent legacy keys. Before the first
 // onboarding finishes, replace them with Overlay's local-first defaults:
 // local Whisper for speech-to-text and the local Ollama server for every
@@ -1815,7 +1815,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   })(),
   // Fresh Overlay profiles default to auto-select. Existing profiles keep
   // the model they already chose unless the user turns this on.
-  overlayModelAutoSelect: readBoolean("overlayModelAutoSelect", isFreshOverlayProfile),
+  overlayModelAutoSelect: readBoolean("overlayModelAutoSelect", true),
   startMinimized: readBoolean("startMinimized", false),
   assistantTtsProvider: readString("assistantTtsProvider", "off") === "inworld" ? "inworld" : "off",
   inworldVoiceId: readString("inworldVoiceId", "Ashley") || "Ashley",
@@ -2908,7 +2908,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       cloudTranscriptionModel,
     } = useSettingsStore.getState();
     // Each Settings tab selects on its InferenceMode field, so set it for every
-    // scope — otherwise the UI keeps showing the previous mode (e.g. OpenWhispr
+    // scope — otherwise the UI keeps showing the previous mode (e.g. Overlay
     // Cloud) even though the cloud routing now points at the new provider.
     const mode = deriveTranscriptionMode(
       useLocalWhisper,
@@ -4073,6 +4073,13 @@ export async function initializeSettings(): Promise<void> {
     reconcileRetiredCloudModelSelections();
 
     try {
+      const { initAiProvider } = await import("./aiProvider");
+      await initAiProvider();
+    } catch (err) {
+      logger.warn("Failed to initialize AI provider", { error: (err as Error).message }, "settings");
+    }
+
+    try {
       const installed = await window.electronAPI.overlayOllamaModels?.();
       const state = useSettingsStore.getState();
       const recommendation = await window.electronAPI.overlayRecommendModel?.({
@@ -4085,6 +4092,10 @@ export async function initializeSettings(): Promise<void> {
         : applyOverlayModelFallback(installed);
       if (switched.length) {
         logger.info("Selected a local model that fits this PC", { scopes: switched }, "overlay");
+      }
+      if (recommendation?.model) {
+        const { applyAutoSelectedModel } = await import("./aiProvider");
+        applyAutoSelectedModel(recommendation.model);
       }
     } catch {
       // Ollama not running: keep the configured model.

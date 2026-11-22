@@ -87,7 +87,7 @@ const LOCAL_TOOL_MIN_PARAMS_B = 4;
 
 // Main adds the note's identified speakers and its calendar event's
 // organizer (calendars often leave them out of the attendees), then drops
-// the user (their OpenWhispr address included) and rooms with find_contact's
+// the user (their Overlay address included) and rooms with find_contact's
 // rules; a failed lookup just leaves the block out.
 async function buildNoteAttendeesContext(
   meeting: NoteAttendeesRequest | undefined

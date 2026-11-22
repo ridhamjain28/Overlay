@@ -207,7 +207,7 @@ There is no shell access, no shutdown/restart, and no file deletion. Risky actio
 ## Privacy
 
 - No account, no telemetry, no automatic updates (set `OVERLAY_ENABLE_UPDATES=1` to allow update checks against this repo's releases).
-- The OpenWhispr cloud and sign-in are switched off; auth points at a closed local port.
+- There are no accounts, hosted transcription, cloud sync or billing; Overlay runs on this PC with your own keys.
 - Cloud providers (Gemini, Tavily, Ollama web search, OpenRouter, Groq) only see your question when you have added their key and a request needs them.
 
 ## Development

@@ -152,7 +152,7 @@ function baseLanguageOf(language?: string): string | undefined {
 
 // The name only counts as addressing the agent when it starts the dictation,
 // follows a greeting cue ("hey Jarvis"), or opens a new sentence. A mere
-// mention elsewhere ("I showed OpenWhispr to a friend") is dictated content,
+// mention elsewhere ("I showed Overlay to a friend") is dictated content,
 // not a command.
 function isAddressedAt(
   index: number,
@@ -257,7 +257,7 @@ function locateAgentAddress(
           : nameEnd;
         const start = cueBefore ? i - 1 : i;
         // Selection edits refine only the prefix of the first match:
-        // "B. OpenWhispr" must prefer "OpenWhispr", without extending a fuzzy
+        // "B. Overlay" must prefer "Overlay", without extending a fuzzy
         // name over a following operand ("OpenWhisp, R.").
         if (!address) searchEnd = nameEnd;
         bestDistance = distance;

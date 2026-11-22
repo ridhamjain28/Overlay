@@ -5,7 +5,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* OpenWhispr Theme — registers color tokens with Tailwind v4.
+  /* Overlay Theme — registers color tokens with Tailwind v4.
      These are the light-mode defaults; .dark overrides them below. */
   /* Overlay maroon brand (#6B0F1A → #800020). Tints, rings and links derive from it. */
   --color-primary: #800020;
@@ -828,7 +828,7 @@ body:has(.onboarding-canvas) kbd {
   mask-composite: intersect;
 }
 
-/* OpenWhispr Brand Typography */
+/* Overlay Brand Typography */
 .brand-heading {
   font-family: var(--font-family-display);
   font-weight: 600;
