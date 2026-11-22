@@ -67,8 +67,11 @@ async function renderChatStreaming(
   // Node runs after hooks in registration order; unmount while the DOM exists.
   t.after(async () => {
     stream?.end();
-    await unmount?.();
+    // Reset fake timers before unmount. If a hook waits on a timeout (or a
+    // Date.now() poll) during teardown, leaving the mock clock frozen hangs
+    // the after hook and can pin the CPU with no chance to tick.
     t.mock.timers.reset();
+    await unmount?.();
   });
   installBrowserGlobals(t, { window: { electronAPI } });
   const container = live ? installHookDom(t) : null;
@@ -251,7 +254,7 @@ function stubFetch(t, body) {
     new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
 }
 
-test("fifty streamed tokens produce a handful of content writes, and the final text is intact", async (t) => {
+test("fifty streamed tokens produce a handful of content writes, and the final text is intact", { timeout: 15000 }, async (t) => {
   const deltas = Array.from({ length: 50 }, (_, i) => `tok${i} `);
   stubFetch(
     t,
@@ -306,7 +309,7 @@ test(
   }
 );
 
-test("paced tokens flush during the stream, rearm the timer, and persist the final tail", async (t) => {
+test("paced tokens flush during the stream, rearm the timer, and persist the final tail", { timeout: 15000 }, async (t) => {
   const harness = await startControlledChat(t);
   const initialDispatches = harness.getDispatches();
   await harness.emit({ type: "content", text: "First " });
@@ -349,7 +352,7 @@ test("paced tokens flush during the stream, rearm the timer, and persist the fin
 });
 
 for (const abortThrows of [false, true]) {
-  test(`Stop flushes a pending token when abort ${abortThrows ? "throws" : "ends the stream"}`, async (t) => {
+  test(`Stop flushes a pending token when abort ${abortThrows ? "throws" : "ends the stream"}`, { timeout: 15000 }, async (t) => {
     const harness = await startControlledChat(t, { abortThrows });
     await harness.emit({ type: "content", text: "Partial reply" });
     assert.equal(harness.getResponseContentCalls(), 1, "the hook consumed the token");
@@ -364,7 +367,7 @@ for (const abortThrows of [false, true]) {
   });
 }
 
-test("unmount before the first flush preserves the received partial reply without delivery", async (t) => {
+test("unmount before the first flush preserves the received partial reply without delivery", { timeout: 15000 }, async (t) => {
   const harness = await startControlledChat(t);
   await harness.emit({ type: "content", text: "Partial reply" });
   assert.equal(harness.getResponseContentCalls(), 1);
@@ -384,7 +387,7 @@ test("unmount before the first flush preserves the received partial reply withou
   await assertNoLateWrites(harness);
 });
 
-test("an error after a consumed token cancels its pending flush", async (t) => {
+test("an error after a consumed token cancels its pending flush", { timeout: 15000 }, async (t) => {
   const harness = await startControlledChat(t);
   await harness.emit({ type: "content", text: "Partial reply" });
   assert.equal(harness.getResponseContentCalls(), 1, "the hook consumed the token before failure");
@@ -398,7 +401,7 @@ test("an error after a consumed token cancels its pending flush", async (t) => {
 });
 
 for (const withContent of [true, false]) {
-  test(`${withContent ? "text and tool" : "tool-only"} replies preserve boundary ordering and persisted metadata`, async (t) => {
+  test(`${withContent ? "text and tool" : "tool-only"} replies preserve boundary ordering and persisted metadata`, { timeout: 15000 }, async (t) => {
     const harness = await startControlledChat(t);
     const call = { id: "search-1", name: "search_notes", arguments: '{"query":"meeting"}' };
     const metadata = [{ id: 42, title: "Meeting" }];
@@ -446,7 +449,7 @@ for (const withContent of [true, false]) {
   });
 }
 
-test("plainTextResponse appends the plain-text instruction to the system prompt", async (t) => {
+test("plainTextResponse appends the plain-text instruction to the system prompt", { timeout: 15000 }, async (t) => {
   const requestBodies = [];
   const originalFetch = globalThis.fetch;
   t.after(() => {
