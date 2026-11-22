@@ -556,6 +556,7 @@ export function useChatStreaming({
             writingStyle: settings.toneStyleEnabled
               ? { tones: settings.toneStyles, destination: options?.destinationAppCategory }
               : undefined,
+            compactTools: !isCloudAgent && (isLocalProvider || isLanAgent),
           }),
           getDictionaryHintWords(settings),
           settings.uiLanguage

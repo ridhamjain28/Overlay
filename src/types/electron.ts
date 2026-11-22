@@ -2738,6 +2738,16 @@ declare global {
         model: string;
         baseUrl?: string;
       }) => Promise<{ tokens: number | null }>;
+      overlayOllamaEnsureContext?: (opts: {
+        model: string;
+        baseUrl?: string;
+        numCtx?: number;
+      }) => Promise<{ ok: boolean; tokens?: number; warmed?: boolean; reason?: string }>;
+      overlayOllamaWarmup?: (opts: {
+        baseUrl?: string;
+        model?: string;
+        models?: string[];
+      }) => Promise<{ ok: boolean; results?: Array<{ ok: boolean; tokens?: number; reason?: string }> }>;
       overlayMemoryRecall?: (
         conversationKey: string,
         query: string

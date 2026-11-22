@@ -47,6 +47,10 @@ const {
   normalizeChatContextSetting,
   ollamaLoadedContext,
   setChatContextSetting,
+  resolveOllamaNumCtx,
+  ensureOllamaModelContext,
+  warmupOllamaModels,
+  isOllamaCompatibleUrl,
 } = require("./chatContext");
 const { createChatMemoryStore } = require("./chatMemoryStore");
 const { detectHardware } = require("./hardwareProfile");
@@ -233,6 +237,24 @@ function registerOverlayIpc({
       return fallback;
     }
   };
+  ipcMain.handle("overlay-ollama-ensure-context", async (_event, opts = {}) => {
+    const model = typeof opts?.model === "string" ? opts.model : "";
+    const baseUrl = typeof opts?.baseUrl === "string" ? opts.baseUrl : undefined;
+    if (!model) return { ok: false, reason: "missing_model" };
+    if (baseUrl && !isOllamaCompatibleUrl(baseUrl)) return { ok: false, reason: "not_ollama" };
+    const numCtx = resolveOllamaNumCtx(chatContextSetting, require("os").totalmem());
+    return ensureOllamaModelContext({ baseUrl, model, numCtx });
+  });
+
+  ipcMain.handle("overlay-ollama-warmup", async (_event, opts = {}) => {
+    const baseUrl = typeof opts?.baseUrl === "string" ? opts.baseUrl : undefined;
+    const models = Array.isArray(opts?.models) ? opts.models : [opts?.model].filter(Boolean);
+    if (baseUrl && !isOllamaCompatibleUrl(baseUrl)) return { ok: false, reason: "not_ollama", results: [] };
+    const numCtx = resolveOllamaNumCtx(chatContextSetting, require("os").totalmem());
+    const results = await warmupOllamaModels({ baseUrl, models, numCtx });
+    return { ok: results.some((r) => r && r.ok), results };
+  });
+
   ipcMain.handle("overlay-memory-recall", async (_event, conversationKey, query) =>
     memoryCall((store) => store.recall(String(conversationKey || ""), String(query || "")), {
       facts: [],

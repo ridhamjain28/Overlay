@@ -1230,6 +1230,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlaySetChatContextLength: (value) =>
     ipcRenderer.send("overlay-set-chat-context-length", String(value || "auto")),
   overlayChatContextWindow: (opts) => ipcRenderer.invoke("overlay-chat-context-window", opts),
+  overlayOllamaEnsureContext: (opts) => ipcRenderer.invoke("overlay-ollama-ensure-context", opts),
+  overlayOllamaWarmup: (opts) => ipcRenderer.invoke("overlay-ollama-warmup", opts),
   overlayMemoryRecall: (conversationKey, query) =>
     ipcRenderer.invoke("overlay-memory-recall", conversationKey, query),
   overlayMemoryRemember: (conversationKey, payload) =>

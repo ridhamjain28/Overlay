@@ -9,8 +9,8 @@ const PREFERRED_LOCAL_PARSE_MODEL = "qwen3:4b-instruct";
 const TIMEOUT_MS = 20000;
 const LOCAL_TIMEOUT_MS = 45000;
 const PARSE_MAX_TOKENS = 150;
-const PARSE_NUM_CTX = 4096;
-const PARSE_KEEP_ALIVE = "30m";
+const PARSE_NUM_CTX = 8192;
+const PARSE_KEEP_ALIVE = -1;
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 
 function isLoopbackUrl(value) {

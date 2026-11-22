@@ -432,7 +432,9 @@ class EnvironmentManager {
     if (legacy) {
       this.saveVoiceAgentKey(legacy);
       delete process.env.CHAT_AGENT_KEY;
+      return legacy;
     }
+    if (process.platform === "win32") return "Control+Shift+A";
     return legacy;
   }
 

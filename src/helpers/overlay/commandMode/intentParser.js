@@ -197,6 +197,42 @@ function planFromOpenAndClause(app, clause) {
   };
 }
 
+
+const BROWSER_NAME_RE = "(?:google\\s+)?chrome|firefox|edge|msedge|brave|safari|browser";
+const SEARCH_WITH_BROWSER_RE = new RegExp(
+  "^(?:open|launch|start|go to)\\s+(" + BROWSER_NAME_RE + ")\\s+(?:and\\s+)?(?:then\\s+)?(?:search|google|look up)\\s+(?:for\\s+)?(.+)$",
+  "i"
+);
+
+function googleSearchUrl(query) {
+  const q = String(query || "")
+    .trim()
+    .replace(/[.?!]+$/g, "")
+    .trim();
+  return "https://www.google.com/search?q=" + encodeURIComponent(q);
+}
+
+function parseOpenAndSearch(text) {
+  const raw = trimText(text);
+  const m = raw.match(SEARCH_WITH_BROWSER_RE);
+  if (!m) return null;
+  const app = cleanAppName(m[1]);
+  const query = String(m[2] || "")
+    .trim()
+    .replace(/[.?!]+$/g, "")
+    .trim();
+  if (!app || !query || toHttpsUrl(app)) return null;
+  return {
+    action: "plan",
+    args: {},
+    steps: [
+      { action: "open_app", args: { app } },
+      { action: "open_url", args: { url: googleSearchUrl(query) } },
+    ],
+    confidence: 0.9,
+  };
+}
+
 function parseCompoundOpenAndType(text) {
   const t = trimText(text);
   const split = t.match(COMPOUND_SPLIT_RE);
@@ -266,6 +302,8 @@ function parseIntentHeuristic(text) {
   // Compound open+write and type/compose must win over chat patterns such as
   // "write an email …", so "open notepad and write an email to …" stays a plan.
   const commandHit =
+    parseOpenAndSearch(t) ||
+    parseOpenAndSearch(original) ||
     parseCompoundOpenAndType(t) ||
     parseCompoundOpenAndType(original) ||
     parseTypeText(t) ||

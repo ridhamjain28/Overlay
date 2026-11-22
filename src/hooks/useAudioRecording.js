@@ -32,6 +32,7 @@ import {
   isSilenceAutoStopEnabled,
   recordSilenceAutoStopWindow,
   SILENCE_AUTO_STOP_DEFAULTS,
+  ASSISTANT_MAX_RECORDING_MS,
 } from "../helpers/silenceAutoStop";
 
 // Maps a failed selection-replacement code to its `selectionEditing.*` toast
@@ -1234,7 +1235,7 @@ export const useAudioRecording = (toast, options = {}) => {
       if (!audioManagerRef.current || startLockRef.current) return;
       if (!canStartDictation(audioManagerRef.current.getState())) return;
       const generation = ++preparationGenerationRef.current;
-      setIsAssistantVoice(false);
+      setIsAssistantVoice(options?.inputKind === "assistant");
       setIsPreparing(true);
       // The prepare event precedes the flag-setting start, so the kind must come
       // from the payload — the audioManager flags still describe the PREVIOUS
@@ -1359,10 +1360,15 @@ export const useAudioRecording = (toast, options = {}) => {
   // (>= 300 ms) and then gone quiet for ~800 ms, stop exactly as a second hotkey
   // press would; ~8 s of no speech cancels quietly. Pressing the hotkey at any
   // time still stops manually. Hold-to-talk dictation is left to key release.
+  const isAssistantVoiceRef = useRef(isAssistantVoice);
+  isAssistantVoiceRef.current = isAssistantVoice;
+
   useEffect(() => {
     if (!isRecording || !isSilenceAutoStopEnabled()) return undefined;
-    if (!isAssistantVoice && recordingInputModeRef.current === "push") return undefined;
-    const state = createSilenceAutoStopState();
+    if (!isAssistantVoiceRef.current && recordingInputModeRef.current === "push") return undefined;
+    const state = createSilenceAutoStopState({
+      maxRecordingMs: isAssistantVoiceRef.current ? ASSISTANT_MAX_RECORDING_MS : SILENCE_AUTO_STOP_DEFAULTS.maxRecordingMs,
+    });
     let lastTick = performance.now();
     let finished = false;
     const interval = setInterval(() => {
@@ -1373,12 +1379,26 @@ export const useAudioRecording = (toast, options = {}) => {
       if (decision.action === "continue") return;
       finished = true;
       clearInterval(interval);
-      logger.debug("Voice auto-stop", { reason: decision.reason }, "audio");
+      logger.debug(
+        "STAGE_TIMING",
+        {
+          stage: "vad",
+          action: decision.action,
+          reason: decision.reason,
+          elapsedMs: state.elapsedMs,
+          quietMs: state.quietMs,
+          speechStarted: state.speechStarted,
+          noiseFloor: state.noiseFloor,
+        },
+        "perf"
+      );
       if (decision.action === "cancel") void cancelRecording();
       else void performStopRecording();
     }, SILENCE_AUTO_STOP_DEFAULTS.windowMs);
     return () => clearInterval(interval);
-  }, [cancelRecording, getAudioLevel, isAssistantVoice, isRecording, performStopRecording]);
+    // isAssistantVoice is read from a ref so a prepare-handler flicker does not
+    // reset the calibrated floor mid-listen.
+  }, [cancelRecording, getAudioLevel, isRecording, performStopRecording]);
   const toggleListening = async ({
     voiceAgentRequested = false,
     translationRequested = false,

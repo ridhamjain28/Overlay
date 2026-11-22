@@ -12,8 +12,8 @@ const {
 } = require("./llmClient");
 
 const COMPOSE_LOCAL_TIMEOUT_MS = 120000;
-const COMPOSE_MAX_TOKENS = 2048;
-const COMPOSE_NUM_CTX = 4096;
+const COMPOSE_MAX_TOKENS = 400;
+const COMPOSE_NUM_CTX = 8192;
 
 function timeoutError() {
   const err = new Error("Writing timed out");

@@ -173,6 +173,12 @@ export interface AgentSystemPromptOptions {
   userName?: string | null;
   /** Tone & Style: the user's tones, and the kind of app a pasted answer lands in. */
   writingStyle?: { tones: ToneStyles; destination?: ToneAppCategory | null };
+  /**
+   * Self-hosted/local chat: skip the long per-tool "How to use them" block.
+   * Tool JSON schemas already describe parameters, and a compact prefix
+   * keeps a basic turn well under 4k tokens.
+   */
+  compactTools?: boolean;
 }
 
 function toolGroup(tool: PromptTool): string {
@@ -206,14 +212,11 @@ export function getAgentSystemPrompt(
     const toolLines = tools
       .map((tool) => tool.promptInstruction ?? TOOL_INSTRUCTIONS[tool.name])
       .filter(Boolean);
-    if (toolLines.length > 0) {
+    if (toolLines.length > 0 && !options.compactTools) {
       prompt += "\n\nHow to use them:\n" + toolLines.map((line) => `- ${line}`).join("\n");
     }
     if (tools.some((tool) => tool.connectorId)) {
       prompt += "\n\n" + CONNECTOR_TOOL_RULES;
-    }
-    if (tools.some((tool) => tool.name === "get_calendar_availability")) {
-      prompt += "\n\n" + getLocalCalendarContext();
     }
   }
 
@@ -226,6 +229,12 @@ export function getAgentSystemPrompt(
       "\n\n" + buildWritingStyleBlock(options.writingStyle.tones, options.writingStyle.destination);
   }
   prompt += "\n\n" + SOURCE_FIDELITY_RULE;
+
+  // Dynamic date/time sits in the tail so the system+tool prefix stays
+  // byte-identical across calls and Ollama's prompt cache can hit.
+  if (tools.some((tool) => tool.name === "get_calendar_availability")) {
+    prompt += "\n\n" + getLocalCalendarContext();
+  }
 
   if (options.openNote) {
     const canSearch = tools.some((tool) => tool.name === "search_notes");

@@ -65,7 +65,7 @@ test("createComposeCompleter uses the configured chat model and streams tokens",
   assert.match(calls[0].url, /\/api\/chat$/);
   assert.equal(calls[0].body.model, "qwen3.5:4b-q4_K_M");
   assert.equal(calls[0].body.stream, true);
-  assert.equal(calls[0].body.options.num_predict, 2048);
+  assert.equal(calls[0].body.options.num_predict, 400);
   assert.ok(!Object.prototype.hasOwnProperty.call(calls[0].body, "think"));
   assert.equal(text, "Dear Mother,");
   assert.deepEqual(tokens, ["Dear ", "Mother,"]);
@@ -91,7 +91,7 @@ test("cloud compose uses a large token budget and does not disable thinking", as
   const text = await completer("write an email to my boss saying I'm sick");
   assert.equal(calls.length, 1);
   assert.equal(calls[0].body.model, "gpt-4o-mini");
-  assert.equal(calls[0].body.max_tokens, 2048);
+  assert.equal(calls[0].body.max_tokens, 400);
   assert.equal(calls[0].body.reasoning_effort, undefined);
   assert.match(text, /Dear Boss/);
 });

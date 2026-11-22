@@ -14,7 +14,8 @@ import { useMainWindowSizeOwner } from "./hooks/useMainWindowSizeOwner";
 import { useMainProcessNotifications } from "./hooks/useMainProcessNotifications";
 import { useListeningEntrancePhase } from "./hooks/useListeningEntrancePhase";
 import { useWindowResizeCompensation } from "./hooks/useWindowResizeCompensation";
-import { useSettingsStore } from "./stores/settingsStore";
+import { useSettingsStore, OVERLAY_DEFAULT_OLLAMA_URL } from "./stores/settingsStore";
+import { resolveCommandParsing } from "./stores/aiProvider";
 import { isAgentAllowed } from "./stores/policyRules";
 import { usePolicyStore } from "./stores/policyStore";
 import { useTranscriptionContextAllowed } from "./hooks/usePolicy";
@@ -49,6 +50,27 @@ import {
   shouldSuppressPillForAssistantActions,
 } from "./helpers/voicePillPresentation";
 
+const LAST_VOICE_MODE_KEY = "overlayLastVoiceMode";
+function readLastVoiceMode() {
+  try {
+    const v = localStorage.getItem(LAST_VOICE_MODE_KEY);
+    if (v === "assistant" || v === "dictation") return v;
+  } catch {
+    /* ignore */
+  }
+  return "dictation";
+}
+function writeLastVoiceMode(mode) {
+  const next = mode === "assistant" ? "assistant" : "dictation";
+  try {
+    localStorage.setItem(LAST_VOICE_MODE_KEY, next);
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
+
+
 const formatPillHotkeyLabel = (value) =>
   formatHotkeyListLabel(value)
     .replace(/\s*\+\s*/g, " + ")
@@ -64,6 +86,10 @@ const UNMOUNTED_RESIZE = {
 export default function App() {
   const [isHovered, setIsHovered] = useState(false);
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [lastVoiceMode, setLastVoiceMode] = useState(() => readLastVoiceMode());
+  const rememberVoiceMode = useCallback((mode) => {
+    setLastVoiceMode(writeLastVoiceMode(mode));
+  }, []);
   const buttonRef = useRef(null);
   const pillPresenceRef = useRef(null);
   const { toast, dismiss, toastCount, dictationErrorActionCount, dismissByPresentation } =
@@ -213,6 +239,14 @@ export default function App() {
   useEffect(() => {
     window.electronAPI?.overlaySetChatContextLength?.(chatContextLength);
   }, [chatContextLength]);
+  useEffect(() => {
+    const parsing = resolveCommandParsing();
+    const models = [parsing.model, "qwen3:4b-instruct"].filter(Boolean);
+    window.electronAPI?.overlayOllamaWarmup?.({
+      baseUrl: parsing.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
+      models,
+    });
+  }, []);
   useEffect(() => {
     const unsubscribe = window.electronAPI?.onOverlayAssistantCollapse?.(() => {
       if (assistantOpenRef.current) closeAssistantPanel();
@@ -552,12 +586,18 @@ export default function App() {
       isProcessing,
       isAssistantVoice,
     }) && !anyPanelMounted;
-  const agentModeActive = resolveAgentModeActive({
-    isAssistantVoice,
-    isRecording,
-    isProcessing: isVisuallyProcessing,
-    assistantPanelMounted: assistant.mounted,
-  });
+  const agentModeActive =
+    resolveAgentModeActive({
+      isAssistantVoice,
+      isRecording,
+      isProcessing: isVisuallyProcessing,
+      assistantPanelMounted: assistant.mounted,
+    }) || lastVoiceMode === "assistant";
+
+  useEffect(() => {
+    if (!isRecording) return;
+    rememberVoiceMode(isAssistantVoice ? "assistant" : "dictation");
+  }, [isRecording, isAssistantVoice, rememberVoiceMode]);
   const assistantFooter = resolveAssistantFooterPresentation(assistant.footerPhase);
   const voicePillInteraction = resolveVoicePillInteraction({
     assistantMounted: assistant.mounted,
@@ -595,7 +635,7 @@ export default function App() {
       })
     ) {
       setIsCommandMenuOpen(false);
-      toggleListening({ voiceAgentRequested: assistant.mounted });
+      toggleListening({ voiceAgentRequested: lastVoiceMode === "assistant" });
     }
   };
   // Prefer a currently open mode over a sibling finishing its exit. The core
@@ -808,10 +848,12 @@ export default function App() {
               isHovered={isHovered}
               setWindowInteractivity={setWindowInteractivity}
               onToggleListening={() => {
-                toggleListening();
+                rememberVoiceMode("dictation");
+                toggleListening({ voiceAgentRequested: false });
               }}
               onAskAssistant={() => {
                 setIsCommandMenuOpen(false);
+                rememberVoiceMode("assistant");
                 void openAssistantPanel();
               }}
               onStartMeeting={() => {

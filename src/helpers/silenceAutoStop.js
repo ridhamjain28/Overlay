@@ -16,15 +16,19 @@ export const SILENCE_AUTO_STOP_DEFAULTS = Object.freeze({
   silenceMs: 800,
   // Nothing said at all: give up quietly.
   noSpeechTimeoutMs: 8000,
-  // Hard cap on one assistant question.
+  // Hard cap on one listen. The assistant hook passes 30 s; dictation keeps 60 s.
   maxRecordingMs: 60000,
 });
+
+export const ASSISTANT_MAX_RECORDING_MS = 30000;
 
 export const createSilenceAutoStopState = (options = {}) => ({
   options: { ...SILENCE_AUTO_STOP_DEFAULTS, ...options },
   elapsedMs: 0,
   dataWindows: 0,
   noiseFloor: null,
+  calibrateWindows: 0,
+  calibrateMin: null,
   speechLevel: 0,
   consecutiveSpeechWindows: 0,
   speechStarted: false,
@@ -33,7 +37,11 @@ export const createSilenceAutoStopState = (options = {}) => ({
 });
 
 // Highest ambient level we trust as "room noise" (byte-quantized RMS).
-const NOISE_FLOOR_CAP = 0.01;
+const NOISE_FLOOR_CAP = 0.05;
+const NOISE_FLOOR_MIN = 0.0004;
+const CALIBRATE_WINDOWS = 3;
+const FLOOR_EMA_UP = 0.03;
+const FLOOR_EMA_DOWN = 0.12;
 
 const CONTINUE = Object.freeze({ action: "continue", reason: null });
 
@@ -41,6 +49,9 @@ const decide = (state, action, reason) => {
   state.decision = { action, reason };
   return state.decision;
 };
+
+const clampFloor = (value) =>
+  Math.min(NOISE_FLOOR_CAP, Math.max(NOISE_FLOOR_MIN, value));
 
 export const getSpeechThreshold = (state) =>
   Math.max(SPEECH_WINDOW_RMS_THRESHOLD, (state.noiseFloor ?? 0) * 2.5);
@@ -66,21 +77,28 @@ export const recordSilenceAutoStopWindow = (state, rms, peak = null, dtMs) => {
   if (Number.isFinite(rms) && rms >= 0) {
     state.dataWindows += 1;
     const peakOk = !Number.isFinite(peak) || peak >= SPEECH_WINDOW_PEAK_THRESHOLD;
-    const isSpeech = rms >= getSpeechThreshold(state) && peakOk;
 
-    if (!state.speechStarted) {
-      // Track the ambient level before the user speaks: fall fast, rise slowly.
-      // Capped, so a user who starts talking instantly can't be mistaken for
-      // a loud room.
-      if (state.noiseFloor === null || rms < state.noiseFloor) {
-        state.noiseFloor = Math.min(rms, NOISE_FLOOR_CAP);
-      } else if (!isSpeech) {
-        state.noiseFloor = Math.min(
-          NOISE_FLOOR_CAP,
-          state.noiseFloor + (rms - state.noiseFloor) * 0.05
-        );
+    // Calibrate over the first ~300 ms from the quietest window so a user who
+    // starts talking immediately is not mistaken for a loud room. Then keep a
+    // slow EMA while the signal is below the speech threshold.
+    if (state.calibrateWindows < CALIBRATE_WINDOWS) {
+      state.calibrateWindows += 1;
+      state.calibrateMin = state.calibrateMin === null ? rms : Math.min(state.calibrateMin, rms);
+      if (state.calibrateWindows >= CALIBRATE_WINDOWS) {
+        const min = state.calibrateMin;
+        // Only ignore the calibration min when it is clearly speech, not a
+        // merely noisy room (the 0.01 ambient fixture must remain the floor).
+        state.noiseFloor = min >= 0.02 ? NOISE_FLOOR_MIN : clampFloor(min);
+      } else if (state.noiseFloor === null) {
+        state.noiseFloor = clampFloor(Math.min(rms, NOISE_FLOOR_CAP));
       }
+    } else if (rms < getSpeechThreshold(state)) {
+      const floor = state.noiseFloor ?? NOISE_FLOOR_MIN;
+      const alpha = rms < floor ? FLOOR_EMA_DOWN : FLOOR_EMA_UP;
+      state.noiseFloor = clampFloor(floor + (rms - floor) * alpha);
     }
+
+    const isSpeech = rms >= getSpeechThreshold(state) && peakOk;
 
     if (isSpeech) {
       state.consecutiveSpeechWindows += 1;

@@ -6,6 +6,10 @@ const { COMMAND_ACTIONS, formatIntentForConfirm, containsCommandConnector } = re
 const { locateGuideTarget } = require("./guideLocator");
 const { resolveApp, listShortcuts, startMenuDirs, isBlockedApp, normalizeName, BUILTIN_APPS } =
   require("../systemActions");
+const {
+  chromiumProductFromAppName,
+  resolveChromiumLaunch,
+} = require("../chromiumProfile");
 
 const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "guide"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
@@ -143,6 +147,33 @@ function createCommandDispatcher(deps = {}) {
     onProgress, // (phase) => void
   } = deps;
 
+  async function launchDetached(file, args = []) {
+    const launched = Promise.resolve(
+      execFile(file, args, { windowsHide: false, detached: true })
+    );
+    launched.catch(() => {});
+    await Promise.race([
+      launched,
+      new Promise((resolve) => {
+        setTimeout(resolve, APP_LAUNCH_GRACE_MS);
+      }),
+    ]);
+  }
+
+  async function launchChromium(product, { url, executablePath } = {}) {
+    if (platform !== "win32" || !product) return false;
+    const launched = resolveChromiumLaunch({
+      product,
+      url,
+      env,
+      fsImpl,
+      executablePath,
+    });
+    if (!launched) return false;
+    await launchDetached(launched.exe, launched.args);
+    return true;
+  }
+
   async function performPlan(request, options = {}) {
     const steps = Array.isArray(request?.steps) ? request.steps : [];
     if (!steps.length) {
@@ -224,9 +255,14 @@ function createCommandDispatcher(deps = {}) {
 
     try {
       switch (action) {
-        case "open_url":
-          await openExternal(args.url);
+        case "open_url": {
+          const opened =
+            (await launchChromium("chrome", { url: args.url })) ||
+            (await launchChromium("edge", { url: args.url })) ||
+            (await launchChromium("brave", { url: args.url }));
+          if (!opened) await openExternal(args.url);
           return { success: true, message: `Opened ${args.url}`, action, args };
+        }
         case "open_app": {
           if (platform !== "win32") {
             return {
@@ -234,6 +270,10 @@ function createCommandDispatcher(deps = {}) {
               error: "Opening apps this way is only available on Windows",
               code: "UNSUPPORTED",
             };
+          }
+          const product = chromiumProductFromAppName(args.app);
+          if (product && (await launchChromium(product))) {
+            return { success: true, message: `Opened ${args.app}`, action, args, label: args.app };
           }
           const app = resolveApp(args.app, {
             shortcuts: listShortcuts(startMenuDirs(env), fsImpl),
@@ -251,14 +291,7 @@ function createCommandDispatcher(deps = {}) {
             // Launch and return at once: the app keeps running on its own, so only an
             // immediate failure (e.g. not found) is reported. No kill timeout, which
             // would close the app we just opened.
-            const launched = Promise.resolve(execFile(app.target, [], { windowsHide: false, detached: true }));
-            launched.catch(() => {});
-            await Promise.race([
-              launched,
-              new Promise((resolve) => {
-                setTimeout(resolve, APP_LAUNCH_GRACE_MS);
-              }),
-            ]);
+            await launchDetached(app.target, []);
           } else if (typeof openPath === "function") {
             const error = await openPath(app.target);
             if (error) throw new Error(error);

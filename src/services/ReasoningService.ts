@@ -120,6 +120,17 @@ function logParamFallback(logEvent: string) {
   return (details: ParamFallbackDetails) => logger.logReasoning(logEvent, details);
 }
 
+
+async function ensureSelfHostedOllamaContext(baseUrl: string | undefined, model: string) {
+  const api = typeof window !== "undefined" ? window.electronAPI : undefined;
+  if (!api?.overlayOllamaEnsureContext || !model) return;
+  try {
+    await api.overlayOllamaEnsureContext({ baseUrl, model });
+  } catch {
+    // Chat still proceeds; a too-small window will 400 as before.
+  }
+}
+
 class ReasoningService extends BaseReasoningService {
   private apiKeyCache: SecureCache<string>;
   private static readonly MAX_TOOL_STEPS = 20;
@@ -615,6 +626,7 @@ class ReasoningService extends BaseReasoningService {
     let apiKey = "";
 
     if (isLanChat) {
+      await ensureSelfHostedOllamaContext(route.baseUrl, model);
       const baseUrl = resolveSelfHostedOpenAIBase(route.baseUrl);
       endpoint = buildApiUrl(baseUrl, "/chat/completions");
       apiKey = route.apiKey;
@@ -907,6 +919,7 @@ class ReasoningService extends BaseReasoningService {
     } else if (isLanChat) {
       apiKey = route.apiKey;
       baseURL = resolveSelfHostedOpenAIBase(route.baseUrl);
+      await ensureSelfHostedOllamaContext(route.baseUrl, model);
     } else if (isLocalProvider) {
       const serverResult = await window.electronAPI.llamaServerStart(model, { chat: true });
       if (!serverResult.success || !serverResult.port) {

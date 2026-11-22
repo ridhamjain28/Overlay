@@ -105,3 +105,16 @@ test("parseIntent returns TIMEOUT when the completer times out", async () => {
   assert.equal(r.action, "none");
   assert.equal(r.errorCode, "TIMEOUT");
 });
+test("open chrome and search for weather in pune is a Google search URL, not an LLM parse", () => {
+  const sentence = "can you please open chrome and search for weather in pune";
+  const r = parser.parseIntentHeuristic(sentence);
+  assert.equal(r.action, "plan");
+  assert.equal(r.source, "heuristic");
+  assert.equal(r.steps[0].action, "open_app");
+  assert.match(r.steps[0].args.app, /chrome/i);
+  assert.equal(r.steps[1].action, "open_url");
+  const url = new URL(r.steps[1].args.url);
+  assert.equal(url.hostname, "www.google.com");
+  assert.equal(url.pathname, "/search");
+  assert.equal(url.searchParams.get("q"), "weather in pune");
+});

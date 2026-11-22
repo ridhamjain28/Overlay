@@ -326,7 +326,7 @@ export function AssistantPanel({
       try {
         if (await tryCommandMode(pendingCommand.text)) {
           onCommandConsumed(commandId);
-          onCommandSettled(commandId, { showPanel: true });
+          onCommandSettled(commandId, { showPanel: false });
           return;
         }
       } catch (error: unknown) {
@@ -346,7 +346,7 @@ export function AssistantPanel({
             isStreaming: false,
           },
         ]);
-        onCommandSettled(commandId, { showPanel: true });
+        onCommandSettled(commandId, { showPanel: false });
         return;
       } finally {
         setSubmissionInFlight(false);

@@ -1759,7 +1759,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   dictationKey: readString("dictationKey", ""),
   activeDictationKey: null,
   meetingKey: readString("meetingKey", ""),
-  voiceAgentKey: readString("voiceAgentKey", ""),
+  voiceAgentKey: readString("voiceAgentKey", process.platform === "win32" ? "Control+Shift+A" : ""),
   translationKey: readString("translationKey", ""),
   onboardingUseCases: readStringArray("onboardingUseCases", []),
   onboardingUseCaseNote: readString("onboardingUseCaseNote", ""),

@@ -2340,9 +2340,18 @@ class WindowManager {
   }
 
   enforceMainWindowOnTop() {
-    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      WindowPositionUtil.setupAlwaysOnTop(this.mainWindow);
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
+    // The chat/assistant panel must not stay pinned above other apps. Keep
+    // always-on-top only for the compact listening pill.
+    if (this._assistantPanelOpen) {
+      try {
+        this.mainWindow.setAlwaysOnTop(false);
+      } catch {
+        // ignore
+      }
+      return;
     }
+    WindowPositionUtil.setupAlwaysOnTop(this.mainWindow);
   }
 
   async showMeetingNotification(promptData, { autoDismiss = true } = {}) {
