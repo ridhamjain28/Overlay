@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "Speech-to-text",
       "description": "How your voice is turned into text."
+    },
+    "data": {
+      "title": "Your data",
+      "clearHistory": "Clear dictation history",
+      "clearHistoryDescription": "Removes saved dictations and their audio from this PC.",
+      "clearButton": "Clear",
+      "confirmTitle": "Clear all dictation history?",
+      "confirmDescription": "Saved dictations and audio will be permanently removed from this PC. This can't be undone.",
+      "done": "History cleared",
+      "failed": "Couldn't clear history",
+      "forgetChats": "Forget assistant memory",
+      "forgetChatsDescription": "The assistant stops recalling things from past chats. The chats stay in Home.",
+      "forgetButton": "Forget"
     }
   }
 }

@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "Reconnaissance vocale",
       "description": "Comment votre voix est transformée en texte."
+    },
+    "data": {
+      "title": "Vos données",
+      "clearHistory": "Effacer l’historique de dictée",
+      "clearHistoryDescription": "Supprime les dictées enregistrées et leur audio de ce PC.",
+      "clearButton": "Effacer",
+      "confirmTitle": "Effacer tout l’historique de dictée ?",
+      "confirmDescription": "Les dictées et l’audio enregistrés seront supprimés définitivement de ce PC. Action irréversible.",
+      "done": "Historique effacé",
+      "failed": "Impossible d’effacer l’historique",
+      "forgetChats": "Oublier la mémoire de l’assistant",
+      "forgetChatsDescription": "L’assistant ne se souviendra plus des discussions passées. Elles restent dans Accueil.",
+      "forgetButton": "Oublier"
     }
   }
 }

@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, Monitor, Moon, Plus, Sun } from "../icons";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertDialog } from "../ui/dialog";
+import { AlertDialog, ConfirmDialog } from "../ui/dialog";
+import { clearTranscriptions as clearTranscriptionStore } from "../../stores/transcriptionStore";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Toggle } from "../ui/toggle";
@@ -116,7 +117,53 @@ function CustomWordsList() {
 
 export default function PreferencesSettings() {
   const { t } = useTranslation();
-  const { alertDialog, showAlertDialog, hideAlertDialog } = useDialogs();
+  const {
+    alertDialog,
+    showAlertDialog,
+    hideAlertDialog,
+    confirmDialog,
+    showConfirmDialog,
+    hideConfirmDialog,
+  } = useDialogs();
+
+  const handleClearHistory = () => {
+    showConfirmDialog({
+      title: t("simpleSettings.data.confirmTitle"),
+      description: t("simpleSettings.data.confirmDescription"),
+      confirmText: t("simpleSettings.data.clearButton"),
+      variant: "destructive",
+      onConfirm: async () => {
+        try {
+          const result = await window.electronAPI.clearTranscriptions();
+          if (result?.success) clearTranscriptionStore();
+          showAlertDialog({
+            title: result?.success
+              ? t("simpleSettings.data.done")
+              : t("simpleSettings.data.failed"),
+          });
+        } catch {
+          showAlertDialog({ title: t("simpleSettings.data.failed") });
+        }
+      },
+    });
+  };
+
+  const handleForgetChats = () => {
+    showConfirmDialog({
+      title: t("settingsPage.general.chatMemory.forgetTitle"),
+      description: t("simpleSettings.data.forgetChatsDescription"),
+      confirmText: t("simpleSettings.data.forgetButton"),
+      variant: "destructive",
+      onConfirm: async () => {
+        const result = await window.electronAPI?.overlayMemoryClear?.();
+        showAlertDialog({
+          title: result?.success
+            ? t("settingsPage.general.chatMemory.forgetDone")
+            : t("settingsPage.general.chatMemory.forgetFailed"),
+        });
+      },
+    });
+  };
   const platform = getCachedPlatform();
   const { theme, setTheme } = useTheme();
   const {
@@ -421,6 +468,43 @@ export default function PreferencesSettings() {
           </SettingsPanelRow>
         </SettingsPanel>
       </div>
+
+      <div>
+        <SectionHeader title={t("simpleSettings.data.title")} />
+        <SettingsPanel>
+          <SettingsPanelRow>
+            <SettingsRow
+              label={t("simpleSettings.data.clearHistory")}
+              description={t("simpleSettings.data.clearHistoryDescription")}
+            >
+              <Button variant="outline" size="sm" onClick={handleClearHistory}>
+                {t("simpleSettings.data.clearButton")}
+              </Button>
+            </SettingsRow>
+          </SettingsPanelRow>
+          <SettingsPanelRow>
+            <SettingsRow
+              label={t("simpleSettings.data.forgetChats")}
+              description={t("simpleSettings.data.forgetChatsDescription")}
+            >
+              <Button variant="outline" size="sm" onClick={handleForgetChats}>
+                {t("simpleSettings.data.forgetButton")}
+              </Button>
+            </SettingsRow>
+          </SettingsPanelRow>
+        </SettingsPanel>
+      </div>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => !open && hideConfirmDialog()}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        onConfirm={confirmDialog.onConfirm}
+        variant={confirmDialog.variant}
+        confirmText={confirmDialog.confirmText}
+        cancelText={confirmDialog.cancelText}
+      />
 
       <AlertDialog
         open={alertDialog.open}

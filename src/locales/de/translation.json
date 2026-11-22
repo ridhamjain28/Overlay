@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "Spracherkennung",
       "description": "Wie deine Stimme in Text umgewandelt wird."
+    },
+    "data": {
+      "title": "Deine Daten",
+      "clearHistory": "Diktatverlauf löschen",
+      "clearHistoryDescription": "Entfernt gespeicherte Diktate und ihr Audio von diesem PC.",
+      "clearButton": "Löschen",
+      "confirmTitle": "Gesamten Diktatverlauf löschen?",
+      "confirmDescription": "Gespeicherte Diktate und Audio werden endgültig von diesem PC entfernt. Das lässt sich nicht rückgängig machen.",
+      "done": "Verlauf gelöscht",
+      "failed": "Verlauf konnte nicht gelöscht werden",
+      "forgetChats": "Gedächtnis des Assistenten löschen",
+      "forgetChatsDescription": "Der Assistent erinnert sich nicht mehr an frühere Chats. Die Chats bleiben auf der Startseite.",
+      "forgetButton": "Vergessen"
     }
   }
 }

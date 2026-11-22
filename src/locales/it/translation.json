@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "Voce in testo",
       "description": "Come la tua voce diventa testo."
+    },
+    "data": {
+      "title": "I tuoi dati",
+      "clearHistory": "Cancella la cronologia delle dettature",
+      "clearHistoryDescription": "Rimuove da questo PC le dettature salvate e il loro audio.",
+      "clearButton": "Cancella",
+      "confirmTitle": "Cancellare tutta la cronologia delle dettature?",
+      "confirmDescription": "Le dettature e l’audio salvati verranno rimossi definitivamente da questo PC. Non si può annullare.",
+      "done": "Cronologia cancellata",
+      "failed": "Impossibile cancellare la cronologia",
+      "forgetChats": "Dimentica la memoria dell’assistente",
+      "forgetChatsDescription": "L’assistente non ricorderà più le chat passate. Le chat restano in Home.",
+      "forgetButton": "Dimentica"
     }
   }
 }

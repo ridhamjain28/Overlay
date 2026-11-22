@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "语音转文字",
       "description": "如何把你的语音转成文字。"
+    },
+    "data": {
+      "title": "你的数据",
+      "clearHistory": "清除听写历史",
+      "clearHistoryDescription": "从这台电脑上删除已保存的听写及其音频。",
+      "clearButton": "清除",
+      "confirmTitle": "清除所有听写历史？",
+      "confirmDescription": "已保存的听写和音频将从这台电脑上永久删除，且无法撤销。",
+      "done": "历史已清除",
+      "failed": "无法清除历史",
+      "forgetChats": "清除助手记忆",
+      "forgetChatsDescription": "助手将不再记得以往的聊天。聊天仍保留在主页。",
+      "forgetButton": "清除"
     }
   }
 }

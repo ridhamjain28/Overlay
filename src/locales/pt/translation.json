@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "Fala para texto",
       "description": "Como sua voz é transformada em texto."
+    },
+    "data": {
+      "title": "Seus dados",
+      "clearHistory": "Limpar o histórico de ditado",
+      "clearHistoryDescription": "Remove os ditados salvos e o áudio deles deste PC.",
+      "clearButton": "Limpar",
+      "confirmTitle": "Limpar todo o histórico de ditado?",
+      "confirmDescription": "Os ditados e o áudio salvos serão removidos permanentemente deste PC. Isso não pode ser desfeito.",
+      "done": "Histórico limpo",
+      "failed": "Não foi possível limpar o histórico",
+      "forgetChats": "Esquecer a memória do assistente",
+      "forgetChatsDescription": "O assistente deixa de lembrar de chats anteriores. Os chats continuam no Início.",
+      "forgetButton": "Esquecer"
     }
   }
 }

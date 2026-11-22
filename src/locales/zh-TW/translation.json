@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "語音轉文字",
       "description": "如何把你的語音轉成文字。"
+    },
+    "data": {
+      "title": "你的資料",
+      "clearHistory": "清除聽寫歷史",
+      "clearHistoryDescription": "從這台電腦刪除已儲存的聽寫及其音訊。",
+      "clearButton": "清除",
+      "confirmTitle": "清除所有聽寫歷史？",
+      "confirmDescription": "已儲存的聽寫和音訊將從這台電腦永久刪除，且無法復原。",
+      "done": "歷史已清除",
+      "failed": "無法清除歷史",
+      "forgetChats": "清除助理記憶",
+      "forgetChatsDescription": "助理將不再記得過去的聊天。聊天仍保留在首頁。",
+      "forgetButton": "清除"
     }
   }
 }

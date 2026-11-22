@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "音声認識",
       "description": "音声をテキストに変換する方法。"
+    },
+    "data": {
+      "title": "データ",
+      "clearHistory": "音声入力の履歴を消去",
+      "clearHistoryDescription": "保存された音声入力と音声をこの PC から削除します。",
+      "clearButton": "消去",
+      "confirmTitle": "音声入力の履歴をすべて消去しますか？",
+      "confirmDescription": "保存された音声入力と音声はこの PC から完全に削除されます。元に戻せません。",
+      "done": "履歴を消去しました",
+      "failed": "履歴を消去できませんでした",
+      "forgetChats": "アシスタントの記憶を消去",
+      "forgetChatsDescription": "アシスタントは過去のチャットを思い出さなくなります。チャットはホームに残ります。",
+      "forgetButton": "消去する"
     }
   }
 }

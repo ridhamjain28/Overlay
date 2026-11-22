@@ -5501,6 +5501,19 @@
     "stt": {
       "title": "Voz a texto",
       "description": "Cómo se convierte tu voz en texto."
+    },
+    "data": {
+      "title": "Tus datos",
+      "clearHistory": "Borrar el historial de dictado",
+      "clearHistoryDescription": "Elimina los dictados guardados y su audio de este PC.",
+      "clearButton": "Borrar",
+      "confirmTitle": "¿Borrar todo el historial de dictado?",
+      "confirmDescription": "Los dictados y el audio guardados se eliminarán de forma permanente de este PC. No se puede deshacer.",
+      "done": "Historial borrado",
+      "failed": "No se pudo borrar el historial",
+      "forgetChats": "Olvidar la memoria del asistente",
+      "forgetChatsDescription": "El asistente dejará de recordar chats anteriores. Los chats siguen en Inicio.",
+      "forgetButton": "Olvidar"
     }
   }
 }
