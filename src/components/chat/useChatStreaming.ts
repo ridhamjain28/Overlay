@@ -5,6 +5,7 @@ import ReasoningService, { type AgentStreamChunk } from "../../services/Reasonin
 import { isEnterpriseProvider } from "../../models/ModelRegistry";
 import { providerSupportsImages } from "../../services/ai/inferenceProviders";
 import { getSettings, useSettingsStore } from "../../stores/settingsStore";
+import { maybeSpeakAssistantReply, stopAssistantTts } from "../../helpers/assistantTtsPlayback";
 import { resolveChatStreamingInference } from "../../helpers/dictationAgentInference.js";
 import { describeProviderError } from "../../utils/describeProviderError";
 import { productHelpMetadata } from "../../services/help/productHelp";
@@ -415,6 +416,7 @@ export function useChatStreaming({
         }
 
         setAgentState("thinking");
+        stopAssistantTts();
         const isCloudAgent = llmMode === "openwhispr" && settings.isSignedIn;
         const isLanAgent = llmMode === "self-hosted" && !!llmConfig.remoteUrl;
         const isCustomAgent = llmMode === "providers" && llmConfig.provider === "custom";
@@ -898,6 +900,7 @@ export function useChatStreaming({
           }
 
           if (cancelled() || !mountedRef.current) {
+            stopAssistantTts();
             flushContentNow();
             setMessages((prev) =>
               prev.map((message) =>
@@ -938,6 +941,7 @@ export function useChatStreaming({
           const finalMsg = messagesRef.current.find((m) => m.id === assistantId);
           onStreamComplete?.(assistantId, fullContent, finalMsg?.toolCalls);
           if (hasDeliverableContent) {
+            void maybeSpeakAssistantReply(fullContent);
             await options?.onComplete?.({
               assistantId,
               content: fullContent,

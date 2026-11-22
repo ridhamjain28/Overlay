@@ -128,6 +128,7 @@ const diarizationHost = (endpoint) => {
 };
 const { resolveLocalServerNeeds, shouldStopLocalServer } = require("./localServerPolicy");
 const autoStart = require("./autoStart");
+const { createInworldTts } = require("./inworldTts");
 const { getRelaunchOptions, getRelaunchWaiter } = require("./autoStartPolicy");
 const HyprlandShortcutManager = require("./hyprlandShortcut");
 const AssemblyAiStreaming = require("./assemblyAiStreaming");
@@ -686,6 +687,9 @@ const {
 class IPCHandlers {
   constructor(managers) {
     this.environmentManager = managers.environmentManager;
+    autoStart.configureAutoStart({
+      getRunAsAdmin: () => this.environmentManager.getRunAsAdmin(),
+    });
     this.databaseManager = managers.databaseManager;
     this.clipboardManager = managers.clipboardManager;
     this.whisperManager = managers.whisperManager;
@@ -4578,7 +4582,7 @@ class IPCHandlers {
         }
       }
       try {
-        autoStart.setAutoStartEnabled(false);
+        await autoStart.setAutoStartEnabled(false);
       } catch (e) {
         errors.push(`Launch at login: ${e.message}`);
       }
@@ -4880,7 +4884,7 @@ class IPCHandlers {
 
     ipcMain.handle("get-auto-start-enabled", async () => {
       try {
-        return autoStart.getAutoStartState();
+        return await autoStart.getAutoStartState();
       } catch (error) {
         debugLogger.error("Error getting auto-start status:", error);
         return { enabled: false, requiresApproval: false };
@@ -4889,13 +4893,80 @@ class IPCHandlers {
 
     ipcMain.handle("set-auto-start-enabled", async (event, enabled) => {
       try {
-        autoStart.setAutoStartEnabled(enabled);
+        const result = await autoStart.setAutoStartEnabled(enabled);
         debugLogger.debug("Auto-start setting updated", { enabled });
-        return { success: true };
+        return result && result.success === false ? result : { success: true };
       } catch (error) {
         debugLogger.error("Error setting auto-start:", error);
         return { success: false, error: error.message };
       }
+    });
+
+    ipcMain.handle("get-run-as-admin", () => {
+      return {
+        enabled: this.environmentManager.getRunAsAdmin(),
+        elevated: autoStart.isElevated(),
+        platform: process.platform,
+      };
+    });
+
+    ipcMain.handle("set-run-as-admin", async (_event, enabled) => {
+      try {
+        this.environmentManager.saveRunAsAdmin(!!enabled);
+        const result = await autoStart.applyRunAsAdminChange(!!enabled);
+        if (result.needsElevation && enabled) {
+          const relaunch = await autoStart.relaunchElevated();
+          return { ...result, ...relaunch };
+        }
+        return result;
+      } catch (error) {
+        debugLogger.error("Error setting run-as-admin:", error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("relaunch-elevated", async () => {
+      try {
+        return await autoStart.relaunchElevated();
+      } catch (error) {
+        debugLogger.error("Error relaunching elevated:", error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    const inworldTts = createInworldTts({
+      getKey: () => this.environmentManager.getInworldKey(),
+      logger: debugLogger,
+    });
+
+    ipcMain.handle("inworld-has-key", () => ({
+      hasKey: this.environmentManager.hasInworldKey(),
+    }));
+
+    ipcMain.handle("inworld-save-key", async (_event, key) => {
+      if (typeof key !== "string") throw new TypeError("API key must be a string");
+      return this.environmentManager.saveInworldKey(key);
+    });
+
+    ipcMain.handle("inworld-clear-key", async () => {
+      return this.environmentManager.saveInworldKey("");
+    });
+
+    ipcMain.handle("inworld-synthesize", async (_event, payload) => {
+      const result = await inworldTts.synthesize({
+        text: typeof payload?.text === "string" ? payload.text : "",
+        voiceId: typeof payload?.voiceId === "string" ? payload.voiceId : undefined,
+      });
+      if (!result.success) return { success: false, error: result.error };
+      return {
+        success: true,
+        audioBase64Parts: result.audioBase64Parts,
+        mimeType: result.mimeType,
+      };
+    });
+
+    ipcMain.handle("inworld-list-voices", async () => {
+      return inworldTts.listVoices();
     });
 
     ipcMain.handle("model-get-all", async () => {

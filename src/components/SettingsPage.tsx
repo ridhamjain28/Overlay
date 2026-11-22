@@ -98,6 +98,7 @@ import DictationAgentSettings from "./settings/DictationAgentSettings";
 import DictationTranslationSettings from "./settings/DictationTranslationSettings";
 import InferenceConfigEditor from "./settings/InferenceConfigEditor";
 import { MeetingTranscriptionPanel } from "./settings/MeetingSettings";
+import SpokenRepliesSettings from "./settings/SpokenRepliesSettings";
 import { UploadTranscriptionPanel } from "./settings/UploadSettings";
 import LanguageSelector from "./ui/LanguageSelector";
 import { Skeleton } from "./ui/skeleton";
@@ -1608,6 +1609,9 @@ export default function SettingsPage({
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [autoStartNeedsApproval, setAutoStartNeedsApproval] = useState(false);
   const [autoStartLoading, setAutoStartLoading] = useState(true);
+  const [runAsAdminEnabled, setRunAsAdminEnabled] = useState(false);
+  const [runAsAdminElevated, setRunAsAdminElevated] = useState(false);
+  const [runAsAdminLoading, setRunAsAdminLoading] = useState(platform === "win32");
 
   const readAutoStartState = useCallback(async () => {
     if (!window.electronAPI?.getAutoStartEnabled) return;
@@ -1620,9 +1624,28 @@ export default function SettingsPage({
     }
   }, []);
 
+  const readRunAsAdminState = useCallback(async () => {
+    if (platform !== "win32" || !window.electronAPI?.getRunAsAdmin) return;
+    try {
+      const state = await window.electronAPI.getRunAsAdmin();
+      setRunAsAdminEnabled(!!state.enabled);
+      setRunAsAdminElevated(!!state.elevated);
+    } catch (error) {
+      logger.error("Failed to get run-as-admin status", error, "settings");
+    }
+  }, [platform]);
+
   useEffect(() => {
     readAutoStartState().finally(() => setAutoStartLoading(false));
   }, [readAutoStartState]);
+
+  useEffect(() => {
+    if (platform !== "win32") {
+      setRunAsAdminLoading(false);
+      return;
+    }
+    readRunAsAdminState().finally(() => setRunAsAdminLoading(false));
+  }, [platform, readRunAsAdminState]);
 
   useEffect(() => {
     window.electronAPI?.syncNotificationPreferences?.({
@@ -1650,6 +1673,21 @@ export default function SettingsPage({
       logger.error("Failed to set auto-start", error, "settings");
     } finally {
       setAutoStartLoading(false);
+    }
+  };
+
+  const handleRunAsAdminChange = async (enabled: boolean) => {
+    if (!window.electronAPI?.setRunAsAdmin) return;
+    try {
+      setRunAsAdminLoading(true);
+      const result = await window.electronAPI.setRunAsAdmin(enabled);
+      if (result?.relaunched) return;
+      await readRunAsAdminState();
+      await readAutoStartState();
+    } catch (error) {
+      logger.error("Failed to set run-as-admin", error, "settings");
+    } finally {
+      setRunAsAdminLoading(false);
     }
   };
 
@@ -3500,8 +3538,16 @@ export default function SettingsPage({
               <SettingsPanel>
                 <SettingsPanelRow>
                   <SettingsRow
-                    label={t("settingsPage.general.startup.launchAtLogin")}
-                    description={t("settingsPage.general.startup.launchAtLoginDescription")}
+                    label={t(
+                      platform === "win32"
+                        ? "settingsPage.general.startup.launchAtLoginWindows"
+                        : "settingsPage.general.startup.launchAtLogin"
+                    )}
+                    description={t(
+                      platform === "win32"
+                        ? "settingsPage.general.startup.launchAtLoginWindowsDescription"
+                        : "settingsPage.general.startup.launchAtLoginDescription"
+                    )}
                   >
                     <Toggle
                       checked={autoStartEnabled}
@@ -3541,7 +3587,32 @@ export default function SettingsPage({
                     <Toggle checked={startMinimized} onChange={setStartMinimized} />
                   </SettingsRow>
                 </SettingsPanelRow>
+                {platform === "win32" && (
+                  <SettingsPanelRow>
+                    <SettingsRow
+                      label={t("settingsPage.general.startup.runAsAdministrator")}
+                      description={t("settingsPage.general.startup.runAsAdministratorDescription")}
+                    >
+                      <Toggle
+                        checked={runAsAdminEnabled}
+                        onChange={(checked: boolean) => void handleRunAsAdminChange(checked)}
+                        disabled={runAsAdminLoading}
+                      />
+                    </SettingsRow>
+                    <p className="text-xs text-muted-foreground">
+                      {t("settingsPage.general.startup.runAsAdministratorWarning")}
+                    </p>
+                  </SettingsPanelRow>
+                )}
               </SettingsPanel>
+            </div>
+
+            <div>
+              <SectionHeader
+                title={t("settingsPage.general.spokenReplies.title")}
+                description={t("settingsPage.general.spokenReplies.description")}
+              />
+              <SpokenRepliesSettings />
             </div>
 
             {/* Microphone */}

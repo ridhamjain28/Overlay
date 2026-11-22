@@ -43,6 +43,9 @@
     !insertmacro DeleteAutoStartEntry "com.gizmolabs.openwhispr"
     !insertmacro DeleteAutoStartEntry "com.gizmolabs.openwhispr.staging"
     !insertmacro DeleteAutoStartEntry "com.gizmolabs.openwhispr.development"
+    nsExec::ExecToLog 'schtasks /Delete /TN "com.ridhamjain.overlay" /F'
+    nsExec::ExecToLog 'schtasks /Delete /TN "com.ridhamjain.overlay.staging" /F'
+    nsExec::ExecToLog 'schtasks /Delete /TN "com.ridhamjain.overlay.development" /F'
     nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="${SHERPA_FIREWALL_RULE}"'
     StrCpy $0 "$PROFILE\.cache\openwhispr\models"
     IfFileExists "$0\*.*" 0 +3

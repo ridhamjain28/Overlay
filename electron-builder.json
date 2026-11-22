@@ -261,6 +261,7 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "include": "resources/nsis/installer.nsh",
+    "requestedExecutionLevel": "asInvoker",
     "artifactName": "${productName}-Setup-${version}.${ext}",
     "shortcutName": "Overlay",
     "uninstallDisplayName": "Overlay"

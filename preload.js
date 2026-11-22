@@ -1128,6 +1128,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Auto-start management
   getAutoStartEnabled: () => ipcRenderer.invoke("get-auto-start-enabled"),
   setAutoStartEnabled: (enabled) => ipcRenderer.invoke("set-auto-start-enabled", enabled),
+  getRunAsAdmin: () => ipcRenderer.invoke("get-run-as-admin"),
+  setRunAsAdmin: (enabled) => ipcRenderer.invoke("set-run-as-admin", enabled),
+  relaunchElevated: () => ipcRenderer.invoke("relaunch-elevated"),
+  inworldHasKey: () => ipcRenderer.invoke("inworld-has-key"),
+  inworldSaveKey: (key) => ipcRenderer.invoke("inworld-save-key", key),
+  inworldClearKey: () => ipcRenderer.invoke("inworld-clear-key"),
+  inworldSynthesize: (payload) => ipcRenderer.invoke("inworld-synthesize", payload),
+  inworldListVoices: () => ipcRenderer.invoke("inworld-list-voices"),
 
   // Agent mode
   updateVoiceAgentHotkey: (hotkey) => ipcRenderer.invoke("update-voice-agent-hotkey", hotkey),
