@@ -2,13 +2,14 @@
 // The main process is the only place this runs. Destructive / shell work is
 // gated here so a model cannot skip the confirmation step.
 
-const { COMMAND_ACTIONS, formatIntentForConfirm } = require("./intentParser");
+const { COMMAND_ACTIONS, formatIntentForConfirm, containsCommandConnector } = require("./intentParser");
 const { locateGuideTarget } = require("./guideLocator");
 const { resolveApp, listShortcuts, startMenuDirs, isBlockedApp, normalizeName, BUILTIN_APPS } =
   require("../systemActions");
 
 const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "guide"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
+const PLAN_STEP_DELAY_MS = 1500;
 
 const MAX_COMMAND_LENGTH = 500;
 const MAX_TYPE_LENGTH = 8000;
@@ -64,6 +65,9 @@ function validateCommandRequest(request) {
   if (action === "open_app") {
     const app = normalizeName(args.app || request.app);
     if (!app || app.length > 80) return { ok: false, error: "open_app needs an app name", code: "NOT_ALLOWED" };
+    if (containsCommandConnector(app)) {
+      return { ok: false, error: "open_app needs a plain app name, not a combined command", code: "NOT_ALLOWED" };
+    }
     if (isBlockedApp(app)) return { ok: false, error: `Opening "${app}" is not allowed`, code: "NOT_ALLOWED" };
     args.app = app;
   }
@@ -124,11 +128,54 @@ function createCommandDispatcher(deps = {}) {
     fsImpl = require("fs"),
     getAutoRunTrusted = () => false,
     isEnabled = () => true,
+    stepDelayMs = PLAN_STEP_DELAY_MS,
+    wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   } = deps;
+
+  async function performPlan(request, options = {}) {
+    const steps = Array.isArray(request?.steps) ? request.steps : [];
+    if (!steps.length) {
+      return { success: false, error: "That command has no steps to run", code: "NOT_ALLOWED" };
+    }
+    const validated = [];
+    for (const step of steps) {
+      const check = validateCommandRequest(step);
+      if (!check.ok) return { success: false, error: check.error, code: check.code };
+      validated.push({ action: check.action, args: check.args });
+    }
+    const autoRunTrusted = options.autoRunTrusted === true || getAutoRunTrusted() === true;
+    const alreadyConfirmed = options.confirmed === true;
+    const planIntent = { action: "plan", args: {}, steps: validated };
+    const mustConfirm =
+      validated.some((step) => needsConfirmation(step.action, { autoRunTrusted })) && !alreadyConfirmed;
+    if (mustConfirm) {
+      const allowed =
+        typeof confirm === "function" ? await confirm(formatIntentForConfirm(planIntent)) : false;
+      if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+    }
+    const delay = Number.isFinite(options.stepDelayMs) ? options.stepDelayMs : stepDelayMs;
+    const messages = [];
+    for (let i = 0; i < validated.length; i += 1) {
+      if (i > 0 && delay > 0) await wait(delay);
+      const result = await perform(validated[i], { ...options, confirmed: true, autoRunTrusted });
+      if (!result.success) return result;
+      if (result.message) messages.push(result.message);
+    }
+    return {
+      success: true,
+      message: messages.join("\n") || "Done",
+      action: "plan",
+      args: {},
+      steps: validated,
+    };
+  }
 
   async function perform(request, options = {}) {
     if (!isEnabled()) {
       return { success: false, error: "Command mode is turned off", code: "DISABLED" };
+    }
+    if (request?.action === "plan" || Array.isArray(request?.steps)) {
+      return performPlan(request, options);
     }
     const check = validateCommandRequest(request);
     if (!check.ok) return { success: false, error: check.error, code: check.code };
@@ -276,6 +323,7 @@ module.exports = {
   ALWAYS_CONFIRM_ACTIONS,
   BLOCKED_COMMAND_PATTERNS,
   MAX_COMMAND_LENGTH,
+  PLAN_STEP_DELAY_MS,
   needsConfirmation,
   isBlockedCommand,
   validateCommandRequest,

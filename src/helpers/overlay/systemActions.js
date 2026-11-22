@@ -68,6 +68,42 @@ const BUILTIN_APPS = {
   "snipping tool": { type: "uri", target: "ms-screenclip:", label: "Snipping Tool" },
 };
 
+// Spoken or typed aliases (including common typos) to a canonical search name.
+const APP_ALIASES = {
+  nordpad: "notepad",
+  "note pad": "notepad",
+  calc: "calculator",
+  "file explorer": "explorer",
+  files: "explorer",
+  chrome: "google chrome",
+  "google chrome": "google chrome",
+  edge: "microsoft edge",
+  "ms edge": "microsoft edge",
+  "microsoft edge": "microsoft edge",
+  "vs code": "visual studio code",
+  vscode: "visual studio code",
+  code: "visual studio code",
+  "visual studio code": "visual studio code",
+  settings: "settings",
+  word: "word",
+  "ms word": "word",
+  "microsoft word": "word",
+  excel: "excel",
+  "ms excel": "excel",
+  "microsoft excel": "excel",
+  spotify: "spotify",
+  whatsapp: "whatsapp",
+};
+
+function canonicalAppName(value) {
+  const name = normalizeName(value);
+  if (!name) return name;
+  if (APP_ALIASES[name]) return APP_ALIASES[name];
+  const collapsed = name.replace(/\s+/g, "");
+  if (APP_ALIASES[collapsed]) return APP_ALIASES[collapsed];
+  return name;
+}
+
 function normalizeName(value) {
   return String(value || "")
     .toLowerCase()
@@ -155,19 +191,24 @@ function listShortcuts(dirs, fsImpl = fs, maxDepth = 3) {
 
 /** Finds an app: built-in list first, then Start-menu shortcuts. */
 function resolveApp(appName, { shortcuts = [] } = {}) {
-  const name = normalizeName(appName);
+  const raw = normalizeName(appName);
+  const name = canonicalAppName(appName);
   if (BUILTIN_APPS[name]) return BUILTIN_APPS[name];
+  if (BUILTIN_APPS[raw]) return BUILTIN_APPS[raw];
   const usable = shortcuts.filter(
     (s) => !isBlockedApp(s.name) && !/uninstall|readme|help|documentation/.test(s.name)
   );
-  const exact = usable.find((s) => s.name === name);
-  const prefix = usable
-    .filter((s) => s.name.startsWith(name))
-    .sort((a, b) => a.name.length - b.name.length)[0];
-  const contains = usable
-    .filter((s) => s.name.includes(name))
-    .sort((a, b) => a.name.length - b.name.length)[0];
-  const hit = exact || prefix || contains;
+  const matchName = (candidate) => {
+    const exact = usable.find((s) => s.name === candidate);
+    const prefix = usable
+      .filter((s) => s.name.startsWith(candidate))
+      .sort((a, b) => a.name.length - b.name.length)[0];
+    const contains = usable
+      .filter((s) => s.name.includes(candidate))
+      .sort((a, b) => a.name.length - b.name.length)[0];
+    return exact || prefix || contains;
+  };
+  const hit = (name && matchName(name)) || (raw && raw !== name && matchName(raw));
   return hit ? { type: "shortcut", target: hit.path, label: hit.name } : null;
 }
 
@@ -366,6 +407,8 @@ module.exports = {
   VK,
   validateRequest,
   resolveApp,
+  canonicalAppName,
+  APP_ALIASES,
   listShortcuts,
   startMenuDirs,
   keyPressScript,

@@ -3397,10 +3397,14 @@ declare global {
         args: Record<string, string>;
         confidence: number;
         source?: string;
+        steps?: Array<{ action: string; args: Record<string, string> }>;
+        errorCode?: string;
+        errorMessage?: string;
       }>;
       overlayCommandExecute?: (payload: {
         action: string;
         args?: Record<string, string>;
+        steps?: Array<{ action: string; args: Record<string, string> }>;
         confirmed?: boolean;
         autoRunTrusted?: boolean;
       }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;

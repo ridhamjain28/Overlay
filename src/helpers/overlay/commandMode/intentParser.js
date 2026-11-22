@@ -11,8 +11,8 @@ const HAS_BARE_SITE =
   /\b(?:www\.)?(?:[a-z0-9-]+\.)+(?:com|org|net|io|ai|dev|app|co|in|uk|edu|gov)(?:[/:?#][^\s]*)?\b/i;
 
 const CHAT_PATTERNS = [
-  /^(what|what's|whats|why|who|whom|whose|when|where is the capital|how does|how do i know|how can i learn|explain|summarize|summarise|translate|tell me about|write (me )?(an? |some )?email|draft|prove|compare)\b/i,
-  /^(can you (explain|help me understand|write|summarize|summarise))\b/i,
+  /^(what|what's|whats|why|who|whom|whose|when|where is the capital|how does|how do i know|how can i learn|explain|summarize|summarise|translate|tell me about|help me understand|write (me )?(an? |some )?(email|essay|letter|poem|story)|draft|prove|compare)\b/i,
+  /^(can you (explain|help me understand|summarize|summarise|write (me )?(an? |some )?(email|essay|letter|poem|story)))\b/i,
 ];
 
 const GUIDE_PATTERNS = [
@@ -41,6 +41,21 @@ const RUN_PATTERNS = [
   /^(?:in(?: the)? (?:terminal|shell|command prompt|cmd|powershell)[,:]?\s+)(.+)$/i,
 ];
 
+// Connectors that split "open X and type Y". An open_app name must never
+// include one of these — split into a plan, or reject the open_app parse.
+const COMPOUND_CONNECTOR_RE =
+  /(?:and(?:\s+then)?|then|and\s+in(?:side)?\s+it|and\s+there|aur|phir)/i;
+const COMPOUND_SPLIT_RE = new RegExp(
+  "^(?:open|launch|start|kholo|khol do|chalao)\\s+(.+?)\\s+(?:" +
+    COMPOUND_CONNECTOR_RE.source +
+    ")\\s+(?:then\\s+)?(?:please\\s+)?(?:type|write|enter|paste|likho|likh do)\\s+(?:this\\s*)?[:\\uFF1A]?\\s*(.+)$",
+  "i"
+);
+const HINGLISH_OPEN_RE = /^(.+?)\s+(kholo|khol do|khol dena|chalao|chala do)\s*$/i;
+const LEADING_WRAPPER_RE =
+  /^(?:(?:please|pls|plz|hey overlay|ok overlay|okay overlay|overlay,|overlay\s*[,:]?|can you|could you|would you|will you|can u|could u|would u)\s+)+/i;
+const TRAILING_WRAPPER_RE = /(?:\s+(?:for me|please|pls|plz|now))+$/i;
+
 function trimText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -49,6 +64,35 @@ function stripWrappingQuotes(value) {
   const t = trimText(value);
   const m = t.match(/^["“'](.+)["”']$/);
   return m ? m[1].trim() : t;
+}
+
+function stripCommandWrappers(text) {
+  let value = trimText(text);
+  let prev;
+  do {
+    prev = value;
+    value = value.replace(/[?!.,]+$/g, "").trim();
+    value = value.replace(TRAILING_WRAPPER_RE, "").trim();
+    value = value.replace(LEADING_WRAPPER_RE, "").trim();
+    value = value.replace(/\s+for me\s+and\s+/i, " and ").trim();
+  } while (value !== prev);
+  return value;
+}
+
+function containsCommandConnector(value) {
+  return new RegExp("\\b" + COMPOUND_CONNECTOR_RE.source + "\\b", "i").test(trimText(value));
+}
+
+function commandReferencesSelection(text) {
+  return /\b(this|selected|selection)\b/i.test(String(text || ""));
+}
+
+function cleanAppName(raw) {
+  return stripWrappingQuotes(raw)
+    .replace(/^(the\s+)?(app|application|program|software)\s+/i, "")
+    .replace(/\s+(app|application|program)$/i, "")
+    .replace(/[?!.,]+$/g, "")
+    .trim();
 }
 
 function toHttpsUrl(raw) {
@@ -107,16 +151,43 @@ function parseOpenApp(text) {
   for (const re of OPEN_APP_PATTERNS) {
     const m = trimText(text).match(re);
     if (!m) continue;
-    const app = stripWrappingQuotes(m[1])
-      .replace(/^(the\s+)?(app|application|program|software)\s+/i, "")
-      .replace(/\s+(app|application|program)$/i, "")
-      .trim();
+    const app = cleanAppName(m[1]);
     if (!app || toHttpsUrl(app)) continue;
     if (/^(a |an |the )?(command|terminal|shell|cmd)\b/i.test(app)) continue;
     if (app.length > 80) continue;
+    // Never launch an app whose "name" still contains a compound connector.
+    if (containsCommandConnector(app)) continue;
     return { action: "open_app", args: { app }, confidence: 0.88 };
   }
   return null;
+}
+
+function parseHinglishOpen(text) {
+  const m = trimText(text).match(HINGLISH_OPEN_RE);
+  if (!m) return null;
+  const app = cleanAppName(m[1]);
+  if (!app || toHttpsUrl(app) || app.length > 80) return null;
+  if (containsCommandConnector(app)) return null;
+  if (looksLikeChat(app)) return null;
+  return { action: "open_app", args: { app }, confidence: 0.88 };
+}
+
+function parseCompoundOpenAndType(text) {
+  const m = trimText(text).match(COMPOUND_SPLIT_RE);
+  if (!m) return null;
+  const app = cleanAppName(m[1]);
+  const typed = stripWrappingQuotes(m[2] || "").replace(/[?!.,]+$/g, "").trim();
+  if (!app || !typed || toHttpsUrl(app) || containsCommandConnector(app)) return null;
+  if (app.length > 80 || typed.length > 8000) return null;
+  return {
+    action: "plan",
+    args: {},
+    steps: [
+      { action: "open_app", args: { app } },
+      { action: "type_text", args: { text: typed } },
+    ],
+    confidence: 0.88,
+  };
 }
 
 function parseTypeText(text) {
@@ -171,23 +242,29 @@ function parseGuide(text) {
  * @returns {{ action: string, args: Record<string, string>, confidence: number, source: string }}
  */
 function parseIntentHeuristic(text) {
-  const t = trimText(text);
+  const original = trimText(text);
+  if (!original) {
+    return { action: "none", args: {}, confidence: 1, source: "heuristic" };
+  }
+  if (looksLikeChat(original)) {
+    return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
+  }
+  const t = stripCommandWrappers(original);
   if (!t) {
     return { action: "none", args: {}, confidence: 1, source: "heuristic" };
   }
-  // More specific patterns first.
+  if (looksLikeChat(t)) {
+    return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
+  }
   const hit =
+    parseCompoundOpenAndType(t) ||
     parseRunCommand(t) ||
     parseTypeText(t) ||
     parseOpenUrl(t) ||
     parseGuide(t) ||
-    parseOpenApp(t);
+    parseOpenApp(t) ||
+    parseHinglishOpen(t);
   if (hit) return { ...hit, source: "heuristic" };
-  if (looksLikeChat(t)) {
-    return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
-  }
-  // Unrecognised wording (including polite or indirect commands) is left
-  // for the local/cloud model when Command mode is on.
   return { action: "none", args: {}, confidence: 0.35, source: "heuristic" };
 }
 
@@ -207,7 +284,7 @@ function buildIntentParsePrompt(text) {
     `- action must be one of: ${allowed}, or none.`,
     "- none if this is a question, conversation, writing help, or anything that is not a desktop command.",
     "- open_url: only http(s) websites. Add https:// if the user named a site like youtube.com.",
-    "- open_app: launch a program by name (Chrome, Notepad, VS Code, Settings, …).",
+    "- open_app: launch a program by name (Chrome, Notepad, VS Code, Settings, …). The app field must be only the app name, never 'and type …'.",
     "- run_command: only when the user clearly wants a shell/terminal command. Put the exact command in `command`.",
     "- type_text: type or paste words into the already-focused field. Put those words in `text`.",
     "- guide: the user wants to find, be shown, or click a button/control on screen. Put the control name in `target`. Do not click it yourself.",
@@ -244,6 +321,9 @@ function normalizeParsedIntent(parsed, source) {
   confidence = Math.min(1, Math.max(0, confidence));
   const args = {};
   if (action === "open_app") args.app = trimText(parsed.app || parsed.name || parsed.target);
+  if (action === "open_app" && containsCommandConnector(args.app)) {
+    return { action: "none", args: {}, confidence: 0.2, source };
+  }
   if (action === "open_url") {
     const url = toHttpsUrl(parsed.url || parsed.link || parsed.target || "");
     if (url) args.url = url;
@@ -273,17 +353,33 @@ async function parseIntent(text, { llmComplete, forceLlm = false } = {}) {
   const heuristic = parseIntentHeuristic(text);
   if (!forceLlm && !shouldUseLlm(heuristic)) return heuristic;
   if (typeof llmComplete !== "function") return heuristic;
-  const raw = await llmComplete(buildIntentParsePrompt(text));
-  const llm = parseIntentFromLlmResponse(raw);
-  // Prefer a confident heuristic over a weak LLM "none".
-  if (llm.action === "none" && heuristic.action !== "none" && heuristic.confidence >= 0.6) {
-    return heuristic;
+  try {
+    const raw = await llmComplete(buildIntentParsePrompt(text));
+    const llm = parseIntentFromLlmResponse(raw);
+    // Prefer a confident heuristic over a weak LLM "none".
+    if (llm.action === "none" && heuristic.action !== "none" && heuristic.confidence >= 0.6) {
+      return heuristic;
+    }
+    return llm;
+  } catch (error) {
+    const errorCode =
+      error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR";
+    return {
+      action: "none",
+      args: {},
+      confidence: 0,
+      source: "llm",
+      errorCode,
+      errorMessage: String(error?.message || "parse failed"),
+    };
   }
-  return llm;
 }
 
 function formatIntentForConfirm(intent) {
   if (!intent || intent.action === "none") return "No desktop command";
+  if (intent.action === "plan") {
+    return (intent.steps || []).map((step) => formatIntentForConfirm(step)).join(", then ");
+  }
   switch (intent.action) {
     case "open_app":
       return `Open app: ${intent.args.app}`;
@@ -315,4 +411,7 @@ module.exports = {
   toHttpsUrl,
   looksLikeChat,
   looksImperative,
+  stripCommandWrappers,
+  containsCommandConnector,
+  commandReferencesSelection,
 };

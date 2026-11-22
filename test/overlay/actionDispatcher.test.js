@@ -218,24 +218,29 @@ test("local completer refuses a non-loopback base URL", async () => {
   await assert.rejects(() => complete("prompt"), /this computer/);
 });
 
-test("local completer posts to the loopback chat completions URL", async () => {
+test("local completer posts to the loopback native Ollama chat API", async () => {
   const seen = [];
   const complete = createIntentCompleter({
     parser: "local",
     localBaseUrl: "http://localhost:11434/v1",
     model: "qwen3.5:4b-q4_K_M",
     fetchImpl: async (url, init) => {
-      seen.push({ url, body: JSON.parse(init.body) });
+      seen.push({ url, body: init?.body ? JSON.parse(init.body) : null });
+      if (String(url).endsWith("/api/tags")) {
+        return { ok: true, json: async () => ({ models: [] }) };
+      }
       return {
         ok: true,
-        json: async () => ({ choices: [{ message: { content: '{"action":"none"}' } }] }),
+        json: async () => ({ message: { content: '{"action":"none"}' } }),
       };
     },
   });
   const text = await complete("hello");
   assert.equal(text, '{"action":"none"}');
-  assert.equal(seen[0].url, "http://localhost:11434/v1/chat/completions");
-  assert.equal(seen[0].body.model, "qwen3.5:4b-q4_K_M");
+  assert.equal(seen[0].url, "http://localhost:11434/api/tags");
+  assert.equal(seen[1].url, "http://localhost:11434/api/chat");
+  assert.equal(seen[1].body.model, "qwen3.5:4b-q4_K_M");
+  assert.equal(seen[1].body.think, false);
   assert.equal(isLoopbackUrl("http://127.0.0.1:8080/v1"), true);
   assert.equal(isLoopbackUrl("https://api.openai.com/v1"), false);
 });

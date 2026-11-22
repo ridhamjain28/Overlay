@@ -487,27 +487,28 @@ function registerOverlayIpc({
       localBaseUrl: payload?.localBaseUrl,
       cloudProvider: payload?.cloudProvider,
     });
-    const llmComplete = async (prompt) => {
-      try {
-        return await completer(prompt);
-      } catch (error) {
-        debugLogger?.warn?.("Command mode parser fallback to heuristic", {
-          error: error?.message,
-        });
-        return "";
-      }
-    };
     try {
-      return await parseIntent(text, { llmComplete });
+      const parsed = await parseIntent(text, { llmComplete: completer });
+      if (parsed?.errorCode) {
+        debugLogger?.warn?.("Command mode parse did not finish", {
+          errorCode: parsed.errorCode,
+          error: parsed.errorMessage,
+        });
+      }
+      return parsed;
     } catch (error) {
       debugLogger?.warn?.("Command mode parse failed", { error: error?.message });
-      return parseIntentHeuristic(text);
+      return {
+        ...parseIntentHeuristic(text),
+        errorCode: error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR",
+        errorMessage: String(error?.message || "parse failed"),
+      };
     }
   });
 
   ipcMain.handle("overlay-command-execute", async (_event, request = {}) => {
     const result = await commandDispatcher.perform(
-      { action: request?.action, args: request?.args || request },
+      { action: request?.action, args: request?.args || request, steps: request?.steps },
       {
         confirmed: request?.confirmed === true,
         autoRunTrusted: request?.autoRunTrusted === true || commandModePrefs.autoRunTrusted,
