@@ -192,17 +192,19 @@ test("empty compose output types nothing", async () => {
   assert.ok(!calls.some((c) => c.kind === "paste"));
 });
 
-test("a detached open_app timeout is still treated as a successful launch", async () => {
+test("open_app does not wait for the launched app to exit and sets no kill timeout", async () => {
+  const seen = [];
   const { dispatcher, calls } = make({
     autoRunTrusted: true,
-    execFile: async () => {
-      const err = new Error("ETIMEDOUT");
-      err.code = "ETIMEDOUT";
-      err.killed = true;
-      throw err;
+    execFile: (file, args, options) => {
+      seen.push(options);
+      return new Promise(() => {}); // the app keeps running; never settles
     },
   });
+  const started = Date.now();
   const r = await dispatcher.perform(plan);
   assert.equal(r.success, true);
+  assert.ok(Date.now() - started < 3000);
+  assert.equal(seen[0].timeout, undefined);
   assert.ok(calls.some((c) => c.kind === "paste"));
 });

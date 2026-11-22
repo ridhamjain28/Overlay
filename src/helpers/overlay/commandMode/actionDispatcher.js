@@ -10,6 +10,7 @@ const { resolveApp, listShortcuts, startMenuDirs, isBlockedApp, normalizeName, B
 const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "guide"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
 const PLAN_STEP_DELAY_MS = 1500;
+const APP_LAUNCH_GRACE_MS = 300;
 
 const MAX_COMMAND_LENGTH = 500;
 const MAX_TYPE_LENGTH = 8000;
@@ -247,16 +248,17 @@ function createCommandDispatcher(deps = {}) {
           if (app.type === "uri" || /^[a-z][a-z0-9+.-]*:/i.test(app.target)) {
             await openExternal(app.target);
           } else if (app.type === "exe") {
-            try {
-              await execFile(app.target, [], { windowsHide: false, timeout: 5000, detached: true });
-            } catch (error) {
-              // A detached launch often keeps running; a timeout still means the app started.
-              const timedOut =
-                error?.killed === true ||
-                error?.code === "ETIMEDOUT" ||
-                /ETIMEDOUT|timed out/i.test(String(error?.message || ""));
-              if (!timedOut) throw error;
-            }
+            // Launch and return at once: the app keeps running on its own, so only an
+            // immediate failure (e.g. not found) is reported. No kill timeout, which
+            // would close the app we just opened.
+            const launched = Promise.resolve(execFile(app.target, [], { windowsHide: false, detached: true }));
+            launched.catch(() => {});
+            await Promise.race([
+              launched,
+              new Promise((resolve) => {
+                setTimeout(resolve, APP_LAUNCH_GRACE_MS);
+              }),
+            ]);
           } else if (typeof openPath === "function") {
             const error = await openPath(app.target);
             if (error) throw new Error(error);
