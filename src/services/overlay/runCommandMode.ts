@@ -1,3 +1,5 @@
+import logger from "../../utils/logger";
+
 const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
 const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
 
@@ -80,8 +82,15 @@ export async function runCommandModeIfEnabled(
 ): Promise<CommandModeOutcome> {
   if (!settings.enabled || !String(text || "").trim()) return { handled: false };
   let intent: CommandIntent;
+  // Debug-only stage timing (durations and the intent source; never the text).
+  const startedAt = Date.now();
   try {
     const parsed = await parseCommandIntent(text, settings);
+    logger.debug(
+      "STAGE_TIMING",
+      { stage: "intent_parsed", ms: Date.now() - startedAt, source: parsed?.source },
+      "perf"
+    );
     if (!parsed) return { handled: false };
     if (parsed.errorCode === "TIMEOUT" || parsed.errorCode === "PARSE_ERROR") {
       console.warn("Command mode parse failed", parsed.errorCode, parsed.errorMessage);
@@ -107,7 +116,13 @@ export async function runCommandModeIfEnabled(
     };
   }
 
+  const executeStartedAt = Date.now();
   const result = await executeCommandIntent(intent, settings, false);
+  logger.debug(
+    "STAGE_TIMING",
+    { stage: "action_executed", ms: Date.now() - executeStartedAt, totalMs: Date.now() - startedAt },
+    "perf"
+  );
   if (result.code === "CANCELLED") {
     return {
       handled: true,

@@ -273,6 +273,9 @@ function translationChainReachable(settings) {
   }).reachable;
 }
 
+// Dictations shorter than this many words are pasted without AI cleanup.
+const SHORT_DICTATION_WORDS = 12;
+
 function resolveReasoningRoute(
   text,
   settings,
@@ -3466,8 +3469,11 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
     if (languageGuard && typeof text === "string" && languageGuard.check(text, source)) {
       return text.trim();
     }
+    const cleanupStartedAt = Date.now();
     try {
       const result = await this.processTranscriptionCore(text, source, wasCancelled);
+      // Debug-only stage timing: durations only, never content or keys.
+      logger.debug("STAGE_TIMING", { stage: "cleanup_done", ms: Date.now() - cleanupStartedAt }, "perf");
       if (wasCancelled()) return result;
       return this.finalizeChineseScript(result);
     } catch (error) {
@@ -3550,6 +3556,18 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         }
         this._noteCleanupRoute(settings, route);
         if (route.kind === "skip") return normalizedText;
+        // Speed: a short plain dictation rarely needs an LLM round-trip. Voice-assistant,
+        // wake-word agent and translation routes are unaffected.
+        if (
+          route.kind === "cleanup" &&
+          !this.voiceAgentRequested &&
+          !this.translationRequested &&
+          normalizedText.trim().split(/\s+/).filter(Boolean).length < SHORT_DICTATION_WORDS
+        ) {
+          logger.logReasoning("REASONING_SKIPPED", { reason: "short dictation" });
+          this._noteCleanupRoute(settings, { kind: "skip", cleanupReachable });
+          return normalizedText;
+        }
 
         if (route.kind === "translation") {
           const { text: translatedText } = await this.runTranslationChain({
@@ -4573,8 +4591,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
   }
 
   async safePaste(text, options = {}) {
+    const pasteStartedAt = Date.now();
     try {
       const result = await window.electronAPI.pasteText(text, options);
+      logger.debug("STAGE_TIMING", { stage: "text_pasted", ms: Date.now() - pasteStartedAt }, "perf");
       if (
         result?.success === false &&
         result.code === "ACCESSIBILITY_PERMISSION_REQUIRED" &&
