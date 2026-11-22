@@ -9,48 +9,32 @@ import {
   type ResolvedLLMConfig,
 } from "./settingsStore";
 import type { InferenceScope } from "../config/inferenceScopes";
-import { getTranscriptionProvider } from "../models/ModelRegistry";
 import logger from "../utils/logger";
 
 /**
- * One global AI provider for everything, with optional per-purpose overrides.
+ * One AI provider and one model for every language-model task (dictation
+ * cleanup, assistant chat, Command mode parsing, translation, note formatting).
  *
- * The runtime still reads the per-feature keys in settingsStore (that is what
- * every request path, the main process and the migrations understand). This
- * module owns the single user-facing choice and writes it through to those keys
- * for every purpose that is not overridden, so nothing downstream changes.
- * Cloud API keys and the own-server key stay in the main process's secure
- * storage; nothing here logs or exposes a key.
+ * The runtime still reads the per-feature keys in settingsStore (every request
+ * path, the main process and the older migrations understand those). This
+ * module owns the single user-facing choice and writes it through to all of
+ * them, so nothing downstream changes. Cloud API keys and the own-server key
+ * stay in the main process's secure storage; nothing here logs or exposes a key.
  */
 
 export type AiProviderKind = "local" | "own-server" | "cloud";
-export type AiPurpose =
-  | "dictationCleanup"
-  | "assistantChat"
-  | "commandParsing"
-  | "speechToText"
-  | "spokenReplies";
 
-export const AI_PURPOSES: readonly AiPurpose[] = [
+/** Every language-model scope the single choice drives. */
+export const GLOBAL_LLM_SCOPES: readonly InferenceScope[] = [
   "dictationCleanup",
-  "assistantChat",
-  "commandParsing",
-  "speechToText",
-  "spokenReplies",
+  "dictationAgent",
+  "noteFormatting",
+  "chatIntelligence",
+  "dictationTranslation",
 ];
-
-/** Which inference scopes each LLM purpose drives. Others fall back to these. */
-export const PURPOSE_SCOPES: Partial<Record<AiPurpose, InferenceScope[]>> = {
-  dictationCleanup: ["dictationCleanup", "noteFormatting", "dictationTranslation"],
-  assistantChat: ["chatIntelligence", "dictationAgent"],
-};
-
-/** Cloud providers that also offer speech-to-text, so "use global" can follow them. */
-const CLOUD_STT_PROVIDERS = new Set(["openai", "groq", "mistral"]);
 
 const STORAGE_KEY = "overlayAiProvider";
 const MIGRATED_KEY = "overlayAiProviderMigrated";
-const STT_APPLIED_KEY = "overlayAiSttFollowsGlobal";
 
 export interface GlobalAiConfig {
   kind: AiProviderKind;
@@ -61,28 +45,18 @@ export interface GlobalAiConfig {
   cloudBaseUrl: string;
   /** Base URL of "Your own server" (any OpenAI-compatible endpoint). */
   serverUrl: string;
-  /** Model used for Command mode parsing when that purpose is overridden. */
-  commandModel: string;
-  overrides: Record<AiPurpose, boolean>;
 }
 
 interface AiProviderState extends GlobalAiConfig {
   apiKey: string;
   loaded: boolean;
-  update: (patch: Partial<Omit<GlobalAiConfig, "overrides">>) => void;
+  update: (patch: Partial<GlobalAiConfig>) => void;
+  /** Switch the provider kind, remembering the model chosen for each kind. */
+  selectKind: (kind: AiProviderKind) => void;
   setApiKey: (key: string) => void;
-  setOverride: (purpose: AiPurpose, enabled: boolean) => void;
 }
 
 const isBrowser = typeof window !== "undefined" && typeof localStorage !== "undefined";
-
-const emptyOverrides = (): Record<AiPurpose, boolean> => ({
-  dictationCleanup: false,
-  assistantChat: false,
-  commandParsing: false,
-  speechToText: false,
-  spokenReplies: false,
-});
 
 function defaults(): GlobalAiConfig {
   return {
@@ -91,8 +65,6 @@ function defaults(): GlobalAiConfig {
     model: OVERLAY_DEFAULT_MODEL,
     cloudBaseUrl: "",
     serverUrl: "",
-    commandModel: "",
-    overrides: emptyOverrides(),
   };
 }
 
@@ -108,12 +80,11 @@ function readStored(): GlobalAiConfig {
         parsed.kind === "own-server" || parsed.kind === "cloud" || parsed.kind === "local"
           ? parsed.kind
           : base.kind,
-      cloudProvider: typeof parsed.cloudProvider === "string" ? parsed.cloudProvider : base.cloudProvider,
-      model: typeof parsed.model === "string" && parsed.model ? parsed.model : base.model,
+      cloudProvider:
+        typeof parsed.cloudProvider === "string" ? parsed.cloudProvider : base.cloudProvider,
+      model: typeof parsed.model === "string" ? parsed.model : base.model,
       cloudBaseUrl: typeof parsed.cloudBaseUrl === "string" ? parsed.cloudBaseUrl : "",
       serverUrl: typeof parsed.serverUrl === "string" ? parsed.serverUrl : "",
-      commandModel: typeof parsed.commandModel === "string" ? parsed.commandModel : "",
-      overrides: { ...emptyOverrides(), ...(parsed.overrides || {}) },
     };
   } catch {
     return base;
@@ -122,11 +93,24 @@ function readStored(): GlobalAiConfig {
 
 function persist(config: GlobalAiConfig) {
   if (!isBrowser) return;
-  const { kind, cloudProvider, model, cloudBaseUrl, serverUrl, commandModel, overrides } = config;
+  const { kind, cloudProvider, model, cloudBaseUrl, serverUrl } = config;
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({ kind, cloudProvider, model, cloudBaseUrl, serverUrl, commandModel, overrides })
+    JSON.stringify({ kind, cloudProvider, model, cloudBaseUrl, serverUrl })
   );
+}
+
+function readModelByKind(): Partial<Record<AiProviderKind, string>> {
+  if (!isBrowser) return {};
+  try {
+    return JSON.parse(localStorage.getItem("overlayAiModelByKind") || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeModelByKind(value: Partial<Record<AiProviderKind, string>>) {
+  if (isBrowser) localStorage.setItem("overlayAiModelByKind", JSON.stringify(value));
 }
 
 export function isLocalOllamaUrl(url: string | undefined | null): boolean {
@@ -171,48 +155,19 @@ export function globalToScopePatch(
   };
 }
 
-function applyStt(config: GlobalAiConfig): void {
-  const store = useSettingsStore.getState();
-  if (config.kind === "cloud" && CLOUD_STT_PROVIDERS.has(config.cloudProvider)) {
-    const provider = getTranscriptionProvider(config.cloudProvider);
-    const model = provider?.models?.[0]?.id;
-    if (!provider || !model) return;
-    store.setCloudTranscriptionForAllScopes({
-      useLocalWhisper: false,
-      cloudTranscriptionMode: "byok",
-      cloudTranscriptionProvider: config.cloudProvider,
-      cloudTranscriptionModel: model,
-    });
-    if (isBrowser) localStorage.setItem(STT_APPLIED_KEY, "1");
-    return;
-  }
-  // Only undo what "use global" itself switched to the cloud; a user's own
-  // speech-to-text choice is never overwritten.
-  if (isBrowser && localStorage.getItem(STT_APPLIED_KEY) === "1") {
-    store.setCloudTranscriptionForAllScopes({ useLocalWhisper: true, cloudTranscriptionMode: "byok" });
-    localStorage.removeItem(STT_APPLIED_KEY);
-  }
-}
-
-/** Write the global choice into every purpose that is not overridden. */
+/** Write the single choice into every language-model scope. */
 export function applyGlobalProvider(): void {
   const state = useAiProvider.getState();
+  // An unfinished choice (no model yet) must not blank a working configuration.
+  if (!state.model) return;
   const patch = globalToScopePatch(state, state.apiKey);
   // The per-scope model setters switch hardware auto-select off (they model a
   // manual pick). A global write is not a manual pick, so keep the flag as is.
   const autoSelect = useSettingsStore.getState().overlayModelAutoSelect;
-  for (const purpose of ["dictationCleanup", "assistantChat"] as const) {
-    if (state.overrides[purpose]) continue;
-    for (const scope of PURPOSE_SCOPES[purpose] ?? []) {
-      setResolvedLLMConfig(scope, patch);
-    }
-  }
+  for (const scope of GLOBAL_LLM_SCOPES) setResolvedLLMConfig(scope, patch);
   const settings = useSettingsStore.getState();
   if (autoSelect && !settings.overlayModelAutoSelect) settings.setOverlayModelAutoSelect(true);
-  if (!state.overrides.commandParsing) {
-    settings.setCommandModeParser(state.kind === "cloud" ? "cloud" : "local");
-  }
-  if (!state.overrides.speechToText) applyStt(state);
+  settings.setCommandModeParser(state.kind === "cloud" ? "cloud" : "local");
 }
 
 export const useAiProvider = create<AiProviderState>()((set, get) => ({
@@ -224,91 +179,79 @@ export const useAiProvider = create<AiProviderState>()((set, get) => ({
     persist(get());
     applyGlobalProvider();
   },
+  selectKind: (kind) => {
+    const current = get();
+    if (current.kind === kind) return;
+    const byKind = readModelByKind();
+    byKind[current.kind] = current.model;
+    writeModelByKind(byKind);
+    const remembered = byKind[kind] || (kind === "local" ? OVERLAY_DEFAULT_MODEL : "");
+    get().update({ kind, model: remembered });
+  },
   setApiKey: (key) => {
     set({ apiKey: key });
     void window.electronAPI?.saveAiGlobalCustomKey?.(key);
     applyGlobalProvider();
   },
-  setOverride: (purpose, enabled) => {
-    set({ overrides: { ...get().overrides, [purpose]: enabled } });
-    persist(get());
-    // Turning an override off hands the purpose back to the global provider.
-    if (!enabled) applyGlobalProvider();
-  },
 }));
 
-/** Command mode's parser settings: the global provider unless overridden. */
+/** Command mode's parser settings: always the single global choice. */
 export function resolveCommandParsing(
   settings = getSettings(),
   ai: GlobalAiConfig = useAiProvider.getState()
 ): { parser: "local" | "cloud"; model: string; localBaseUrl: string; cloudProvider: string } {
   const chat = selectResolvedLLMConfig(settings, "chatIntelligence");
-  if (!ai.overrides.commandParsing) {
-    return {
-      parser: ai.kind === "cloud" ? "cloud" : "local",
-      model: ai.model || chat.model,
-      localBaseUrl:
-        ai.kind === "own-server" && ai.serverUrl ? ai.serverUrl : OVERLAY_DEFAULT_OLLAMA_URL,
-      cloudProvider: ai.cloudProvider,
-    };
-  }
   return {
-    parser: settings.commandModeParser,
-    model: ai.commandModel || chat.model,
-    localBaseUrl: chat.remoteUrl || OVERLAY_DEFAULT_OLLAMA_URL,
-    cloudProvider: chat.provider,
+    parser: ai.kind === "cloud" ? "cloud" : "local",
+    model: ai.model || chat.model,
+    localBaseUrl:
+      ai.kind === "own-server" && ai.serverUrl ? ai.serverUrl : OVERLAY_DEFAULT_OLLAMA_URL,
+    cloudProvider: ai.cloudProvider,
   };
 }
 
-/**
- * First run of this version: derive the global choice from what the user has
- * today, and mark any purpose that differs as overridden, so nothing changes.
- */
-export function migrateExistingChoices(): void {
-  if (!isBrowser || localStorage.getItem(MIGRATED_KEY) === "1") return;
-  const settings = getSettings();
-  const chat = selectResolvedLLMConfig(settings, "chatIntelligence");
+/** Derive the single choice from the per-purpose settings that exist today. */
+export function deriveGlobalFromScopes(
+  settings = getSettings()
+): Pick<GlobalAiConfig, "kind" | "cloudProvider" | "model" | "cloudBaseUrl" | "serverUrl"> {
   const config = defaults();
-
-  if (chat.mode === "providers") {
+  // chatAgent* wins when it is set to something usable; otherwise the dictation model.
+  const usable = (scope: InferenceScope) => {
+    const resolved = selectResolvedLLMConfig(settings, scope);
+    const ok =
+      (resolved.mode === "providers" && !!resolved.model) ||
+      (resolved.mode === "self-hosted" && !!resolved.model) ||
+      (resolved.mode === "local" && !!resolved.model);
+    return ok ? resolved : null;
+  };
+  const chosen = usable("chatIntelligence") ?? usable("dictationCleanup");
+  if (!chosen) return config;
+  if (chosen.mode === "providers") {
     config.kind = "cloud";
-    config.cloudProvider = chat.provider || config.cloudProvider;
-    config.model = chat.model || config.model;
-    config.cloudBaseUrl = chat.cloudBaseUrl || "";
-  } else if (chat.mode === "self-hosted") {
-    const url = chat.remoteUrl || OVERLAY_DEFAULT_OLLAMA_URL;
+    config.cloudProvider = chosen.provider || config.cloudProvider;
+    config.model = chosen.model;
+    config.cloudBaseUrl = chosen.cloudBaseUrl || "";
+  } else if (chosen.mode === "self-hosted") {
+    const url = chosen.remoteUrl || OVERLAY_DEFAULT_OLLAMA_URL;
     config.kind = isLocalOllamaUrl(url) ? "local" : "own-server";
     config.serverUrl = config.kind === "own-server" ? url : "";
-    config.model = chat.model || config.model;
+    config.model = chosen.model;
   } else {
     config.kind = "local";
-    config.model = chat.model || config.model;
+    config.model = chosen.model;
   }
+  return config;
+}
 
-  const sameAsGlobal = (scope: InferenceScope) => {
-    const resolved = selectResolvedLLMConfig(settings, scope);
-    const wanted = globalToScopePatch(config, "");
-    return (
-      resolved.mode === wanted.mode &&
-      resolved.model === wanted.model &&
-      (wanted.mode !== "providers" || resolved.provider === wanted.provider) &&
-      (wanted.mode !== "self-hosted" || (resolved.remoteUrl || "") === (wanted.remoteUrl || ""))
-    );
-  };
-  for (const purpose of ["dictationCleanup", "assistantChat"] as const) {
-    config.overrides[purpose] = !(PURPOSE_SCOPES[purpose] ?? [])
-      .filter((scope) => scope !== "noteFormatting" && scope !== "dictationTranslation")
-      .every(sameAsGlobal);
-  }
-  config.overrides.commandParsing =
-    settings.commandModeParser === "cloud" && config.kind !== "cloud";
-  config.overrides.speechToText = settings.transcriptionMode !== "local";
-  config.overrides.spokenReplies = false;
-
+/** First run of this version: collapse the per-purpose settings into one choice. */
+export function migrateExistingChoices(): void {
+  if (!isBrowser || localStorage.getItem(MIGRATED_KEY) === "1") return;
+  const config = deriveGlobalFromScopes();
   useAiProvider.setState(config);
-  persist({ ...config });
+  persist({ ...useAiProvider.getState() });
   localStorage.setItem(MIGRATED_KEY, "1");
-  logger.info("Migrated AI provider choice", { kind: config.kind, overrides: config.overrides }, "settings");
+  applyGlobalProvider();
+  logger.info("Migrated AI provider choice", { kind: config.kind }, "settings");
 }
 
 /** Load the secret key and migrate existing choices. Called once at startup. */

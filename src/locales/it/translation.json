@@ -5455,5 +5455,52 @@
       "bootstrapMismatch": "Il file di bootstrap non corrisponde al tuo account, a questo workspace o alle credenziali configurate.",
       "testLinkOtherWorkspace": "Questo link di test è per un altro workspace. Passa a quel workspace e apri di nuovo il link."
     }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "Dettatura",
+      "description": "Tieni premuta la scorciatoia, parla, rilascia. Il testo viene incollato al cursore e gli appunti vengono ripristinati."
+    },
+    "customWords": {
+      "title": "Parole personalizzate",
+      "description": "Nomi e termini da scrivere correttamente.",
+      "placeholder": "Aggiungi una parola o un nome",
+      "add": "Aggiungi",
+      "empty": "Ancora nessuna parola personalizzata.",
+      "remove": "Rimuovi {{word}}"
+    },
+    "command": {
+      "hotkeyTitle": "Scorciatoia per assistente e modalità Comando",
+      "hotkeyDescription": "Apre l’assistente. Di’ o scrivi un comando come «apri Blocco note» per eseguirlo sul PC."
+    },
+    "app": {
+      "title": "App",
+      "description": "Avvio, aspetto e lingua."
+    },
+    "llm": {
+      "title": "Modello linguistico",
+      "description": "Scegli l’unica IA usata ovunque: pulizia della dettatura, chat dell’assistente e modalità Comando.",
+      "kinds": {
+        "local": "Locale su questo PC",
+        "localDescription": "Ollama o llama-server su questo computer. Privato, gratuito e predefinito.",
+        "ownServer": "Il tuo server",
+        "ownServerDescription": "Qualsiasi server compatibile con OpenAI che gestisci, tramite l’URL di base.",
+        "cloud": "Cloud con la tua chiave API",
+        "cloudDescription": "OpenRouter, OpenAI, Groq, Gemini, Mistral, Anthropic e altri."
+      },
+      "autoSelect": "Scegli automaticamente il modello migliore per questo PC",
+      "autoSelectDescription": "Sceglie un modello veloce che sta nella tua memoria. Disattiva per scegliere tu.",
+      "model": "Modello",
+      "noLocalModels": "Nessun modello trovato. Ollama è in esecuzione?",
+      "serverUrl": "URL del server",
+      "serverUrlDescription": "L’URL di base compatibile con OpenAI, di solito termina con /v1.",
+      "apiKeyOptional": "Chiave API (facoltativa)",
+      "apiKeyDescription": "Archiviata in modo sicuro su questo PC e mai più mostrata.",
+      "oneModelNote": "Questo modello è usato per ogni attività linguistica. Non ci sono impostazioni di modello per funzione."
+    },
+    "stt": {
+      "title": "Voce in testo",
+      "description": "Come la tua voce diventa testo."
+    }
   }
 }

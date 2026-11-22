@@ -5455,5 +5455,52 @@
       "bootstrapMismatch": "ブートストラップファイルがあなたのアカウント、このワークスペース、またはその設定済み認証情報と一致しません。",
       "testLinkOtherWorkspace": "このテストリンクは別のワークスペース用です。そのワークスペースに切り替えてから、もう一度リンクを開いてください。"
     }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "音声入力",
+      "description": "ホットキーを押したまま話し、離します。テキストはカーソル位置に貼り付けられ、その後クリップボードは元に戻ります。"
+    },
+    "customWords": {
+      "title": "カスタム単語",
+      "description": "正しく表記したい名前や用語。",
+      "placeholder": "単語や名前を追加",
+      "add": "追加",
+      "empty": "カスタム単語はまだありません。",
+      "remove": "{{word}} を削除"
+    },
+    "command": {
+      "hotkeyTitle": "アシスタントとコマンドモードのホットキー",
+      "hotkeyDescription": "アシスタントを開きます。「メモ帳を開いて」のようなコマンドを話すか入力すると、PC 上で実行されます。"
+    },
+    "app": {
+      "title": "アプリ",
+      "description": "起動、外観、言語。"
+    },
+    "llm": {
+      "title": "言語モデル",
+      "description": "音声入力の整形、アシスタントのチャット、コマンドモードのすべてで使う AI を 1 つ選びます。",
+      "kinds": {
+        "local": "この PC 上でローカル実行",
+        "localDescription": "このコンピューターで動く Ollama または llama-server。プライベートで無料、デフォルトです。",
+        "ownServer": "自分のサーバー",
+        "ownServerDescription": "自分で運用する OpenAI 互換サーバーをベース URL で指定します。",
+        "cloud": "自分の API キーでクラウド",
+        "cloudDescription": "OpenRouter、OpenAI、Groq、Gemini、Mistral、Anthropic など。"
+      },
+      "autoSelect": "この PC に最適なモデルを自動で選ぶ",
+      "autoSelectDescription": "メモリに収まる高速なモデルを選びます。オフにすると自分で選べます。",
+      "model": "モデル",
+      "noLocalModels": "モデルが見つかりません。Ollama は起動していますか？",
+      "serverUrl": "サーバー URL",
+      "serverUrlDescription": "OpenAI 互換のベース URL。通常は /v1 で終わります。",
+      "apiKeyOptional": "API キー（任意）",
+      "apiKeyDescription": "この PC に安全に保存され、再表示されません。",
+      "oneModelNote": "このモデルがすべての言語タスクに使われます。機能ごとのモデル設定はありません。"
+    },
+    "stt": {
+      "title": "音声認識",
+      "description": "音声をテキストに変換する方法。"
+    }
   }
 }

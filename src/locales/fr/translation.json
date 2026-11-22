@@ -5455,5 +5455,52 @@
       "bootstrapMismatch": "Le fichier d’amorçage ne correspond pas à votre compte, à cet espace de travail ou à ses identifiants configurés.",
       "testLinkOtherWorkspace": "Ce lien de test concerne un autre espace de travail. Passez à cet espace de travail et rouvrez le lien."
     }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "Dictée",
+      "description": "Maintenez le raccourci, parlez, relâchez. Le texte est collé au curseur puis le presse-papiers est restauré."
+    },
+    "customWords": {
+      "title": "Mots personnalisés",
+      "description": "Noms et termes à orthographier correctement.",
+      "placeholder": "Ajouter un mot ou un nom",
+      "add": "Ajouter",
+      "empty": "Aucun mot personnalisé pour l’instant.",
+      "remove": "Retirer {{word}}"
+    },
+    "command": {
+      "hotkeyTitle": "Raccourci de l’assistant et du mode Commande",
+      "hotkeyDescription": "Ouvre l’assistant. Dites ou tapez une commande comme « ouvre le Bloc-notes » pour l’exécuter sur votre PC."
+    },
+    "app": {
+      "title": "Application",
+      "description": "Démarrage, apparence et langue."
+    },
+    "llm": {
+      "title": "Modèle de langage",
+      "description": "Choisissez l’unique IA utilisée partout : nettoyage de la dictée, chat de l’assistant et mode Commande.",
+      "kinds": {
+        "local": "En local sur ce PC",
+        "localDescription": "Ollama ou llama-server sur cet ordinateur. Privé, gratuit et par défaut.",
+        "ownServer": "Votre propre serveur",
+        "ownServerDescription": "Tout serveur compatible OpenAI que vous exploitez, via son URL de base.",
+        "cloud": "Cloud avec votre clé d’API",
+        "cloudDescription": "OpenRouter, OpenAI, Groq, Gemini, Mistral, Anthropic et plus."
+      },
+      "autoSelect": "Choisir automatiquement le meilleur modèle pour ce PC",
+      "autoSelectDescription": "Choisit un modèle rapide qui tient en mémoire. Désactivez pour choisir vous-même.",
+      "model": "Modèle",
+      "noLocalModels": "Aucun modèle trouvé. Ollama est-il lancé ?",
+      "serverUrl": "URL du serveur",
+      "serverUrlDescription": "L’URL de base compatible OpenAI, finissant en général par /v1.",
+      "apiKeyOptional": "Clé d’API (facultative)",
+      "apiKeyDescription": "Stockée en sécurité sur ce PC et jamais réaffichée.",
+      "oneModelNote": "Ce modèle sert à toutes les tâches de langage. Il n’y a pas de réglage de modèle par fonction."
+    },
+    "stt": {
+      "title": "Reconnaissance vocale",
+      "description": "Comment votre voix est transformée en texte."
+    }
   }
 }

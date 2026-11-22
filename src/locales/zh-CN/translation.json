@@ -5455,5 +5455,52 @@
       "bootstrapMismatch": "引导文件与您的账号、此工作区或其配置的凭据不匹配。",
       "testLinkOtherWorkspace": "此测试链接对应的是其他工作区。请切换到该工作区，然后重新打开链接。"
     }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "听写",
+      "description": "按住快捷键说话，然后松开。文本会粘贴到光标处，随后恢复剪贴板。"
+    },
+    "customWords": {
+      "title": "自定义词汇",
+      "description": "需要正确拼写的名称和术语。",
+      "placeholder": "添加词语或名称",
+      "add": "添加",
+      "empty": "还没有自定义词汇。",
+      "remove": "移除 {{word}}"
+    },
+    "command": {
+      "hotkeyTitle": "助手和命令模式快捷键",
+      "hotkeyDescription": "打开助手。说出或输入“打开记事本”之类的命令，即可在你的电脑上执行。"
+    },
+    "app": {
+      "title": "应用",
+      "description": "启动、外观和语言。"
+    },
+    "llm": {
+      "title": "语言模型",
+      "description": "选择在所有地方使用的唯一 AI：听写清理、助手聊天和命令模式。",
+      "kinds": {
+        "local": "本机运行",
+        "localDescription": "在这台电脑上运行的 Ollama 或 llama-server。私密、免费，默认选项。",
+        "ownServer": "你自己的服务器",
+        "ownServerDescription": "你运行的任何兼容 OpenAI 的服务器，填写其基础 URL。",
+        "cloud": "使用你的 API 密钥的云端",
+        "cloudDescription": "OpenRouter、OpenAI、Groq、Gemini、Mistral、Anthropic 等。"
+      },
+      "autoSelect": "自动为这台电脑选择最佳模型",
+      "autoSelectDescription": "选择适合你内存的快速模型。关闭后可自行选择。",
+      "model": "模型",
+      "noLocalModels": "未找到模型。Ollama 是否在运行？",
+      "serverUrl": "服务器 URL",
+      "serverUrlDescription": "兼容 OpenAI 的基础 URL，通常以 /v1 结尾。",
+      "apiKeyOptional": "API 密钥（可选）",
+      "apiKeyDescription": "安全存储在这台电脑上，不会再次显示。",
+      "oneModelNote": "所有语言任务都使用这个模型，没有按功能划分的模型设置。"
+    },
+    "stt": {
+      "title": "语音转文字",
+      "description": "如何把你的语音转成文字。"
+    }
   }
 }

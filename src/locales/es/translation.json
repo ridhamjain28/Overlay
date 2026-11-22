@@ -5455,5 +5455,52 @@
       "bootstrapMismatch": "El archivo de arranque no coincide con tu cuenta, este espacio de trabajo o sus credenciales configuradas.",
       "testLinkOtherWorkspace": "Este enlace de prueba es para otro espacio de trabajo. Cambia a ese espacio de trabajo y vuelve a abrir el enlace."
     }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "Dictado",
+      "description": "Mantén el atajo, habla y suelta. El texto se pega en el cursor y el portapapeles se restaura después."
+    },
+    "customWords": {
+      "title": "Palabras personalizadas",
+      "description": "Nombres y términos que deben escribirse bien.",
+      "placeholder": "Añade una palabra o nombre",
+      "add": "Añadir",
+      "empty": "Aún no hay palabras personalizadas.",
+      "remove": "Quitar {{word}}"
+    },
+    "command": {
+      "hotkeyTitle": "Atajo del asistente y del modo Comando",
+      "hotkeyDescription": "Abre el asistente. Di o escribe una orden como «abre el Bloc de notas» para ejecutarla en tu PC."
+    },
+    "app": {
+      "title": "Aplicación",
+      "description": "Inicio, apariencia e idioma."
+    },
+    "llm": {
+      "title": "Modelo de lenguaje",
+      "description": "Elige la única IA que se usa en todas partes: limpieza del dictado, chat del asistente y modo Comando.",
+      "kinds": {
+        "local": "Local en este PC",
+        "localDescription": "Ollama o llama-server en este equipo. Privado, gratuito y predeterminado.",
+        "ownServer": "Tu propio servidor",
+        "ownServerDescription": "Cualquier servidor compatible con OpenAI que ejecutes, por su URL base.",
+        "cloud": "Nube con tu clave de API",
+        "cloudDescription": "OpenRouter, OpenAI, Groq, Gemini, Mistral, Anthropic y más."
+      },
+      "autoSelect": "Elegir automáticamente el mejor modelo para este PC",
+      "autoSelectDescription": "Elige un modelo rápido que quepa en tu memoria. Desactívalo para elegir tú.",
+      "model": "Modelo",
+      "noLocalModels": "No se encontraron modelos. ¿Está Ollama en marcha?",
+      "serverUrl": "URL del servidor",
+      "serverUrlDescription": "La URL base compatible con OpenAI, normalmente termina en /v1.",
+      "apiKeyOptional": "Clave de API (opcional)",
+      "apiKeyDescription": "Se guarda de forma segura en este PC y no se vuelve a mostrar.",
+      "oneModelNote": "Este modelo se usa para todas las tareas de lenguaje. No hay ajustes de modelo por función."
+    },
+    "stt": {
+      "title": "Voz a texto",
+      "description": "Cómo se convierte tu voz en texto."
+    }
   }
 }

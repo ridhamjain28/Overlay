@@ -5455,5 +5455,52 @@
       "bootstrapMismatch": "The bootstrap file doesn't match your account, this workspace or its configured credentials.",
       "testLinkOtherWorkspace": "This test link is for a different workspace. Switch to that workspace and open the link again."
     }
+  },
+  "simpleSettings": {
+    "dictation": {
+      "title": "Dictation",
+      "description": "Hold your hotkey, speak, release. Text is pasted at your cursor and your clipboard is restored afterwards."
+    },
+    "customWords": {
+      "title": "Custom words",
+      "description": "Names and terms to spell correctly.",
+      "placeholder": "Add a word or name",
+      "add": "Add",
+      "empty": "No custom words yet.",
+      "remove": "Remove {{word}}"
+    },
+    "command": {
+      "hotkeyTitle": "Assistant and Command mode hotkey",
+      "hotkeyDescription": "Opens the assistant. Say or type a command like “open Notepad” to run it on your PC."
+    },
+    "app": {
+      "title": "App",
+      "description": "Startup, appearance and language."
+    },
+    "llm": {
+      "title": "Language model",
+      "description": "Choose the one AI used everywhere: dictation cleanup, assistant chat and Command mode.",
+      "kinds": {
+        "local": "Local on this PC",
+        "localDescription": "Ollama or llama-server running on this computer. Private, free and the default.",
+        "ownServer": "Your own server",
+        "ownServerDescription": "Any OpenAI-compatible server you run, by its base URL.",
+        "cloud": "Cloud with your API key",
+        "cloudDescription": "OpenRouter, OpenAI, Groq, Gemini, Mistral, Anthropic and more."
+      },
+      "autoSelect": "Pick the best model for this PC automatically",
+      "autoSelectDescription": "Chooses a fast model that fits your memory. Turn off to choose a model yourself.",
+      "model": "Model",
+      "noLocalModels": "No models found. Is Ollama running?",
+      "serverUrl": "Server URL",
+      "serverUrlDescription": "The OpenAI-compatible base URL, usually ending in /v1.",
+      "apiKeyOptional": "API key (optional)",
+      "apiKeyDescription": "Stored securely on this PC and never shown again.",
+      "oneModelNote": "This model is used for every language task. There are no per-feature model settings."
+    },
+    "stt": {
+      "title": "Speech-to-text",
+      "description": "How your voice is turned into text."
+    }
   }
 }
