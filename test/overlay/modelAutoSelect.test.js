@@ -63,13 +63,32 @@ test("auto-select picks the largest installed model that fits", () => {
 
 test("auto keeps the current 4B tag when nothing larger fits", () => {
   const picked = selectLocalModel({
-    installed: [OVERLAY_FALLBACK_MODEL, OVERLAY_DEFAULT_MODEL],
+    installed: [OVERLAY_DEFAULT_MODEL, OVERLAY_TINY_MODEL],
     hardware: ram16,
     current: OVERLAY_DEFAULT_MODEL,
     autoSelect: true,
   });
   assert.equal(picked.model, OVERLAY_DEFAULT_MODEL);
   assert.equal(picked.reason, "auto-keep");
+});
+
+test("auto prefers the fast instruct model over larger installed ones", () => {
+  const picked = selectLocalModel({
+    installed: [OVERLAY_FALLBACK_MODEL, OVERLAY_DEFAULT_MODEL, "qwen2.5:7b"],
+    hardware: ram32Gpu,
+    current: OVERLAY_DEFAULT_MODEL,
+    autoSelect: true,
+  });
+  assert.equal(picked.model, OVERLAY_FALLBACK_MODEL);
+  assert.equal(picked.reason, "auto-fast");
+  // A manual pick still wins when auto-select is off.
+  const manual = selectLocalModel({
+    installed: [OVERLAY_FALLBACK_MODEL, "qwen2.5:7b"],
+    hardware: ram32Gpu,
+    current: "qwen2.5:7b",
+    autoSelect: false,
+  });
+  assert.equal(manual.model, "qwen2.5:7b");
 });
 
 test("a manual override is kept when it fits, and refused when it does not", () => {

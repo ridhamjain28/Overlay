@@ -33,6 +33,7 @@ const BYOK_KEY_BRIDGES = [
     save: "saveDictationAgentVisionCustomKey",
   },
   { base: "chat-agent-custom", get: "getChatAgentCustomKey", save: "saveChatAgentCustomKey" },
+  { base: "ai-global-custom", get: "getAiGlobalCustomKey", save: "saveAiGlobalCustomKey" },
 ];
 const secretKeyApi = {};
 for (const k of BYOK_KEY_BRIDGES) {

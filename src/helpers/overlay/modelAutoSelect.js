@@ -1,7 +1,9 @@
 /**
  * Pick a local Ollama model that fits this machine.
  *
- * "auto" chooses the largest installed model that comfortably fits RAM/VRAM.
+ * "auto" prefers the fast instruct model (qwen3:4b-instruct) when it is installed
+ * and fits, since dictation and Command mode are latency-bound; otherwise it
+ * chooses the largest installed model that comfortably fits RAM/VRAM.
  * A manual override keeps the user's choice when it fits, and never loads a
  * model larger than the machine can hold — it falls back instead.
  */
@@ -168,6 +170,14 @@ function selectLocalModel({
     }
     if (largest) return result(largest, "override-missing", true);
     return result(current || null, "override-missing", false);
+  }
+
+  // Auto: the fast instruct model wins whenever it is installed and fits.
+  const fast = hasModel(names, OVERLAY_FALLBACK_MODEL)
+    ? installedName(names, OVERLAY_FALLBACK_MODEL)
+    : null;
+  if (fast && modelFits(fast, hardware, contextTokens)) {
+    return result(fast, sameModel(fast, current) ? "auto-keep" : "auto-fast", true);
   }
 
   // Auto: largest installed model that fits, preferring the current one when

@@ -1805,7 +1805,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   })(),
   // Fresh Overlay profiles default to auto-select. Existing profiles keep
   // the model they already chose unless the user turns this on.
-  overlayModelAutoSelect: readBoolean("overlayModelAutoSelect", isFreshOverlayProfile),
+  overlayModelAutoSelect: readBoolean("overlayModelAutoSelect", true),
   startMinimized: readBoolean("startMinimized", false),
   assistantTtsProvider: readString("assistantTtsProvider", "off") === "inworld" ? "inworld" : "off",
   inworldVoiceId: readString("inworldVoiceId", "Ashley") || "Ashley",
@@ -4056,6 +4056,13 @@ export async function initializeSettings(): Promise<void> {
     reconcileRetiredCloudModelSelections();
 
     try {
+      const { initAiProvider } = await import("./aiProvider");
+      await initAiProvider();
+    } catch (err) {
+      logger.warn("Failed to initialize AI provider", { error: (err as Error).message }, "settings");
+    }
+
+    try {
       const installed = await window.electronAPI.overlayOllamaModels?.();
       const state = useSettingsStore.getState();
       const recommendation = await window.electronAPI.overlayRecommendModel?.({
@@ -4068,6 +4075,10 @@ export async function initializeSettings(): Promise<void> {
         : applyOverlayModelFallback(installed);
       if (switched.length) {
         logger.info("Selected a local model that fits this PC", { scopes: switched }, "overlay");
+      }
+      if (recommendation?.model) {
+        const { applyAutoSelectedModel } = await import("./aiProvider");
+        applyAutoSelectedModel(recommendation.model);
       }
     } catch {
       // Ollama not running: keep the configured model.
