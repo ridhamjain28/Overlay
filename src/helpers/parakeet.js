@@ -96,6 +96,7 @@ class ParakeetManager {
       const capability = getParakeetCapability();
 
       if (
+        settings.prewarm !== false &&
         capability.supported &&
         isSherpaLocalProvider(localTranscriptionProvider) &&
         parakeetModel &&

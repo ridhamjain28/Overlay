@@ -71,6 +71,7 @@ function buildResponseError(statusCode, body) {
 class LlamaServerManager {
   constructor() {
     this.keepResident = false;
+    this.idleTimeoutMs = IDLE_TIMEOUT_MS;
     this.process = null;
     this.port = null;
     this.ready = false;
@@ -622,6 +623,13 @@ class LlamaServerManager {
     else if (this.process && !this.startupPromise) this.resetIdleTimer();
   }
 
+  setIdleTimeoutMs(timeoutMs) {
+    const next = Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : IDLE_TIMEOUT_MS;
+    if (this.idleTimeoutMs === next) return;
+    this.idleTimeoutMs = next;
+    if (this.process && !this.startupPromise && !this.keepResident) this.resetIdleTimer();
+  }
+
   resetIdleTimer() {
     this.clearIdleTimer();
     // Explicit stop, model/context changes and app shutdown still release it.
@@ -636,11 +644,11 @@ class LlamaServerManager {
         return;
       }
       debugLogger.info("llama-server idle timeout reached, stopping to free VRAM", {
-        timeoutMs: IDLE_TIMEOUT_MS,
+        timeoutMs: this.idleTimeoutMs,
         model: this.modelPath ? path.basename(this.modelPath) : null,
       });
       this.stop();
-    }, IDLE_TIMEOUT_MS);
+    }, this.idleTimeoutMs);
     // Freeing an idle server is housekeeping; it must never hold the process open.
     timer.unref();
     this.idleTimer = timer;

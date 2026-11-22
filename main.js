@@ -1465,10 +1465,31 @@ async function startApp() {
     }, WHISPER_WAKE_REWARM_DELAY_MS);
   });
 
+  // Hardware profile is cheap (RAM/CPU sync, GPU best-effort). Use it to
+  // skip eager model loads on low-memory machines and to shorten idle unload.
+  const hardwareProfile = require("./src/helpers/overlay/hardwareProfile");
+  const hw = hardwareProfile.detectHardwareSync();
+  debugLogger.info("hardware profile", {
+    cpuCores: hw.cpuCores,
+    totalRamGiB: hw.totalRamGiB,
+    gpuName: hw.gpuName,
+    vramMb: hw.vramMb,
+    gpuSource: hw.gpuSource,
+  });
+  const modelManager = require("./src/helpers/modelManagerBridge").default;
+  modelManager.serverManager?.setIdleTimeoutMs?.(hardwareProfile.idleTimeoutMs(hw));
+  const prewarmLocalModels = hardwareProfile.shouldPrewarmLocalModels(hw);
+  if (!prewarmLocalModels) {
+    debugLogger.info("skipping local model pre-warm on a low-memory machine", {
+      totalRamGiB: hw.totalRamGiB,
+    });
+  }
+
   // Non-blocking server pre-warming; GPU backend resolved by the manager
   const whisperSettings = {
     localTranscriptionProvider: process.env.LOCAL_TRANSCRIPTION_PROVIDER || "",
     whisperModel: process.env.LOCAL_WHISPER_MODEL,
+    prewarm: prewarmLocalModels,
   };
   whisperManager.initializeAtStartup(whisperSettings).catch((err) => {
     debugLogger.debug("Whisper startup init error (non-fatal)", { error: err.message });
@@ -1478,6 +1499,7 @@ async function startApp() {
     localTranscriptionProvider: process.env.LOCAL_TRANSCRIPTION_PROVIDER || "",
     parakeetModel: process.env.PARAKEET_MODEL,
     language: process.env.DICTATION_LANGUAGE,
+    prewarm: prewarmLocalModels,
   };
   parakeetManager.initializeAtStartup(parakeetSettings).catch((err) => {
     debugLogger.debug("Parakeet startup init error (non-fatal)", { error: err.message });
@@ -1486,19 +1508,18 @@ async function startApp() {
   // TODO: drop legacy REASONING_PROVIDER / LOCAL_REASONING_MODEL fallbacks after 2 releases.
   const cleanupProvider = process.env.CLEANUP_PROVIDER || process.env.REASONING_PROVIDER;
   const cleanupLocalModel = process.env.LOCAL_CLEANUP_MODEL || process.env.LOCAL_REASONING_MODEL;
-  if (cleanupProvider === "local" && cleanupLocalModel) {
-    const modelManager = require("./src/helpers/modelManagerBridge").default;
+  if (prewarmLocalModels && cleanupProvider === "local" && cleanupLocalModel) {
     modelManager.prewarmServer(cleanupLocalModel).catch((err) => {
       debugLogger.debug("llama-server pre-warm error (non-fatal)", { error: err.message });
     });
   }
 
   if (
+    prewarmLocalModels &&
     process.env.DICTATION_AGENT_PROVIDER === "local" &&
     process.env.LOCAL_DICTATION_AGENT_MODEL &&
     process.env.LOCAL_DICTATION_AGENT_MODEL !== cleanupLocalModel
   ) {
-    const modelManager = require("./src/helpers/modelManagerBridge").default;
     modelManager.prewarmServer(process.env.LOCAL_DICTATION_AGENT_MODEL).catch((err) => {
       debugLogger.debug("dictation-agent llama-server pre-warm error (non-fatal)", {
         error: err.message,

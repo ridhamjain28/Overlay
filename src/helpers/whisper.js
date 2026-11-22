@@ -273,6 +273,7 @@ class WhisperManager {
       const { useCuda, useVulkan } = gpuOptions;
 
       if (
+        settings.prewarm !== false &&
         localTranscriptionProvider === "whisper" &&
         whisperModel &&
         this.serverManager.isAvailable()

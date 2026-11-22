@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { Message, ToolCallInfo } from "./types";
 import type { ContainerScope } from "../../types/chat";
+import { capChatMessages } from "./liveMessageCap";
 
 interface UseChatPersistenceOptions {
   conversationId?: number | null;
@@ -26,7 +27,12 @@ export interface ChatPersistence {
 }
 
 export function useChatPersistence(options: UseChatPersistenceOptions = {}): ChatPersistence {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessagesState] = useState<Message[]>([]);
+  const setMessages: React.Dispatch<React.SetStateAction<Message[]>> = useCallback((update) => {
+    setMessagesState((prev) =>
+      capChatMessages(typeof update === "function" ? update(prev) : update)
+    );
+  }, []);
   const [conversationId, setConversationId] = useState<number | null>(
     options.conversationId ?? null
   );
@@ -69,35 +75,38 @@ export function useChatPersistence(options: UseChatPersistenceOptions = {}): Cha
     [options]
   );
 
-  const loadConversation = useCallback(async (id: number) => {
-    const version = ++sessionVersionRef.current;
-    const conv = await window.electronAPI?.getAgentConversation?.(id);
-    if (version !== sessionVersionRef.current) return false;
-    if (!conv) {
-      // The conversation was deleted elsewhere (e.g. ControlPanel history).
-      // Clear the id, or every subsequent save silently no-ops against the
-      // tombstoned row and the session is never persisted.
-      conversationIdRef.current = null;
-      setConversationId(null);
-      setMessages([]);
-      return null;
-    }
-    conversationIdRef.current = id;
-    setConversationId(id);
-    const loaded: Message[] = conv.messages.map((m) => {
-      const parsed = m.metadata ? tryParseMetadata(m.metadata) : undefined;
-      const toolCalls = parsed?.toolCalls as ToolCallInfo[] | undefined;
-      return {
-        id: crypto.randomUUID(),
-        role: m.role as Message["role"],
-        content: m.content,
-        isStreaming: false,
-        ...(toolCalls ? { toolCalls } : {}),
-      };
-    });
-    setMessages(loaded);
-    return true;
-  }, []);
+  const loadConversation = useCallback(
+    async (id: number) => {
+      const version = ++sessionVersionRef.current;
+      const conv = await window.electronAPI?.getAgentConversation?.(id);
+      if (version !== sessionVersionRef.current) return false;
+      if (!conv) {
+        // The conversation was deleted elsewhere (e.g. ControlPanel history).
+        // Clear the id, or every subsequent save silently no-ops against the
+        // tombstoned row and the session is never persisted.
+        conversationIdRef.current = null;
+        setConversationId(null);
+        setMessages([]);
+        return null;
+      }
+      conversationIdRef.current = id;
+      setConversationId(id);
+      const loaded: Message[] = conv.messages.map((m) => {
+        const parsed = m.metadata ? tryParseMetadata(m.metadata) : undefined;
+        const toolCalls = parsed?.toolCalls as ToolCallInfo[] | undefined;
+        return {
+          id: crypto.randomUUID(),
+          role: m.role as Message["role"],
+          content: m.content,
+          isStreaming: false,
+          ...(toolCalls ? { toolCalls } : {}),
+        };
+      });
+      setMessages(loaded);
+      return true;
+    },
+    [setMessages]
+  );
 
   const saveUserMessage = useCallback(async (text: string) => {
     if (conversationIdRef.current) {
@@ -121,7 +130,7 @@ export function useChatPersistence(options: UseChatPersistenceOptions = {}): Cha
     setMessages([]);
     conversationIdRef.current = null;
     setConversationId(null);
-  }, []);
+  }, [setMessages]);
 
   return {
     messages,
