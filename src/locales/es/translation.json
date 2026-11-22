@@ -2314,7 +2314,9 @@
         "parser": "Intérprete de intenciones",
         "parserDescription": "Cómo Overlay convierte tus palabras en un comando. Local usa el modelo que ya corre en este PC (Ollama o llama-server) y no necesita ninguna API en la nube. Nube usa el proveedor que ya configuraste en Ajustes.",
         "parserLocal": "Local (Ollama / llama-server)",
-        "parserCloud": "Nube (proveedor configurado)"
+        "parserCloud": "Nube (proveedor configurado)",
+        "idleMinutes": "Empezar un chat nuevo tras N minutos de inactividad",
+        "idleMinutesDescription": "Si vuelves a abrir el asistente dentro de estos minutos, Overlay continúa el mismo chat. El botón de chat nuevo siempre empieza uno nuevo."
       }
     },
     "permissions": {

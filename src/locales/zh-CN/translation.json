@@ -2262,7 +2262,9 @@
         "parser": "意图解析",
         "parserDescription": "Overlay 如何把你的话变成命令。本地使用这台电脑上已在运行的模型（Ollama 或 llama-server），无需云端 API。云端则使用你已在设置中配置的服务商。",
         "parserLocal": "本地（Ollama / llama-server）",
-        "parserCloud": "云端（已配置的服务商）"
+        "parserCloud": "云端（已配置的服务商）",
+        "idleMinutes": "空闲 N 分钟后开始新对话",
+        "idleMinutesDescription": "在这段时间内再次打开助手时，Overlay 会继续同一段对话。“新对话”按钮始终会开始新的对话。"
       }
     },
     "permissions": {

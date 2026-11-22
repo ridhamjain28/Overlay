@@ -8,6 +8,11 @@ import {
   closeAssistantSessionState,
   discardPendingAssistantCommand,
 } from "../helpers/assistantSessionState";
+import {
+  readAssistantChatLastActivityAt,
+  shouldReuseAssistantConversation,
+} from "../helpers/overlay/assistantChatContinuity";
+import { useSettingsStore } from "../stores/settingsStore";
 
 const ASSISTANT_TRANSITION_MS = 320;
 const ASSISTANT_CONTENT_FADE_FALLBACK_MS = 260;
@@ -58,6 +63,24 @@ export function useAssistantPanel({
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
+  const expireStaleConversation = useCallback(() => {
+    const idleMinutes = useSettingsStore.getState().assistantChatIdleMinutes;
+    const current = conversationIdRef.current;
+    if (
+      shouldReuseAssistantConversation({
+        lastActivityAt: readAssistantChatLastActivityAt(),
+        idleMinutes,
+      })
+    ) {
+      return current;
+    }
+    if (current != null) {
+      conversationIdRef.current = null;
+      setConversationId(null);
+    }
+    return null;
+  }, []);
+
   const clearFooterTimers = useCallback(() => {
     for (const timer of footerTimersRef.current) clearTimeout(timer);
     footerTimersRef.current = [];
@@ -89,6 +112,7 @@ export function useAssistantPanel({
     // After the guard: a second open (the tray's Ask assistant while a command is
     // already thinking) must not clear the flourish of the one in flight.
     if (openRef.current) return;
+    expireStaleConversation();
     setThinking(false);
     const generation = ++openGenerationRef.current;
     openRef.current = true;
@@ -117,7 +141,7 @@ export function useAssistantPanel({
         setOpen(true);
       });
     });
-  }, [requestMainWindowSize]);
+  }, [expireStaleConversation, requestMainWindowSize]);
 
   const beginThinking = useCallback(() => {
     clearTimeout(closeTimerRef.current);
@@ -135,6 +159,7 @@ export function useAssistantPanel({
 
   const handleCommand = useCallback(
     (command) => {
+      expireStaleConversation();
       commandIdRef.current += 1;
       // A follow-up spoken into an open panel stays panel-first: its answer is
       // already streaming into a visible conversation, and delivering it to
@@ -149,7 +174,7 @@ export function useAssistantPanel({
         delivery,
       });
     },
-    [beginThinking]
+    [beginThinking, expireStaleConversation]
   );
 
   const handleResponseContent = useCallback(() => {

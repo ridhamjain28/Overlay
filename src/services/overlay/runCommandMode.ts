@@ -17,6 +17,9 @@ export interface CommandIntent {
   args: Record<string, string>;
   confidence: number;
   source?: string;
+  steps?: Array<{ action: string; args: Record<string, string> }>;
+  errorCode?: "TIMEOUT" | "PARSE_ERROR" | string;
+  errorMessage?: string;
 }
 
 export type CommandModeOutcome =
@@ -60,6 +63,7 @@ export async function executeCommandIntent(
   return fn({
     action: intent.action,
     args: intent.args,
+    steps: intent.steps,
     confirmed,
     autoRunTrusted: settings.autoRunTrusted,
   });
@@ -78,10 +82,29 @@ export async function runCommandModeIfEnabled(
   let intent: CommandIntent;
   try {
     const parsed = await parseCommandIntent(text, settings);
-    if (!parsed || parsed.action === "none") return { handled: false };
+    if (!parsed) return { handled: false };
+    if (parsed.errorCode === "TIMEOUT" || parsed.errorCode === "PARSE_ERROR") {
+      console.warn("Command mode parse failed", parsed.errorCode, parsed.errorMessage);
+      return {
+        handled: true,
+        success: false,
+        message:
+          parsed.errorCode === "TIMEOUT"
+            ? "Couldn't understand that as a command in time — try 'open notepad'"
+            : "Couldn't understand that as a command — try 'open notepad'",
+        intent: parsed,
+      };
+    }
+    if (parsed.action === "none") return { handled: false };
     intent = parsed;
-  } catch {
-    return { handled: false };
+  } catch (error) {
+    console.warn("Command mode parse failed", error);
+    return {
+      handled: true,
+      success: false,
+      message: "Couldn't understand that as a command in time — try 'open notepad'",
+      intent: { action: "none", args: {}, confidence: 0, errorCode: "PARSE_ERROR" },
+    };
   }
 
   const result = await executeCommandIntent(intent, settings, false);

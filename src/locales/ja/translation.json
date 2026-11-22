@@ -2262,7 +2262,9 @@
         "parser": "意図の解析",
         "parserDescription": "言葉をコマンドに変換する方法です。ローカルは、この PC で動いているモデル（Ollama または llama-server）を使い、クラウド API は不要です。クラウドは、設定済みのプロバイダーを使います。",
         "parserLocal": "ローカル（Ollama / llama-server）",
-        "parserCloud": "クラウド（設定済みプロバイダー）"
+        "parserCloud": "クラウド（設定済みプロバイダー）",
+        "idleMinutes": "N分操作がなければ新しいチャットを開始",
+        "idleMinutesDescription": "この分数以内にアシスタントを開き直すと、同じチャットを続けます。「新しいチャット」ボタンは常に新しい会話を開始します。"
       }
     },
     "permissions": {

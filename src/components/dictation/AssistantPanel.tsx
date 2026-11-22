@@ -50,6 +50,8 @@ import {
 import { buildAssistantCommandSendOptions } from "./assistantCommandOptions";
 import { runCommandModeIfEnabled } from "../../services/overlay/runCommandMode";
 import { resolveCommandParsing, useAiProvider } from "../../stores/aiProvider";
+import { commandReferencesSelection } from "../../helpers/overlay/commandMode/intentParser";
+import { touchAssistantChatActivity } from "../../helpers/overlay/assistantChatContinuity";
 import { ApprovalCard } from "../chat/ApprovalCard";
 import { approvalKey, useConnectorApprovalStore } from "../../stores/connectorApprovalStore";
 
@@ -193,6 +195,7 @@ export function AssistantPanel({
       persistence.setMessages((messages) => [...messages, userMessage, assistantMessage]);
       await persistence.saveUserMessage(text);
       await persistence.saveAssistantMessage(message);
+      touchAssistantChatActivity();
     },
     [createConversation, persistence]
   );
@@ -283,8 +286,13 @@ export function AssistantPanel({
     }
     consumedCommandIdRef.current = pendingCommand.id;
     const commandId = pendingCommand.id;
+    const attachSelection =
+      !commandSettings.enabled || commandReferencesSelection(pendingCommand.text);
+    const commandForSend = attachSelection
+      ? pendingCommand
+      : { ...pendingCommand, selectedContext: undefined };
     const { options: sendOptions, wasDelivered } = buildAssistantCommandSendOptions(
-      pendingCommand,
+      commandForSend,
       {
         onResponseContent,
         deliver: deliverAssistantResponse,
@@ -328,6 +336,7 @@ export function AssistantPanel({
       await sendMessage(pendingCommand.text, sendOptions)
       .then((sent) => {
         if (sent) {
+          touchAssistantChatActivity();
           onCommandConsumed(commandId);
           return;
         }
@@ -369,6 +378,7 @@ export function AssistantPanel({
     setMessages,
     t,
     tryCommandMode,
+    commandSettings.enabled,
   ]);
 
   const approvalEntries = useConnectorApprovalStore((state) => state.entries);
@@ -444,19 +454,24 @@ export function AssistantPanel({
   const handleTextSubmit = useCallback(
     (text: string): void => {
       if (!historyReady) return;
-      const context = selectedContext;
-      if (context) clearSelectedContext();
+      const context =
+        !commandSettings.enabled || commandReferencesSelection(text) ? selectedContext : null;
+      if (selectedContext) clearSelectedContext();
       void (async () => {
         setSubmissionInFlight(true);
         try {
-          if (await tryCommandMode(text)) return;
+          if (await tryCommandMode(text)) {
+            touchAssistantChatActivity();
+            return;
+          }
         } finally {
           setSubmissionInFlight(false);
         }
-        await sendMessage(text, context ? { selectedContext: context } : undefined);
+        const sent = await sendMessage(text, context ? { selectedContext: context } : undefined);
+        if (sent) touchAssistantChatActivity();
       })();
     },
-    [clearSelectedContext, historyReady, selectedContext, sendMessage, tryCommandMode]
+    [clearSelectedContext, commandSettings.enabled, historyReady, selectedContext, sendMessage, tryCommandMode]
   );
 
   const showEmptyState =

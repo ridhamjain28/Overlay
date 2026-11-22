@@ -67,6 +67,10 @@ import type {
 import type { Snippet } from "../utils/snippets";
 import type { EnterpriseSetupMode } from "../types/enterpriseIdentity";
 import { getManagedScopeResolution } from "./enterpriseIdentityStore";
+import {
+  DEFAULT_ASSISTANT_CHAT_IDLE_MINUTES,
+  normalizeAssistantChatIdleMinutes,
+} from "../helpers/overlay/assistantChatContinuity";
 
 let _ReasoningService: typeof import("../services/ReasoningService").default | null = null;
 
@@ -351,6 +355,7 @@ const ARRAY_SETTINGS = new Set([
 
 const NUMERIC_SETTINGS = new Set([
   "micWarmHoldSeconds",
+  "assistantChatIdleMinutes",
   "audioRetentionDays",
   "transcriptRetentionDays",
   "whisperVadThreshold",
@@ -1004,6 +1009,7 @@ export interface SettingsState
   commandModeEnabled: boolean;
   commandModeAutoRunTrusted: boolean;
   commandModeParser: "local" | "cloud";
+  assistantChatIdleMinutes: number;
   chatMemoryEnabled: boolean;
   chatContextLength: ChatContextLength;
   overlayModelAutoSelect: boolean;
@@ -1349,6 +1355,7 @@ export interface SettingsState
   setCommandModeEnabled: (enabled: boolean) => void;
   setCommandModeAutoRunTrusted: (enabled: boolean) => void;
   setCommandModeParser: (value: "local" | "cloud") => void;
+  setAssistantChatIdleMinutes: (minutes: number) => void;
   setChatMemoryEnabled: (enabled: boolean) => void;
   setChatContextLength: (value: ChatContextLength) => void;
   setStartMinimized: (enabled: boolean) => void;
@@ -1797,6 +1804,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     return v === "cloud" ? "cloud" : "local";
   })(),
   chatMemoryEnabled: readBoolean("chatMemoryEnabled", true),
+  assistantChatIdleMinutes: normalizeAssistantChatIdleMinutes(
+    readNumber("assistantChatIdleMinutes", DEFAULT_ASSISTANT_CHAT_IDLE_MINUTES)
+  ),
   chatContextLength: (() => {
     const v = readString("chatContextLength", "auto");
     return (CHAT_CONTEXT_LENGTHS as readonly string[]).includes(v)
@@ -2668,6 +2678,13 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (get().commandModeParser === next) return;
     if (isBrowser) localStorage.setItem("commandModeParser", next);
     set({ commandModeParser: next });
+  },
+
+  setAssistantChatIdleMinutes: (minutes: number) => {
+    const next = normalizeAssistantChatIdleMinutes(minutes);
+    if (get().assistantChatIdleMinutes === next) return;
+    if (isBrowser) localStorage.setItem("assistantChatIdleMinutes", String(next));
+    set({ assistantChatIdleMinutes: next });
   },
 
   setStartMinimized: (enabled: boolean) => {
@@ -4141,6 +4158,8 @@ export async function initializeSettings(): Promise<void> {
         // Same whitelist as the setter — a hand-edited localStorage value
         // synced from another window must not exceed the offered durations.
         value = snapMicWarmHold(parsed);
+      } else if (key === "assistantChatIdleMinutes") {
+        value = normalizeAssistantChatIdleMinutes(parsed);
       } else {
         value = parsed;
       }

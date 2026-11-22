@@ -2557,7 +2557,9 @@
         "parser": "Befehlsauswertung",
         "parserDescription": "So macht Overlay aus deinen Worten einen Befehl. Lokal nutzt das Modell auf diesem PC (Ollama oder llama-server) und braucht keine Cloud-API. Cloud nutzt den bereits in den Einstellungen hinterlegten Anbieter.",
         "parserLocal": "Lokal (Ollama / llama-server)",
-        "parserCloud": "Cloud (konfigurierter Anbieter)"
+        "parserCloud": "Cloud (konfigurierter Anbieter)",
+        "idleMinutes": "Neuen Chat nach N Minuten Inaktivität beginnen",
+        "idleMinutesDescription": "Wenn du den Assistenten innerhalb dieser Minuten erneut öffnest, setzt Overlay denselben Chat fort. Die Schaltfläche „Neuer Chat“ startet immer einen neuen."
       }
     },
     "permissions": {

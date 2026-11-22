@@ -2262,7 +2262,9 @@
         "parser": "意圖解析",
         "parserDescription": "Overlay 如何把你的話變成命令。本機使用這台電腦上已在執行的模型（Ollama 或 llama-server），不需要雲端 API。雲端則使用你已在設定中設定的服務提供者。",
         "parserLocal": "本機（Ollama / llama-server）",
-        "parserCloud": "雲端（已設定的服務提供者）"
+        "parserCloud": "雲端（已設定的服務提供者）",
+        "idleMinutes": "閒置 N 分鐘後開始新對話",
+        "idleMinutesDescription": "在這段時間內再次打開助手時，Overlay 會繼續同一段對話。「新對話」按鈕一律會開始新的對話。"
       }
     },
     "permissions": {

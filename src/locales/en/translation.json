@@ -2557,7 +2557,9 @@
         "parser": "Intent parser",
         "parserDescription": "How Overlay turns your words into a command. Local uses the model already running on this PC (Ollama or llama-server) and needs no cloud API. Cloud uses the provider you already configured in Settings.",
         "parserLocal": "Local (Ollama / llama-server)",
-        "parserCloud": "Cloud (configured provider)"
+        "parserCloud": "Cloud (configured provider)",
+        "idleMinutes": "Start a new chat after this many minutes idle",
+        "idleMinutesDescription": "When you open the assistant again within this many minutes, Overlay continues the same chat. The New chat button always starts a new one."
       }
     },
     "permissions": {
