@@ -1022,6 +1022,8 @@
         "manualPaste": "點擊下方按鈕複製文字，然後按 {{shortcut}} 貼上。",
         "openSettings": "開啟設定",
         "copyToClipboard": "複製到剪貼板",
+      "writing": "正在撰寫…",
+      "cancelWriting": "取消",
         "copyFailed": "複製失敗"
       },
       "pasteFailed": {

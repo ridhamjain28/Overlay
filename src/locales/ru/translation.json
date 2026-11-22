@@ -1022,6 +1022,8 @@
         "manualPaste": "Скопируйте текст ниже, затем нажмите {{shortcut}}, чтобы вставить его.",
         "openSettings": "Открыть настройки",
         "copyToClipboard": "Скопировать текст",
+      "writing": "Пишу…",
+      "cancelWriting": "Отмена",
         "copyFailed": "Не удалось скопировать"
       },
       "pasteFailed": {

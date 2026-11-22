@@ -7,12 +7,14 @@ const { locateGuideTarget } = require("./guideLocator");
 const { resolveApp, listShortcuts, startMenuDirs, isBlockedApp, normalizeName, BUILTIN_APPS } =
   require("../systemActions");
 
-const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "guide"]);
+const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "guide"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
 const PLAN_STEP_DELAY_MS = 1500;
 
 const MAX_COMMAND_LENGTH = 500;
 const MAX_TYPE_LENGTH = 8000;
+const MAX_COMPOSE_PROMPT_LENGTH = 4000;
+const MAX_COMPOSE_OUTPUT_LENGTH = 32000;
 const COMMAND_TIMEOUT_MS = 20000;
 const MAX_OUTPUT = 4000;
 
@@ -100,6 +102,11 @@ function validateCommandRequest(request) {
     if (!String(text).length) return { ok: false, error: "type_text needs some text", code: "NOT_ALLOWED" };
     args.text = text;
   }
+  if (action === "compose_text") {
+    const prompt = clampString(args.prompt || request.prompt, MAX_COMPOSE_PROMPT_LENGTH).trim();
+    if (!prompt) return { ok: false, error: "compose_text needs a writing request", code: "NOT_ALLOWED" };
+    args.prompt = prompt;
+  }
   if (action === "guide") {
     const target = String(args.target || request.target || "").trim();
     if (!target || target.length > 80) {
@@ -130,6 +137,9 @@ function createCommandDispatcher(deps = {}) {
     isEnabled = () => true,
     stepDelayMs = PLAN_STEP_DELAY_MS,
     wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    composeText, // (prompt, { signal, onToken }) => Promise<string>
+    focusApp, // (name) => Promise
+    onProgress, // (phase) => void
   } = deps;
 
   async function performPlan(request, options = {}) {
@@ -155,10 +165,28 @@ function createCommandDispatcher(deps = {}) {
     }
     const delay = Number.isFinite(options.stepDelayMs) ? options.stepDelayMs : stepDelayMs;
     const messages = [];
+    let lastOpenedLabel = "";
+    let focusReady = Promise.resolve();
     for (let i = 0; i < validated.length; i += 1) {
-      if (i > 0 && delay > 0) await wait(delay);
-      const result = await perform(validated[i], { ...options, confirmed: true, autoRunTrusted });
+      const step = validated[i];
+      const openedBefore = step.action === "compose_text" && lastOpenedLabel;
+      // Start composing immediately after opening an app — do not wait on the LLM
+      // before the app launches, and do not delay the model call by the focus wait.
+      if (i > 0 && delay > 0 && step.action !== "compose_text" && !(step.action === "type_text" && lastOpenedLabel)) {
+        await wait(delay);
+      }
+      const result = await perform(step, {
+        ...options,
+        confirmed: true,
+        autoRunTrusted,
+        focusLabel: openedBefore ? lastOpenedLabel : options.focusLabel,
+        focusReady: openedBefore ? focusReady : undefined,
+      });
       if (!result.success) return result;
+      if (step.action === "open_app") {
+        lastOpenedLabel = result.label || step.args.app || lastOpenedLabel;
+        focusReady = delay > 0 ? wait(delay) : Promise.resolve();
+      }
       if (result.message) messages.push(result.message);
     }
     return {
@@ -219,7 +247,16 @@ function createCommandDispatcher(deps = {}) {
           if (app.type === "uri" || /^[a-z][a-z0-9+.-]*:/i.test(app.target)) {
             await openExternal(app.target);
           } else if (app.type === "exe") {
-            await execFile(app.target, [], { windowsHide: false, timeout: 5000, detached: true });
+            try {
+              await execFile(app.target, [], { windowsHide: false, timeout: 5000, detached: true });
+            } catch (error) {
+              // A detached launch often keeps running; a timeout still means the app started.
+              const timedOut =
+                error?.killed === true ||
+                error?.code === "ETIMEDOUT" ||
+                /ETIMEDOUT|timed out/i.test(String(error?.message || ""));
+              if (!timedOut) throw error;
+            }
           } else if (typeof openPath === "function") {
             const error = await openPath(app.target);
             if (error) throw new Error(error);
@@ -239,7 +276,7 @@ function createCommandDispatcher(deps = {}) {
               { windowsHide: true, timeout: 8000 }
             );
           }
-          return { success: true, message: `Opened ${app.label}`, action, args };
+          return { success: true, message: `Opened ${app.label}`, action, args, label: app.label };
         }
         case "run_command": {
           if (platform !== "win32") {
@@ -286,8 +323,79 @@ function createCommandDispatcher(deps = {}) {
           if (typeof pasteText !== "function") {
             return { success: false, error: "Typing into apps is not available", code: "FAILED" };
           }
+          if (typeof options.focusReady?.then === "function") await options.focusReady;
+          if (options.focusLabel && typeof focusApp === "function") {
+            try { await focusApp(options.focusLabel); } catch { /* best-effort */ }
+          }
           await pasteText(args.text, { restoreClipboard: true, silentAccessibilityCheck: true });
           return { success: true, message: "Typed into the focused field", action, args };
+        }
+        case "compose_text": {
+          if (typeof composeText !== "function") {
+            return { success: false, error: "Writing is not available", code: "FAILED" };
+          }
+          if (typeof pasteText !== "function") {
+            return { success: false, error: "Typing into apps is not available", code: "FAILED" };
+          }
+          if (options.signal?.aborted) {
+            return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+          }
+          const emitProgress = typeof options.onProgress === "function" ? options.onProgress : onProgress;
+          if (typeof emitProgress === "function") {
+            try { emitProgress("writing"); } catch { /* ignore */ }
+          }
+          let generated = "";
+          try {
+            const write = typeof options.composeText === "function" ? options.composeText : composeText;
+            if (typeof write !== "function") {
+              return { success: false, error: "Writing is not available", code: "FAILED" };
+            }
+            generated = await write(args.prompt, {
+              signal: options.signal,
+              onToken: options.onToken,
+            });
+          } catch (error) {
+            if (error?.code === "TIMEOUT" || error?.name === "AbortError" || options.signal?.aborted) {
+              return {
+                success: false,
+                error: options.signal?.aborted
+                  ? "You cancelled this command"
+                  : "Couldn't write that in time — nothing was typed",
+                code: options.signal?.aborted ? "CANCELLED" : "TIMEOUT",
+              };
+            }
+            return {
+              success: false,
+              error: "Couldn't write that — nothing was typed",
+              code: "COMPOSE_FAILED",
+            };
+          }
+          const text = clampString(String(generated || "").trim(), MAX_COMPOSE_OUTPUT_LENGTH);
+          if (!text) {
+            return {
+              success: false,
+              error: "Couldn't write that — nothing was typed",
+              code: "COMPOSE_FAILED",
+            };
+          }
+          if (typeof options.focusReady?.then === "function") await options.focusReady;
+          if (options.focusLabel && typeof focusApp === "function") {
+            try { await focusApp(options.focusLabel); } catch { /* best-effort */ }
+          }
+          if (options.signal?.aborted) {
+            return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+          }
+          if (typeof emitProgress === "function") {
+            try { emitProgress("pasting"); } catch { /* ignore */ }
+          }
+          await pasteText(text, { restoreClipboard: true, silentAccessibilityCheck: true });
+          return {
+            success: true,
+            message: "Wrote into the focused field",
+            action,
+            args,
+            text,
+          };
         }
         case "guide": {
           const found = await locateGuide(args.target, { platform, execFile });
@@ -323,6 +431,7 @@ module.exports = {
   ALWAYS_CONFIRM_ACTIONS,
   BLOCKED_COMMAND_PATTERNS,
   MAX_COMMAND_LENGTH,
+  MAX_COMPOSE_OUTPUT_LENGTH,
   PLAN_STEP_DELAY_MS,
   needsConfirmation,
   isBlockedCommand,

@@ -95,6 +95,8 @@
         "manualPaste": "انسخ النص أدناه، ثم اضغط على {{shortcut}} للصقه.",
         "openSettings": "فتح الإعدادات",
         "copyToClipboard": "نسخ إلى الحافظة",
+      "writing": "جارٍ الكتابة…",
+      "cancelWriting": "إلغاء",
         "copyFailed": "تعذّر النسخ"
       },
       "pasteFailed": {

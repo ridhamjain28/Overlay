@@ -1022,6 +1022,8 @@
         "manualPaste": "Copia il testo qui sotto, poi premi {{shortcut}} per incollarlo.",
         "openSettings": "Apri impostazioni",
         "copyToClipboard": "Copia negli appunti",
+      "writing": "Scrittura…",
+      "cancelWriting": "Annulla",
         "copyFailed": "Copia non riuscita"
       },
       "pasteFailed": {

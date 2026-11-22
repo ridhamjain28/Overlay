@@ -7,6 +7,7 @@
 //   overlay-system-action          -> run one allowlisted laptop action
 //   overlay-command-parse          -> turn speech/text into a Command-mode intent
 //   overlay-command-execute        -> run one Command-mode action (confirm-gated)
+//   overlay-command-cancel         -> abort an in-flight compose/write
 //   overlay-set-command-mode-prefs -> enable flag and auto-run trusted actions
 //   overlay-requirements-check     -> first-run checklist (what this PC still needs)
 //   overlay-requirements-install   -> install one checklist item, hidden, with live output
@@ -37,6 +38,7 @@ const {
   createIntentCompleter,
   createCommandDispatcher,
 } = require("./commandMode");
+const { createComposeCompleter } = require("./commandMode/composeClient");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
 const { createRequirements } = require("./requirements");
 const { createHinglishServer } = require("./hinglishServer");
@@ -461,6 +463,32 @@ function registerOverlayIpc({
     return result.response === 1;
   };
 
+  const composeRuntime = { opts: {}, onProgress: null };
+  let commandAbort = null;
+
+  async function focusNamedWindow(name) {
+    const title = String(name || "").trim();
+    if (!title || process.platform !== "win32") return;
+    try {
+      await execFileAsync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
+          "-Command",
+          "$w = New-Object -ComObject WScript.Shell; [void]$w.AppActivate(" +
+            JSON.stringify(title) +
+            ")",
+        ],
+        { windowsHide: true, timeout: 4000 }
+      );
+    } catch {
+      // Focus is best-effort; paste still goes to whatever is frontmost.
+    }
+  }
+
   const commandDispatcher = createCommandDispatcher({
     execFile: execFileAsync,
     openPath: (p) => shell.openPath(p),
@@ -477,6 +505,18 @@ function registerOverlayIpc({
     showHighlight: (bounds) => showGuideHighlight(BrowserWindow, bounds),
     isEnabled: () => commandModePrefs.enabled === true,
     getAutoRunTrusted: () => commandModePrefs.autoRunTrusted === true,
+    composeText: async (prompt, extra = {}) => {
+      const completer = createComposeCompleter(composeRuntime.opts);
+      return completer(prompt, extra);
+    },
+    focusApp: focusNamedWindow,
+    onProgress: (phase) => {
+      try {
+        composeRuntime.onProgress?.(phase);
+      } catch {
+        // ignore
+      }
+    },
   });
 
   ipcMain.handle("overlay-command-parse", async (_event, payload = {}) => {
@@ -506,20 +546,57 @@ function registerOverlayIpc({
     }
   });
 
-  ipcMain.handle("overlay-command-execute", async (_event, request = {}) => {
-    const result = await commandDispatcher.perform(
-      { action: request?.action, args: request?.args || request, steps: request?.steps },
-      {
-        confirmed: request?.confirmed === true,
-        autoRunTrusted: request?.autoRunTrusted === true || commandModePrefs.autoRunTrusted,
+  ipcMain.handle("overlay-command-execute", async (event, request = {}) => {
+    if (commandAbort) {
+      try { commandAbort.abort(); } catch { /* ignore */ }
+    }
+    commandAbort = typeof AbortController === "function" ? new AbortController() : null;
+    composeRuntime.opts = {
+      parser: request?.parser === "cloud" ? "cloud" : "local",
+      model: MODEL_TAG.test(request?.model || "") ? request.model : undefined,
+      localBaseUrl: request?.localBaseUrl,
+      cloudProvider: request?.cloudProvider,
+    };
+    composeRuntime.onProgress = (phase) => {
+      try {
+        event.sender.send("overlay-command-progress", { phase });
+      } catch {
+        // ignore
       }
-    );
-    debugLogger?.info?.("Overlay command mode", {
-      action: request?.action,
-      success: result.success,
-      code: result.code,
-    });
-    return result;
+    };
+    try {
+      const result = await commandDispatcher.perform(
+        { action: request?.action, args: request?.args || request, steps: request?.steps },
+        {
+          confirmed: request?.confirmed === true,
+          autoRunTrusted: request?.autoRunTrusted === true || commandModePrefs.autoRunTrusted,
+          signal: commandAbort?.signal,
+        }
+      );
+      debugLogger?.info?.("Overlay command mode", {
+        action: request?.action,
+        success: result.success,
+        code: result.code,
+      });
+      try {
+        event.sender.send("overlay-command-progress", { phase: "done", code: result.code });
+      } catch {
+        // ignore
+      }
+      return result;
+    } finally {
+      composeRuntime.onProgress = null;
+      commandAbort = null;
+    }
+  });
+
+  ipcMain.handle("overlay-command-cancel", async () => {
+    try {
+      commandAbort?.abort();
+    } catch {
+      // ignore
+    }
+    return { ok: true };
   });
 
   // Feature B: check which third-party apps have OAuth credentials configured

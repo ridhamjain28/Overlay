@@ -197,13 +197,31 @@ export function AssistantPanel({
     },
     [createConversation, persistence]
   );
+  const [commandWriting, setCommandWriting] = useState(false);
+  useEffect(() => {
+    const unsub = window.electronAPI?.onOverlayCommandProgress?.((payload) => {
+      const phase = payload?.phase;
+      if (phase === "writing") setCommandWriting(true);
+      else if (phase === "pasting" || phase === "done") setCommandWriting(false);
+    });
+    return () => {
+      unsub?.();
+    };
+  }, []);
+  const cancelCommandWriting = useCallback(() => {
+    void window.electronAPI?.overlayCommandCancel?.();
+  }, []);
   const tryCommandMode = useCallback(
     async (text: string): Promise<boolean> => {
       if (!commandSettings.enabled) return false;
-      const outcome = await runCommandModeIfEnabled(text, commandSettings);
-      if (!outcome.handled) return false;
-      await recordCommandTurn(text, outcome.message);
-      return true;
+      try {
+        const outcome = await runCommandModeIfEnabled(text, commandSettings);
+        if (!outcome.handled) return false;
+        await recordCommandTurn(text, outcome.message);
+        return true;
+      } finally {
+        setCommandWriting(false);
+      }
     },
     [commandSettings, recordCommandTurn]
   );
@@ -712,6 +730,26 @@ export function AssistantPanel({
             className="assistant-content-area-shimmer pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-2xl"
             aria-hidden="true"
           />
+        )}
+        {commandWriting && (
+          <div
+            className="pointer-events-auto absolute inset-x-0 bottom-[4.5rem] z-30 flex justify-center px-6"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className="inline-flex max-w-full items-center gap-2.5 rounded-xl border border-border/60 bg-surface-raised/80 px-4 py-2.5 shadow-[var(--shadow-card)] backdrop-blur-md">
+              <span className="assistant-tool-invocation-pulse relative flex size-2 shrink-0 rounded-full bg-agent-brand" />
+              <span className="text-sm font-medium text-foreground">{t("assistant.panel.writing")}</span>
+              <button
+                type="button"
+                className="ms-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                onClick={cancelCommandWriting}
+              >
+                {t("assistant.panel.cancelWriting")}
+              </button>
+            </div>
+          </div>
         )}
         {isToolExecuting && (
           <div

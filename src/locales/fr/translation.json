@@ -1022,6 +1022,8 @@
         "manualPaste": "Copiez votre texte ci-dessous, puis appuyez sur {{shortcut}} pour le coller.",
         "openSettings": "Ouvrir les réglages",
         "copyToClipboard": "Copier le texte",
+      "writing": "Rédaction…",
+      "cancelWriting": "Annuler",
         "copyFailed": "Échec de la copie"
       },
       "pasteFailed": {

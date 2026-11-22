@@ -3407,7 +3407,15 @@ declare global {
         steps?: Array<{ action: string; args: Record<string, string> }>;
         confirmed?: boolean;
         autoRunTrusted?: boolean;
+        parser?: "local" | "cloud";
+        model?: string;
+        localBaseUrl?: string;
+        cloudProvider?: string;
       }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
+      overlayCommandCancel?: () => Promise<{ ok: boolean }>;
+      onOverlayCommandProgress?: (
+        callback: (payload: { phase?: string; code?: string }) => void
+      ) => () => void;
       overlaySetCommandModePrefs?: (prefs: {
         enabled: boolean;
         autoRunTrusted: boolean;

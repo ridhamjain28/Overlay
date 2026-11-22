@@ -1,7 +1,9 @@
 // Overlay Command mode: turn spoken or typed text into one structured intent.
 // Pure functions — no Electron, no network. The LLM step is injected.
 
-const COMMAND_ACTIONS = ["open_app", "open_url", "run_command", "type_text", "guide"];
+const { classifyTypedClause, intentFromTypedClause } = require("./typedClause");
+
+const COMMAND_ACTIONS = ["open_app", "open_url", "run_command", "type_text", "compose_text", "guide"];
 
 const URL_PROTOCOL = /^(https?:\/\/)/i;
 const BARE_SITE =
@@ -172,36 +174,50 @@ function parseHinglishOpen(text) {
   return { action: "open_app", args: { app }, confidence: 0.88 };
 }
 
-function parseCompoundOpenAndType(text) {
-  const m = trimText(text).match(COMPOUND_SPLIT_RE);
-  if (!m) return null;
-  const app = cleanAppName(m[1]);
-  const typed = stripWrappingQuotes(m[2] || "").replace(/[?!.,]+$/g, "").trim();
-  if (!app || !typed || toHttpsUrl(app) || containsCommandConnector(app)) return null;
-  if (app.length > 80 || typed.length > 8000) return null;
+const HINGLISH_COMPOUND_RE = new RegExp(
+  "^(.+?)\\s+(kholo|khol do|khol dena|chalao|chala do)\\s+(?:" +
+    COMPOUND_CONNECTOR_RE.source +
+    ")\\s+(.+)$",
+  "i"
+);
+
+function planFromOpenAndClause(app, clause) {
+  const name = cleanAppName(app);
+  const typedIntent = intentFromTypedClause(clause);
+  if (!name || !typedIntent || toHttpsUrl(name) || containsCommandConnector(name)) return null;
+  if (name.length > 80) return null;
   return {
     action: "plan",
     args: {},
     steps: [
-      { action: "open_app", args: { app } },
-      { action: "type_text", args: { text: typed } },
+      { action: "open_app", args: { app: name } },
+      typedIntent,
     ],
     confidence: 0.88,
   };
 }
 
-function parseTypeText(text) {
-  for (const re of TYPE_PATTERNS) {
-    const m = trimText(text).match(re);
-    if (!m) continue;
-    const value = stripWrappingQuotes(m[1]);
-    if (!value) continue;
-    // "type in notepad" is open+type, not type_text of "in notepad"
-    if (/^(this|that|it)\s+in\b/i.test(value)) continue;
-    if (/^(in|into)\s+/i.test(value) && value.split(/\s+/).length <= 4) continue;
-    return { action: "type_text", args: { text: value }, confidence: 0.9 };
+function parseCompoundOpenAndType(text) {
+  const t = trimText(text);
+  const split = t.match(COMPOUND_SPLIT_RE);
+  if (split) {
+    // Keep the type/write verb in the clause so "write a letter …" is compose
+    // and "and in it type hello" still classifies as type_text.
+    const verbClause = t.match(
+      /(?:type|write|enter|paste|likho|likh do)\s+(?:this\s*)?[:\uFF1A]?\s*(.+)$/i
+    );
+    const plan = planFromOpenAndClause(split[1], verbClause ? verbClause[0] : split[2]);
+    if (plan) return plan;
+  }
+  const hinglish = t.match(HINGLISH_COMPOUND_RE);
+  if (hinglish) {
+    return planFromOpenAndClause(hinglish[1], hinglish[3]);
   }
   return null;
+}
+
+function parseTypeText(text) {
+  return intentFromTypedClause(text);
 }
 
 function parseRunCommand(text) {
@@ -246,20 +262,20 @@ function parseIntentHeuristic(text) {
   if (!original) {
     return { action: "none", args: {}, confidence: 1, source: "heuristic" };
   }
-  if (looksLikeChat(original)) {
-    return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
-  }
-  const t = stripCommandWrappers(original);
-  if (!t) {
-    return { action: "none", args: {}, confidence: 1, source: "heuristic" };
-  }
-  if (looksLikeChat(t)) {
+  const t = stripCommandWrappers(original) || original;
+  // Compound open+write and type/compose must win over chat patterns such as
+  // "write an email …", so "open notepad and write an email to …" stays a plan.
+  const commandHit =
+    parseCompoundOpenAndType(t) ||
+    parseCompoundOpenAndType(original) ||
+    parseTypeText(t) ||
+    parseTypeText(original);
+  if (commandHit) return { ...commandHit, source: "heuristic" };
+  if (looksLikeChat(original) || looksLikeChat(t)) {
     return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
   }
   const hit =
-    parseCompoundOpenAndType(t) ||
     parseRunCommand(t) ||
-    parseTypeText(t) ||
     parseOpenUrl(t) ||
     parseGuide(t) ||
     parseOpenApp(t) ||
@@ -279,14 +295,15 @@ function buildIntentParsePrompt(text) {
   return [
     "You convert one user request into a single desktop command for the Overlay app.",
     "Return ONLY a JSON object, no markdown, no commentary, with this shape:",
-    `{"action":"${allowed.replace(/, /g, "|")}|none","app":"","url":"","command":"","text":"","target":"","confidence":0.0}`,
+    `{"action":"${allowed.replace(/, /g, "|")}|none","app":"","url":"","command":"","text":"","prompt":"","target":"","confidence":0.0}`,
     "Rules:",
     `- action must be one of: ${allowed}, or none.`,
-    "- none if this is a question, conversation, writing help, or anything that is not a desktop command.",
+    "- none if this is a question, conversation, or anything that is not a desktop command. Asking to write a letter or email into an app is compose_text, not none.",
     "- open_url: only http(s) websites. Add https:// if the user named a site like youtube.com.",
     "- open_app: launch a program by name (Chrome, Notepad, VS Code, Settings, …). The app field must be only the app name, never 'and type …'.",
     "- run_command: only when the user clearly wants a shell/terminal command. Put the exact command in `command`.",
-    "- type_text: type or paste words into the already-focused field. Put those words in `text`.",
+    "- type_text: type or paste the user's exact short words into the already-focused field. Put those words in `text`.",
+    "- compose_text: the user wants a real letter, email, note, essay, message, or poem written. Put the writing request in `prompt`. Do not put the finished document in `text`.",
     "- guide: the user wants to find, be shown, or click a button/control on screen. Put the control name in `target`. Do not click it yourself.",
     "- Do not invent destructive commands (delete, format, shutdown, registry edits).",
     "- confidence is a number from 0 to 1.",
@@ -331,11 +348,14 @@ function normalizeParsedIntent(parsed, source) {
   }
   if (action === "run_command") args.command = trimText(parsed.command || parsed.cmd || parsed.text);
   if (action === "type_text") args.text = String(parsed.text || parsed.content || "");
+  if (action === "compose_text") args.prompt = trimText(parsed.prompt || parsed.text || parsed.content || "");
   if (action === "guide") args.target = trimText(parsed.target || parsed.app || parsed.text);
   if (action === "open_app" && !args.app) return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "run_command" && !args.command)
     return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "type_text" && !String(args.text || "").trim())
+    return { action: "none", args: {}, confidence: 0.2, source };
+  if (action === "compose_text" && !args.prompt)
     return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "guide" && !args.target) return { action: "none", args: {}, confidence: 0.2, source };
   return { action, args, confidence, source };
@@ -392,6 +412,11 @@ function formatIntentForConfirm(intent) {
       const preview = t.length > 160 ? `${t.slice(0, 157)}...` : t;
       return `Type text: ${preview}`;
     }
+    case "compose_text": {
+      const t = String(intent.args.prompt || "");
+      const preview = t.length > 160 ? `${t.slice(0, 157)}...` : t;
+      return `Write: ${preview}`;
+    }
     case "guide":
       return `Find on screen: ${intent.args.target}`;
     default:
@@ -414,4 +439,6 @@ module.exports = {
   stripCommandWrappers,
   containsCommandConnector,
   commandReferencesSelection,
+  classifyTypedClause,
+  intentFromTypedClause,
 };

@@ -1022,6 +1022,8 @@
         "manualPaste": "下のボタンでテキストをコピーし、{{shortcut}}を押して貼り付けてください。",
         "openSettings": "設定を開く",
         "copyToClipboard": "テキストをコピー",
+      "writing": "作成中…",
+      "cancelWriting": "キャンセル",
         "copyFailed": "コピーに失敗しました"
       },
       "pasteFailed": {

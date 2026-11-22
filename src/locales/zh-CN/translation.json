@@ -1022,6 +1022,8 @@
         "manualPaste": "点击下方按钮复制文本，然后按 {{shortcut}} 粘贴。",
         "openSettings": "打开设置",
         "copyToClipboard": "复制到剪贴板",
+      "writing": "正在撰写…",
+      "cancelWriting": "取消",
         "copyFailed": "复制失败"
       },
       "pasteFailed": {

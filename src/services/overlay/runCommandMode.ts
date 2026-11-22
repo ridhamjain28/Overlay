@@ -66,6 +66,10 @@ export async function executeCommandIntent(
     steps: intent.steps,
     confirmed,
     autoRunTrusted: settings.autoRunTrusted,
+    parser: settings.parser === "cloud" ? "cloud" : "local",
+    model: settings.model || OVERLAY_DEFAULT_MODEL,
+    localBaseUrl: settings.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
+    cloudProvider: settings.cloudProvider,
   });
 }
 

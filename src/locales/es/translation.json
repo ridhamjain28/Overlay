@@ -1022,6 +1022,8 @@
         "manualPaste": "Copia tu texto abajo y pulsa {{shortcut}} para pegarlo.",
         "openSettings": "Abrir ajustes",
         "copyToClipboard": "Copiar al portapapeles",
+      "writing": "Escribiendo…",
+      "cancelWriting": "Cancelar",
         "copyFailed": "Error al copiar"
       },
       "pasteFailed": {
