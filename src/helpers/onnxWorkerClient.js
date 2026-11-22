@@ -58,6 +58,7 @@ class OnnxWorkerClient {
       const logPath = this._logPath();
       if (logPath) env.OPENWHISPR_ONNX_WORKER_LOG = logPath;
 
+      const spawnStartedAt = Date.now();
       const child = utilityProcess.fork(WORKER_SCRIPT, [], {
         serviceName: "openwhispr-onnx",
         stdio: "pipe",
@@ -97,7 +98,11 @@ class OnnxWorkerClient {
 
       this.child = child;
       this.port = port1;
-      debugLogger.info("onnx worker spawned", { pid: child.pid });
+      const spawnMs = Date.now() - spawnStartedAt;
+      debugLogger.info("onnx worker spawned", { pid: child.pid, spawnMs });
+      if (spawnMs > 2000) {
+        debugLogger.warn("onnx worker spawn was slow", { pid: child.pid, spawnMs });
+      }
     })();
 
     try {

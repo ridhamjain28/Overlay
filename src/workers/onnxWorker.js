@@ -30,7 +30,7 @@ const SPEAKER_MAX_SAMPLES = FBANK_SAMPLE_RATE * 8;
 const TEXT_EMBED_MAX_TOKENS = 256;
 const TEXT_EMBED_DIM = 384;
 
-const intraOpNumThreads = Math.min(4, Math.max(2, Math.floor((os.cpus()?.length || 4) / 2)));
+const intraOpNumThreads = Math.min(4, Math.max(1, Math.floor((os.cpus()?.length || 4) / 2)));
 
 let port = null;
 let ort = null;
@@ -361,6 +361,23 @@ async function textUnload() {
   return { ok: true };
 }
 
+async function releaseSessionsForExit() {
+  const jobs = [];
+  if (speakerSession)
+    jobs.push(
+      speakerUnload().catch((err) =>
+        log("warn", "speaker unload on exit failed", { error: err?.message })
+      )
+    );
+  if (textSession)
+    jobs.push(
+      textUnload().catch((err) =>
+        log("warn", "text unload on exit failed", { error: err?.message })
+      )
+    );
+  if (jobs.length) await Promise.all(jobs);
+}
+
 const handlers = {
   ping: () => ({ ok: true, sessions: { speaker: !!speakerSession, text: !!textSession } }),
   "speaker.load": speakerLoad,
@@ -369,8 +386,9 @@ const handlers = {
   "text.load": textLoad,
   "text.embed": textEmbed,
   "text.unload": textUnload,
-  shutdown: () => {
+  shutdown: async () => {
     log("info", "shutdown requested");
+    await releaseSessionsForExit();
     setImmediate(() => process.exit(0));
     return { ok: true };
   },
@@ -425,8 +443,12 @@ process.parentPort.once("message", ({ data, ports }) => {
       port.postMessage(reply, transferList);
     });
     port.on("close", () => {
-      log("info", "port closed");
-      process.exit(0);
+      releaseSessionsForExit()
+        .catch((err) => log("warn", "unload on port close failed", { error: err?.message }))
+        .finally(() => {
+          log("info", "port closed");
+          process.exit(0);
+        });
     });
     port.start();
     log("info", "worker initialized", { intraOpNumThreads });
