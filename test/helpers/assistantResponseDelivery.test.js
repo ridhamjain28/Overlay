@@ -48,7 +48,8 @@ test("Assistant delivery mode follows Auto-Paste and target state", async () => 
     });
 
   assert.equal(createDelivery(false), null);
-  assert.deepEqual(createDelivery(true), { mode: "clipboard" });
+  // No caret target: the answer stays in the panel and is never copied.
+  assert.equal(createDelivery(true), null);
   assert.deepEqual(createDelivery(true, "caret-session"), PASTE_DELIVERY);
   assert.deepEqual(createDelivery(true, "caret-session", false), PASTE_DELIVERY);
   assert.deepEqual(createDelivery(true, "caret-session", true), {
@@ -75,43 +76,47 @@ test("a captured Assistant target receives the response without replacing the cl
   assert.deepEqual(writes, []);
 });
 
-test("no Assistant target and a lost target both copy the completed response", async () => {
+test("assistant answers are never auto-copied: panel-only and lost-target deliveries write nothing", async () => {
   const { deliverAssistantResponse } = await deliveryModule;
 
   for (const delivery of [{ mode: "clipboard" }, PASTE_DELIVERY]) {
     const { dependencies, writes } = createDeliveryHarness(false);
-
-    assert.deepEqual(
-      await deliverAssistantResponse(delivery, RESPONSE, dependencies),
-      { pasted: false, copied: true },
-      delivery.mode
-    );
-    assert.deepEqual(writes, [RESPONSE], delivery.mode);
-  }
-});
-
-// On niri, wlroots and Hyprland without wl-copy (#2621), the app the user is in
-// can't read the copy, so the panel offers its Copy button instead of "Copied".
-test("a copy only XWayland apps can read is not reported as copied", async () => {
-  const { deliverAssistantResponse } = await deliveryModule;
-
-  for (const delivery of [{ mode: "clipboard" }, PASTE_DELIVERY]) {
-    const { dependencies, writes } = createDeliveryHarness(false);
-    const rendererWrites = [];
-    dependencies.electronAPI.writeClipboard = async (text) => {
-      writes.push(text);
-      return { success: true, xwaylandOnly: true };
-    };
-    dependencies.clipboard = { writeText: async (text) => rendererWrites.push(text) };
 
     assert.deepEqual(
       await deliverAssistantResponse(delivery, RESPONSE, dependencies),
       { pasted: false, copied: false },
       delivery.mode
     );
-    assert.deepEqual(writes, [RESPONSE], delivery.mode);
-    assert.deepEqual(rendererWrites, [], `${delivery.mode}: no second write to the same clipboard`);
+    assert.deepEqual(writes, [], delivery.mode);
   }
+});
+
+test("a throwing paste never falls back to the clipboard", async () => {
+  const { deliverAssistantResponse } = await deliveryModule;
+  const { dependencies, writes } = createDeliveryHarness(false);
+  dependencies.electronAPI.pasteAtCapturedTarget = async () => {
+    throw new Error("boom");
+  };
+  assert.deepEqual(await deliverAssistantResponse(PASTE_DELIVERY, RESPONSE, dependencies), {
+    pasted: false,
+    copied: false,
+  });
+  assert.deepEqual(writes, []);
+});
+
+test("the caret paste always restores the user's clipboard and never allows a clipboard fallback", async () => {
+  const { deliverAssistantResponse, createAssistantResponseDelivery } = await deliveryModule;
+  const delivery = createAssistantResponseDelivery({
+    autoPasteEnabled: true,
+    deliverySessionId: "s",
+    restoreClipboard: false,
+    allowClipboardFallback: true,
+  });
+  assert.equal(delivery.restoreClipboard, true);
+  assert.equal(delivery.allowClipboardFallback, false);
+  const { dependencies, pastes } = createDeliveryHarness(true);
+  await deliverAssistantResponse({ ...delivery, restoreClipboard: false, allowClipboardFallback: true }, RESPONSE, dependencies);
+  assert.deepEqual(pastes[0].options, { restoreClipboard: true, allowClipboardFallback: false });
 });
 
 const MARKDOWN_RESPONSE = "**Bold** start.\n\n* item one\n* item two";
@@ -127,17 +132,6 @@ test("a plain-text caret target receives the response stripped of markdown", asy
   );
   assert.equal(pastes[0].text, PLAIN_RESPONSE);
   assert.deepEqual(writes, []);
-});
-
-test("the clipboard fallback of a refused plain-text paste carries the same stripped text", async () => {
-  const { deliverAssistantResponse } = await deliveryModule;
-  const { dependencies, writes } = createDeliveryHarness(false);
-
-  assert.deepEqual(
-    await deliverAssistantResponse(PASTE_DELIVERY, MARKDOWN_RESPONSE, dependencies),
-    { pasted: false, copied: true }
-  );
-  assert.deepEqual(writes, [PLAIN_RESPONSE]);
 });
 
 test("an answer the strip empties is pasted raw rather than as nothing", async () => {
@@ -163,14 +157,6 @@ test("a markdown-friendly caret target receives the response verbatim", async ()
     dependencies
   );
   assert.equal(pastes[0].text, MARKDOWN_RESPONSE);
-});
-
-test("a clipboard-only delivery keeps the response verbatim", async () => {
-  const { deliverAssistantResponse } = await deliveryModule;
-  const { dependencies, writes } = createDeliveryHarness(false);
-
-  await deliverAssistantResponse({ mode: "clipboard" }, MARKDOWN_RESPONSE, dependencies);
-  assert.deepEqual(writes, [MARKDOWN_RESPONSE]);
 });
 
 test("a paste delivery keeps the kind of app the caret is in", async () => {
@@ -215,7 +201,7 @@ test("an answer typed in the user's Tone & Style, and its clipboard fallback, lo
 
   const refused = createDeliveryHarness(false);
   await deliverAssistantResponse(toneDelivery, DASHED_RESPONSE, refused.dependencies);
-  assert.deepEqual(refused.writes, [expected]);
+  assert.deepEqual(refused.writes, []);
 });
 
 test("without Tone & Style an answer keeps its em dashes", async () => {

@@ -692,7 +692,7 @@ export const useAudioRecording = (toast, options = {}) => {
               });
               onOnboardingAssistantCommandRef.current?.(command);
             } else {
-              const { autoPasteEnabled, keepTranscriptionInClipboard } = getSettings();
+              const { autoPasteEnabled } = getSettings();
               onAssistantCommandRef.current?.({
                 ...command,
                 selectedContext: selectedContext ?? null,
@@ -701,7 +701,7 @@ export const useAudioRecording = (toast, options = {}) => {
                   deliverySessionId,
                   acceptsMarkdown: deliveryAcceptsMarkdown,
                   appCategory: deliveryAppCategory,
-                  restoreClipboard: !keepTranscriptionInClipboard,
+                  restoreClipboard: true,
                   allowClipboardFallback: isAccessibilitySkipped(),
                 }),
               });
@@ -724,7 +724,7 @@ export const useAudioRecording = (toast, options = {}) => {
           }
 
           const isStreaming = result.source?.includes("streaming");
-          const { autoPasteEnabled, keepTranscriptionInClipboard } = getSettings();
+          const { autoPasteEnabled } = getSettings();
 
           const persistencePromise = audioManagerRef.current
             .saveTranscription(result.text, result.rawText ?? result.text, {
@@ -783,7 +783,7 @@ export const useAudioRecording = (toast, options = {}) => {
           };
 
           const pasteOptions = {
-            restoreClipboard: !keepTranscriptionInClipboard,
+            restoreClipboard: true,
             allowClipboardFallback: isAccessibilitySkipped(),
           };
 
@@ -915,9 +915,6 @@ export const useAudioRecording = (toast, options = {}) => {
                 );
               } else if (!pasteSucceeded) {
                 window.electronAPI?.hideDictationPreview?.();
-                if (keepTranscriptionInClipboard) {
-                  await keepInClipboard("selection-edit-fallback");
-                }
                 const detailKey =
                   SELECTION_EDIT_DETAIL_KEY_BY_CODE[replacement?.code] || "unavailable";
                 showDictationError({
@@ -948,8 +945,6 @@ export const useAudioRecording = (toast, options = {}) => {
               window.electronAPI?.hideDictationPreview?.();
             }
             pasted = pasteSucceeded;
-          } else if (keepTranscriptionInClipboard && !result.assistantConversation) {
-            await keepInClipboard("clipboard-only");
           }
 
           // Cleanup can be missing or can fail whether or not the paste landed
