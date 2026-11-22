@@ -2222,7 +2222,9 @@
         "forgetDescription": "アシスタントは過去のチャットを思い出さなくなります。チャットは履歴に残ります。",
         "forgetConfirm": "消す",
         "forgetDone": "完了しました。アシスタントは過去のチャットを忘れました。",
-        "forgetFailed": "今は記憶を消せませんでした。少し待ってからもう一度お試しください。"
+        "forgetFailed": "今は記憶を消せませんでした。少し待ってからもう一度お試しください。",
+        "autoSelectModel": "ローカルモデルを自動選択",
+        "autoSelectModelDescription": "このPCのRAMとGPUに収まる、インストール済みのOllamaモデルのうち最大のものを選びます。オフにすると、自分で選んだモデルを使います。"
       }
     },
     "permissions": {

@@ -2517,7 +2517,9 @@
         "forgetDescription": "L'assistant ne se souviendra plus de vos discussions passées. Elles restent dans l'historique.",
         "forgetConfirm": "Oublier",
         "forgetDone": "C'est fait. L'assistant a oublié vos discussions passées.",
-        "forgetFailed": "Impossible d'effacer la mémoire pour le moment. Réessayez dans un instant."
+        "forgetFailed": "Impossible d'effacer la mémoire pour le moment. Réessayez dans un instant.",
+        "autoSelectModel": "Choisir le modèle local automatiquement",
+        "autoSelectModelDescription": "Choisit le plus grand modèle Ollama installé qui tient dans la RAM et le GPU de cet ordinateur. Désactivez pour conserver le modèle que vous avez choisi."
       }
     },
     "permissions": {

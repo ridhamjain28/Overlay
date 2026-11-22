@@ -3313,6 +3313,34 @@ declare global {
 
       // Overlay: answer sources and allowlisted laptop actions (see src/helpers/overlay/)
       overlayOllamaModels?: () => Promise<string[] | null>;
+      overlayHardwareProfile?: () => Promise<{
+        cpuCores: number;
+        totalRamBytes: number;
+        totalRamGiB: number;
+        gpuName: string | null;
+        vramMb: number | null;
+        gpuSource: string | null;
+      }>;
+      overlayRecommendModel?: (opts?: {
+        installed?: string[] | null;
+        current?: string;
+        autoSelect?: boolean;
+      }) => Promise<{
+        model: string | null;
+        reason: string;
+        fits: boolean;
+        usableMemoryBytes: number;
+        estimatedBytes: number | null;
+        recommendedPull: string;
+        hardware: {
+          cpuCores: number;
+          totalRamBytes: number;
+          totalRamGiB: number;
+          gpuName: string | null;
+          vramMb: number | null;
+          gpuSource: string | null;
+        };
+      }>;
       overlayAnswerSourcesStatus?: () => Promise<
         import("../services/overlay/answerRouter").AnswerSourcesStatus
       >;
@@ -4028,7 +4056,16 @@ declare global {
           end?: string | null;
           description?: string;
         };
-      }) => Promise<{ success: boolean; reconnectNeeded?: boolean; provider?: string; error?: string; format?: string; eventId?: string; htmlLink?: string; webLink?: string }>;
+      }) => Promise<{
+        success: boolean;
+        reconnectNeeded?: boolean;
+        provider?: string;
+        error?: string;
+        format?: string;
+        eventId?: string;
+        htmlLink?: string;
+        webLink?: string;
+      }>;
       overlayTodoCreate?: (todoData: {
         title?: string;
         text?: string;

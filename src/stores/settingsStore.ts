@@ -999,6 +999,8 @@ export interface SettingsState
   keepAssistantOnTop: boolean;
   chatMemoryEnabled: boolean;
   chatContextLength: ChatContextLength;
+  overlayModelAutoSelect: boolean;
+  setOverlayModelAutoSelect: (enabled: boolean) => void;
   startMinimized: boolean;
   gcalAccounts: CalendarAccount[];
   gcalConnected: boolean;
@@ -1387,10 +1389,24 @@ export interface SettingsState
   updateChatAgentSettings: (settings: Partial<ChatAgentSettings>) => void;
 }
 
+const OVERLAY_MANUAL_MODEL_KEYS = new Set([
+  "cleanupModel",
+  "chatAgentModel",
+  "dictationAgentModel",
+  "noteFormattingModel",
+  "translationModel",
+]);
+
 function createStringSetter(key: string) {
   return (value: string) => {
     if (isBrowser) localStorage.setItem(key, value);
-    useSettingsStore.setState({ [key]: value });
+    const disableAuto =
+      OVERLAY_MANUAL_MODEL_KEYS.has(key) &&
+      useSettingsStore.getState().overlayModelAutoSelect === true;
+    if (disableAuto && isBrowser) localStorage.setItem("overlayModelAutoSelect", "false");
+    useSettingsStore.setState(
+      disableAuto ? { [key]: value, overlayModelAutoSelect: false } : { [key]: value }
+    );
   };
 }
 
@@ -1767,6 +1783,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       ? (v as ChatContextLength)
       : "auto";
   })(),
+  // Fresh Overlay profiles default to auto-select. Existing profiles keep
+  // the model they already chose unless the user turns this on.
+  overlayModelAutoSelect: readBoolean("overlayModelAutoSelect", isFreshOverlayProfile),
   startMinimized: readBoolean("startMinimized", false),
   notificationsEnabled: readBoolean("notificationsEnabled", true),
   notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
@@ -1841,7 +1860,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   noteFilesEnabled: readBoolean("noteFilesEnabled", false),
   noteFilesPath: readString("noteFilesPath", ""),
   detectDictationIntents: readBoolean("detectDictationIntents", true),
-  dictationIntentOutput: (readString("dictationIntentOutput", "ask") as "ask" | "ics" | "gcal" | "mcal"),
+  dictationIntentOutput: readString("dictationIntentOutput", "ask") as
+    "ask" | "ics" | "gcal" | "mcal",
   isSignedIn: readBoolean("isSignedIn", false),
   // Overlay: which source answers ("auto" | "local" | "openclaw" | "gemini").
   answerSource: readString("answerSource", "auto"),
@@ -2582,6 +2602,12 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (isBrowser) localStorage.setItem("chatContextLength", next);
     set({ chatContextLength: next });
     if (isBrowser) window.electronAPI?.overlaySetChatContextLength?.(next);
+  },
+
+  setOverlayModelAutoSelect: (enabled: boolean) => {
+    if (get().overlayModelAutoSelect === enabled) return;
+    if (isBrowser) localStorage.setItem("overlayModelAutoSelect", String(enabled));
+    set({ overlayModelAutoSelect: enabled });
   },
 
   setKeepAssistantOnTop: (enabled: boolean) => {
@@ -3418,6 +3444,29 @@ export function applyOverlayModelFallback(installed: string[] | null | undefined
 }
 
 /**
+ * Overlay: apply a model already chosen for this machine (see
+ * overlayRecommendModel in the main process). Only self-hosted scopes change.
+ */
+export function applyOverlayLocalModelSelection(pickedModel: string | null | undefined): string[] {
+  if (!pickedModel) return [];
+  const state = useSettingsStore.getState();
+  const switched: string[] = [];
+  for (const scopeId of OVERLAY_TEXT_SCOPES) {
+    const keys = (INFERENCE_SCOPES as Record<string, { storeKeys: Record<string, string> }>)[
+      scopeId
+    ]?.storeKeys;
+    if (!keys) continue;
+    const s = state as unknown as Record<string, unknown>;
+    if (s[keys.mode] !== "self-hosted") continue;
+    const current = String(s[keys.model] || "");
+    if (current === pickedModel) continue;
+    setResolvedLLMConfig(scopeId as InferenceScope, { model: pickedModel });
+    switched.push(scopeId);
+  }
+  return switched;
+}
+
+/**
  * Repoints any scope still selecting a cloud model the registry no longer ships
  * (e.g. a retired Groq id) at that provider's current default — otherwise every
  * request 404s with an error the user can't act on. Custom, OpenRouter and
@@ -3940,9 +3989,18 @@ export async function initializeSettings(): Promise<void> {
     reconcileRetiredCloudModelSelections();
 
     try {
-      const switched = applyOverlayModelFallback(await window.electronAPI.overlayOllamaModels?.());
+      const installed = await window.electronAPI.overlayOllamaModels?.();
+      const state = useSettingsStore.getState();
+      const recommendation = await window.electronAPI.overlayRecommendModel?.({
+        installed,
+        current: state.chatAgentModel,
+        autoSelect: state.overlayModelAutoSelect,
+      });
+      const switched = recommendation?.model
+        ? applyOverlayLocalModelSelection(recommendation.model)
+        : applyOverlayModelFallback(installed);
       if (switched.length) {
-        logger.info("Using the fallback local model", { scopes: switched }, "overlay");
+        logger.info("Selected a local model that fits this PC", { scopes: switched }, "overlay");
       }
     } catch {
       // Ollama not running: keep the configured model.

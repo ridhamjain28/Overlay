@@ -2517,7 +2517,9 @@
         "forgetDescription": "Der Assistent erinnert sich dann nicht mehr an frühere Chats. Deine Chats bleiben im Verlauf.",
         "forgetConfirm": "Vergessen",
         "forgetDone": "Erledigt. Der Assistent hat deine früheren Chats vergessen.",
-        "forgetFailed": "Das Gedächtnis konnte gerade nicht gelöscht werden. Versuche es gleich noch einmal."
+        "forgetFailed": "Das Gedächtnis konnte gerade nicht gelöscht werden. Versuche es gleich noch einmal.",
+        "autoSelectModel": "Lokales Modell automatisch wählen",
+        "autoSelectModelDescription": "Wählt das größte installierte Ollama-Modell, das in RAM und GPU dieses PCs passt. Ausschalten, um das selbst gewählte Modell zu behalten."
       }
     },
     "permissions": {

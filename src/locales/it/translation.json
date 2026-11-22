@@ -2222,7 +2222,9 @@
         "forgetDescription": "L'assistente non ricorderà più le chat passate. Le chat restano nella cronologia.",
         "forgetConfirm": "Dimentica",
         "forgetDone": "Fatto. L'assistente ha dimenticato le chat passate.",
-        "forgetFailed": "Impossibile cancellare la memoria ora. Riprova tra poco."
+        "forgetFailed": "Impossibile cancellare la memoria ora. Riprova tra poco.",
+        "autoSelectModel": "Seleziona automaticamente il modello locale",
+        "autoSelectModelDescription": "Sceglie il modello Ollama installato più grande che sta in RAM e GPU di questo PC. Disattiva per mantenere il modello che scegli tu."
       }
     },
     "permissions": {

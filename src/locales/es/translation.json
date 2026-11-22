@@ -2274,7 +2274,9 @@
         "forgetDescription": "El asistente dejará de recordar tus chats anteriores. Tus chats siguen en el historial.",
         "forgetConfirm": "Olvidar",
         "forgetDone": "Listo. El asistente olvidó tus chats anteriores.",
-        "forgetFailed": "No se pudo borrar la memoria ahora. Inténtalo de nuevo en un momento."
+        "forgetFailed": "No se pudo borrar la memoria ahora. Inténtalo de nuevo en un momento.",
+        "autoSelectModel": "Elegir el modelo local automáticamente",
+        "autoSelectModelDescription": "Elige el modelo de Ollama instalado más grande que quepa en la RAM y la GPU de este PC. Desactívalo para conservar el modelo que tú elijas."
       }
     },
     "permissions": {

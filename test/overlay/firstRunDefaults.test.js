@@ -26,6 +26,7 @@ test("a fresh Overlay profile starts on local Whisper and local Ollama", async (
     assert.equal(s[`${prefix}Model`], "qwen3.5:4b-q4_K_M", prefix);
   }
   assert.equal(s.answerSource, "auto");
+  assert.equal(s.overlayModelAutoSelect, true);
   assert.equal(storage.getItem("_overlayDefaultsApplied"), "1");
 });
 
@@ -44,6 +45,7 @@ test("an existing profile is never overwritten by the first-run defaults", async
   const s = useSettingsStore.getState();
   assert.equal(s.chatAgentMode, "providers");
   assert.equal(s.chatAgentProvider, "openai");
+  assert.equal(s.overlayModelAutoSelect, false);
 });
 
 test("the fallback model is used only when the default is missing from Ollama", async (t) => {
@@ -64,4 +66,18 @@ test("the fallback model is used only when the default is missing from Ollama", 
   assert.ok(switched.includes("chatIntelligence"));
   assert.equal(useSettingsStore.getState().chatAgentModel, "qwen3:4b-instruct");
   assert.equal(useSettingsStore.getState().cleanupModel, "qwen3:4b-instruct");
+});
+
+test("applying a recommended model updates every self-hosted Overlay scope", async (t) => {
+  installBrowserGlobals(t, { initialStorage: { _overlayDefaultsApplied: undefined } });
+  const vite = await createRendererServer(t, { cachePrefix: "overlay-model-autoselect-test-" });
+  const { useSettingsStore, applyOverlayLocalModelSelection } = await vite.ssrLoadModule(
+    "/stores/settingsStore.ts"
+  );
+
+  const switched = applyOverlayLocalModelSelection("qwen2.5:1.5b");
+  assert.ok(switched.includes("chatIntelligence"));
+  assert.equal(useSettingsStore.getState().chatAgentModel, "qwen2.5:1.5b");
+  assert.equal(useSettingsStore.getState().cleanupModel, "qwen2.5:1.5b");
+  assert.deepEqual(applyOverlayLocalModelSelection("qwen2.5:1.5b"), []);
 });

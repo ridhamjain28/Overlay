@@ -38,6 +38,8 @@ const {
   setChatContextSetting,
 } = require("./chatContext");
 const { createChatMemoryStore } = require("./chatMemoryStore");
+const { detectHardware } = require("./hardwareProfile");
+const { selectLocalModel, recommendPull } = require("./modelAutoSelect");
 
 // Model tags look like qwen3.5:4b-q4_K_M; refuse anything that could read as a flag.
 const MODEL_TAG = /^[A-Za-z0-9][\w.:/-]{0,120}$/;
@@ -123,6 +125,26 @@ function registerOverlayIpc({
   );
 
   ipcMain.handle("overlay-ollama-models", async () => listOllamaModels());
+
+  ipcMain.handle("overlay-hardware-profile", async () => detectHardware());
+
+  ipcMain.handle("overlay-recommend-model", async (_event, opts = {}) => {
+    const hardware = await detectHardware();
+    const installed = Array.isArray(opts?.installed) ? opts.installed : await listOllamaModels();
+    const current = typeof opts?.current === "string" ? opts.current : "";
+    const autoSelect = opts?.autoSelect !== false;
+    const picked = selectLocalModel({
+      installed: installed || [],
+      hardware,
+      current,
+      autoSelect,
+    });
+    return {
+      ...picked,
+      hardware,
+      recommendedPull: picked.recommendedPull || recommendPull(hardware),
+    };
+  });
 
   let chatContextSetting = "auto";
   ipcMain.on("overlay-set-chat-context-length", (_event, value) => {

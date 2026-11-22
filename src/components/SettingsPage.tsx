@@ -1285,6 +1285,8 @@ export default function SettingsPage({
   const setChatMemoryEnabled = useSettingsStore((s) => s.setChatMemoryEnabled);
   const chatContextLength = useSettingsStore((s) => s.chatContextLength);
   const setChatContextLength = useSettingsStore((s) => s.setChatContextLength);
+  const overlayModelAutoSelect = useSettingsStore((s) => s.overlayModelAutoSelect);
+  const setOverlayModelAutoSelect = useSettingsStore((s) => s.setOverlayModelAutoSelect);
   const handleForgetChats = () => {
     showConfirmDialog({
       title: t("settingsPage.general.chatMemory.forgetTitle"),
@@ -3362,6 +3364,18 @@ export default function SettingsPage({
                     description={t("settingsPage.general.chatMemory.rememberDescription")}
                   >
                     <Toggle checked={chatMemoryEnabled} onChange={setChatMemoryEnabled} />
+                  </SettingsRow>
+                </SettingsPanelRow>
+                <SettingsPanelRow>
+                  <SettingsRow
+                    label={t("settingsPage.general.chatMemory.autoSelectModel")}
+                    description={t("settingsPage.general.chatMemory.autoSelectModelDescription")}
+                  >
+                    <Toggle
+                      checked={overlayModelAutoSelect}
+                      onChange={setOverlayModelAutoSelect}
+                      data-testid="overlay-model-auto-select"
+                    />
                   </SettingsRow>
                 </SettingsPanelRow>
                 <SettingsPanelRow>

@@ -2222,7 +2222,9 @@
         "forgetDescription": "助理將不再記得以前的聊天。聊天仍保留在歷史記錄中。",
         "forgetConfirm": "清除",
         "forgetDone": "已完成。助理已忘記以前的聊天。",
-        "forgetFailed": "暫時無法清除記憶，請稍後再試。"
+        "forgetFailed": "暫時無法清除記憶，請稍後再試。",
+        "autoSelectModel": "自動選擇本機模型",
+        "autoSelectModelDescription": "選擇適合這台電腦記憶體與顯示卡記憶體、已安裝的最大 Ollama 模型。關閉後將保留你手動選擇的模型。"
       }
     },
     "permissions": {

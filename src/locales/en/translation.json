@@ -2517,7 +2517,9 @@
         "forgetDescription": "The assistant will no longer recall things from your past chats. Your chats stay in your history.",
         "forgetConfirm": "Forget",
         "forgetDone": "Done. The assistant has forgotten your past chats.",
-        "forgetFailed": "Couldn't clear the memory right now. Try again in a moment."
+        "forgetFailed": "Couldn't clear the memory right now. Try again in a moment.",
+        "autoSelectModel": "Auto-select local model",
+        "autoSelectModelDescription": "Pick the largest installed Ollama model that fits this PC's RAM and GPU. Turn this off to keep the model you choose."
       }
     },
     "permissions": {

@@ -56,14 +56,18 @@ export default function RequirementsChecklist({ compact = false }: { compact?: b
   const useLocalWhisper = useSettingsStore((s) => s.useLocalWhisper);
   const chatAgentMode = useSettingsStore((s) => s.chatAgentMode);
   const chatAgentModel = useSettingsStore((s) => s.chatAgentModel);
+  const overlayModelAutoSelect = useSettingsStore((s) => s.overlayModelAutoSelect);
+  const [recommendedModel, setRecommendedModel] = useState<string | null>(null);
 
   const hindiSelected = ["hi", "hi-Latn"].some(
     (code) => spokenLanguages.includes(code) || preferredLanguage === code
   );
   const [choice, setChoice] = useState<HinglishChoice>(readChoice);
   const includeHinglish = hindiSelected && choice === "download";
-  const answerModel =
+  const configuredModel =
     chatAgentMode === "self-hosted" && chatAgentModel ? chatAgentModel : DEFAULT_ANSWER_MODEL;
+  const answerModel =
+    overlayModelAutoSelect && recommendedModel ? recommendedModel : configuredModel;
 
   const [items, setItems] = useState<RequirementItem[]>([]);
   const [checking, setChecking] = useState(true);
@@ -74,6 +78,22 @@ export default function RequirementsChecklist({ compact = false }: { compact?: b
   const logRef = useRef<HTMLPreElement | null>(null);
   const autoRunRef = useRef(false);
   const api = window.electronAPI;
+
+  useEffect(() => {
+    if (!overlayModelAutoSelect) {
+      setRecommendedModel(null);
+      return;
+    }
+    let cancelled = false;
+    void api
+      ?.overlayRecommendModel?.({ current: configuredModel, autoSelect: true })
+      .then((result) => {
+        if (!cancelled && result?.recommendedPull) setRecommendedModel(result.recommendedPull);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, overlayModelAutoSelect, configuredModel]);
 
   const appendLog = useCallback((line: string) => {
     setLog((prev) => {

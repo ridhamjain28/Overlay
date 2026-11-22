@@ -1186,6 +1186,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Secrets stay in main; only answer text crosses this bridge.
   overlayAnswerSourcesStatus: () => ipcRenderer.invoke("overlay-answer-sources-status"),
   overlayOllamaModels: () => ipcRenderer.invoke("overlay-ollama-models"),
+  overlayHardwareProfile: () => ipcRenderer.invoke("overlay-hardware-profile"),
+  overlayRecommendModel: (opts) => ipcRenderer.invoke("overlay-recommend-model", opts),
   overlayAnswerStreamStart: (requestId, payload) =>
     ipcRenderer.send("overlay-answer-stream-start", requestId, payload),
   overlayAnswerStreamCancel: (requestId) =>
