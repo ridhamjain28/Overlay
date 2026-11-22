@@ -72,6 +72,8 @@ export const useAudioRecording = (toast, options = {}) => {
   const startLockRef = useRef(false);
   const stopRequestedDuringStartRef = useRef(false);
   const pushForceStoppedRef = useRef(false);
+  // "push" while a hold-to-talk hotkey owns the recording: release stops it, so no auto-stop.
+  const recordingInputModeRef = useRef("toggle");
   const stopLockRef = useRef(false);
   const preparationGenerationRef = useRef(0);
   const dictationErrorGenerationRef = useRef(0);
@@ -1199,11 +1201,13 @@ export const useAudioRecording = (toast, options = {}) => {
       if (startLockRef.current || currentState.isRecording) {
         await performStopRecording();
       } else if (canStartDictation(currentState)) {
+        recordingInputModeRef.current = "toggle";
         await performStartRecording({ voiceAgentRequested, translationRequested });
       }
     };
 
     const handleStart = async () => {
+      recordingInputModeRef.current = "push";
       await performStartRecording();
     };
 
@@ -1356,11 +1360,13 @@ export const useAudioRecording = (toast, options = {}) => {
     return () => clearInterval(interval);
   }, [assistantOpenRef, getAudioLevel, isAssistantVoice, isRecording]);
 
-  // Assistant questions end on their own: once the user has spoken and then
-  // gone quiet, stop exactly as a second hotkey press would. Silent by design,
-  // with no UI. Dictation keeps its manual stop.
+  // Dictation and assistant questions end on their own: once the user has spoken
+  // (>= 300 ms) and then gone quiet for ~800 ms, stop exactly as a second hotkey
+  // press would; ~8 s of no speech cancels quietly. Pressing the hotkey at any
+  // time still stops manually. Hold-to-talk dictation is left to key release.
   useEffect(() => {
-    if (!isRecording || !isAssistantVoice || !isSilenceAutoStopEnabled()) return undefined;
+    if (!isRecording || !isSilenceAutoStopEnabled()) return undefined;
+    if (!isAssistantVoice && recordingInputModeRef.current === "push") return undefined;
     const state = createSilenceAutoStopState();
     let lastTick = performance.now();
     let finished = false;
@@ -1372,7 +1378,7 @@ export const useAudioRecording = (toast, options = {}) => {
       if (decision.action === "continue") return;
       finished = true;
       clearInterval(interval);
-      logger.debug("Assistant auto-stop", { reason: decision.reason }, "audio");
+      logger.debug("Voice auto-stop", { reason: decision.reason }, "audio");
       if (decision.action === "cancel") void cancelRecording();
       else void performStopRecording();
     }, SILENCE_AUTO_STOP_DEFAULTS.windowMs);

@@ -16,14 +16,14 @@ const run = (mod, levels, peaks = null) => {
   return null;
 };
 
-test("speech then 1.2 s of silence stops like a second hotkey press", async () => {
+test("speech then 0.8 s of silence stops like a second hotkey press", async () => {
   const mod = await load();
   const levels = [...repeat(0.001, 5), ...repeat(0.04, 15), ...repeat(0.001, 30)];
   const d = run(mod, levels);
   assert.equal(d.action, "stop");
   assert.equal(d.reason, "silence");
-  // 12 quiet windows after speech = 1200 ms.
-  assert.equal(d.index, 5 + 15 + 12 - 1);
+  // 8 quiet windows after speech = 800 ms.
+  assert.equal(d.index, 5 + 15 + 8 - 1);
 });
 
 test("never speaking cancels quietly after about 8 s", async () => {
@@ -43,28 +43,28 @@ test("isolated noise blips never count as speech", async () => {
   assert.equal(d.state.speechStarted, false);
 });
 
-test("a pause under 1.2 s mid-sentence does not stop", async () => {
+test("a pause under 0.8 s mid-sentence does not stop", async () => {
   const mod = await load();
   const sentence = [
     ...repeat(0.001, 3),
     ...repeat(0.04, 10),
-    ...repeat(0.001, 11), // 1.1 s pause
+    ...repeat(0.001, 7), // 0.7 s pause
     ...repeat(0.035, 10),
-    ...repeat(0.001, 8), // 0.8 s pause
+    ...repeat(0.001, 6), // 0.6 s pause
     ...repeat(0.03, 6),
   ];
   assert.equal(run(mod, sentence), null);
-  const d = run(mod, [...sentence, ...repeat(0.001, 12)]);
+  const d = run(mod, [...sentence, ...repeat(0.001, 8)]);
   assert.equal(d.action, "stop");
-  assert.equal(d.index, sentence.length + 11);
+  assert.equal(d.index, sentence.length + 7);
 });
 
-test("a blip during the trailing silence restarts the 1.2 s timer", async () => {
+test("a blip during the trailing silence restarts the 0.8 s timer", async () => {
   const mod = await load();
-  const levels = [...repeat(0.04, 10), ...repeat(0.001, 8), 0.05, ...repeat(0.001, 20)];
+  const levels = [...repeat(0.04, 10), ...repeat(0.001, 6), 0.05, ...repeat(0.001, 20)];
   const d = run(mod, levels);
   assert.equal(d.action, "stop");
-  assert.equal(d.index, 10 + 8 + 1 + 12 - 1);
+  assert.equal(d.index, 10 + 6 + 1 + 8 - 1);
 });
 
 test("a noisy room still ends the question once speech drops back to the floor", async () => {
@@ -73,7 +73,7 @@ test("a noisy room still ends the question once speech drops back to the floor",
   const d = run(mod, levels);
   assert.equal(d.action, "stop");
   assert.equal(d.reason, "silence");
-  assert.equal(d.index, 10 + 15 + 12 - 1);
+  assert.equal(d.index, 10 + 15 + 8 - 1);
 });
 
 test("windows with a tiny peak are not speech", async () => {
@@ -106,4 +106,12 @@ test("a decision is final", async () => {
   for (let i = 0; i < 3; i++) d = mod.recordSilenceAutoStopWindow(state, 0.001);
   assert.equal(d.action, "cancel");
   assert.equal(mod.recordSilenceAutoStopWindow(state, 0.2).action, "cancel");
+});
+
+test("a 200 ms cough is below the 300 ms minimum speech and never arms the timer", async () => {
+  const mod = await load();
+  const levels = [...repeat(0.001, 5), ...repeat(0.06, 2), ...repeat(0.001, 100)];
+  const d = run(mod, levels);
+  assert.equal(d.action, "cancel");
+  assert.equal(d.reason, "no_speech");
 });

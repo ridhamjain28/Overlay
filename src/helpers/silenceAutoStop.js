@@ -4,16 +4,16 @@ import {
   SPEECH_WINDOW_RMS_THRESHOLD,
 } from "./localSpeechGate";
 
-// Assistant-mode end-of-speech detection. Pure decision logic fed one mic
+// End-of-speech detection for dictation and assistant voice. Pure decision logic fed one mic
 // level window at a time (RMS 0..~1, optional peak); the caller performs the
 // actual stop/cancel. Nothing here touches the UI.
 export const SILENCE_AUTO_STOP_DEFAULTS = Object.freeze({
   windowMs: 100,
-  // Consecutive speech windows required before speech counts as started, so
+  // Consecutive speech windows (3 x 100 ms = 300 ms minimum speech) required before speech counts as started, so
   // a cough, click or key tap does not arm the silence timer.
   speechStartWindows: 3,
   // Quiet time after speech that ends the question.
-  silenceMs: 1200,
+  silenceMs: 800,
   // Nothing said at all: give up quietly.
   noSpeechTimeoutMs: 8000,
   // Hard cap on one assistant question.
