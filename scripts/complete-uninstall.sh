@@ -4,7 +4,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-echo "This script will stop OpenWhispr, remove the installed app, and delete caches, databases, and preferences."
+echo "This script will stop Overlay, remove the installed app, and delete caches, databases, and preferences."
 read -r -p "Continue with the full uninstall? [y/N]: " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Aborted."
@@ -20,9 +20,9 @@ remove_target() {
 }
 
 echo "Stopping running OpenWhispr/Electron processes..."
-pkill -f "OpenWhispr" 2>/dev/null || true
+pkill -f "Overlay" 2>/dev/null || true
 pkill -f "open-whispr" 2>/dev/null || true
-pkill -f "Electron Helper.*OpenWhispr" 2>/dev/null || true
+pkill -f "Electron Helper.*Overlay" 2>/dev/null || true
 
 echo "Removing /Applications/OpenWhispr.app (requires admin)..."
 remove_target "/Applications/OpenWhispr.app"

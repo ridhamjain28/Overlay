@@ -97,11 +97,11 @@ node --import tsx --test "test/overlay/*.test.js"   # only Overlay's tests
 npm run typecheck
 ```
 
-## 8. Where the old OpenWhispr cloud went
+## 8. Where the old Overlay cloud went
 
-OpenWhispr had an optional paid cloud with accounts. Overlay keeps the code (it is large and well-tested) but switches it off:
+Overlay had an optional paid cloud with accounts. Overlay keeps the code (it is large and well-tested) but switches it off:
 
-- Sign-in and cloud URLs point to a closed local port (`127.0.0.1:9`), so nothing is sent to openwhispr.com.
+- Sign-in and cloud URLs point to a closed local port (`127.0.0.1:9`), so nothing is sent to any hosted service.
 - Onboarding skips the account step and starts in local mode.
 - Automatic updates are disabled unless `OVERLAY_ENABLE_UPDATES=1`.
 

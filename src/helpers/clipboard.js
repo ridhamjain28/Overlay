@@ -2305,17 +2305,17 @@ class ClipboardManager {
 
     let dialogMessage;
     if (isStuckPermission) {
-      dialogMessage = `🔒 OpenWhispr needs Accessibility permissions, but it looks like you may have OLD PERMISSIONS from a previous version.
+      dialogMessage = `🔒 Overlay needs Accessibility permissions, but it looks like you may have OLD PERMISSIONS from a previous version.
 
-❗ COMMON ISSUE: If you've rebuilt/reinstalled OpenWhispr, the old permissions may be "stuck" and preventing new ones.
+❗ COMMON ISSUE: If you've rebuilt/reinstalled Overlay, the old permissions may be "stuck" and preventing new ones.
 
 🔧 To fix this:
 1. Open System Settings → Privacy & Security → Accessibility
-2. Look for ANY old "OpenWhispr" entries and REMOVE them (click the - button)
+2. Look for ANY old "Overlay" entries and REMOVE them (click the - button)
 3. Also remove any entries that say "Electron" or have unclear names
-4. Click the + button and manually add the NEW OpenWhispr app
+4. Click the + button and manually add the NEW Overlay app
 5. Make sure the checkbox is enabled
-6. Restart OpenWhispr
+6. Restart Overlay
 
 ⚠️ This is especially common during development when rebuilding the app.
 
@@ -2323,7 +2323,7 @@ class ClipboardManager {
 
 Would you like to open System Settings now?`;
     } else {
-      dialogMessage = `🔒 OpenWhispr needs Accessibility permissions to paste text into other applications.
+      dialogMessage = `🔒 Overlay needs Accessibility permissions to paste text into other applications.
 
 📋 Current status: Clipboard copy works, but pasting (Cmd+V simulation) fails.
 
@@ -2331,8 +2331,8 @@ Would you like to open System Settings now?`;
 1. Open System Settings (or System Preferences on older macOS)
 2. Go to Privacy & Security → Accessibility
 3. Click the lock icon and enter your password
-4. Add OpenWhispr to the list and check the box
-5. Restart OpenWhispr
+4. Add Overlay to the list and check the box
+5. Restart Overlay
 
 ⚠️ Without this permission, dictated text will only be copied to clipboard but won't paste automatically.
 
@@ -2404,7 +2404,7 @@ Would you like to open System Settings now?`;
   }
 
   // `xwaylandOnly`: where wl-copy is required (#2621), a write it didn't make reaches
-  // native Wayland apps only while an OpenWhispr window has focus.
+  // native Wayland apps only while an Overlay window has focus.
   async writeClipboard(text, webContents = null) {
     if (process.platform === "linux" && this._isWayland()) {
       const wroteWayland = this._writeClipboardWayland(text, webContents);

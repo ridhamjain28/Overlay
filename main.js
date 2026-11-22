@@ -551,7 +551,7 @@ function initializeCoreManagers() {
     onStatusChanged: (statuses) => broadcastToWindows("connector-status-changed", statuses),
   });
   // Pending cards expire in main even when no renderer ever answers them.
-  setInterval(() => connectorManager.sweepExpired(), 60 * 1000).unref();
+  // Connector expiry sweep is not scheduled: integrations are not used.
   whisperManager = new WhisperManager();
   if (process.platform !== "darwin") {
     whisperCudaManager = new WhisperCudaManager();
@@ -801,10 +801,8 @@ function initializeDeferredManagers() {
     });
   }
 
-  googleCalendarManager.start();
-  microsoftCalendarManager.start();
-  appleCalendarManager.start();
-  meetingDetectionEngine.start();
+  // Overlay is dictation + Command mode only: calendar polling and meeting
+  // detection are not started (the managers are built but stay idle).
 }
 
 let pendingEnterpriseAudioTest = null;
@@ -1244,13 +1242,7 @@ async function startApp() {
   // failure before the whisper pre-warm below resolves its GPU backend.
   resetWhisperGpuFailureOnUpgrade(environmentManager);
   registerSidecars();
-  startAuthBridgeServer();
-
-  cliBridge = new CliBridge(ipcHandlers);
-  cliBridge.start().catch((err) => {
-    debugLogger.error("CLI bridge failed to start", { error: err.message });
-    cliBridge = null;
-  });
+  // No account bridge and no CLI/integrations bridge at launch.
 
   await migrateCookieToBearerToken();
 

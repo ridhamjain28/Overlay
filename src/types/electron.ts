@@ -2812,7 +2812,7 @@ declare global {
         callback: (state: { generation: number; hasToken: boolean }) => void
       ) => () => void;
 
-      // OpenWhispr Cloud API
+      // Overlay cloud API
       cloudTranscribe?: (
         audioBuffer: ArrayBuffer,
         opts: {
