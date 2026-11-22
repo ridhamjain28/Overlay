@@ -18,6 +18,7 @@ const SECRET_KEYS = [
   "BEDROCK_SESSION_TOKEN",
   "AZURE_OPENAI_API_KEY",
   "VERTEX_API_KEY",
+  "INWORLD_API_KEY",
 ];
 
 const SECRET_KEY_SET = new Set(SECRET_KEYS);
@@ -42,6 +43,7 @@ const PERSISTED_KEYS = [
   "FLOATING_ICON_AUTO_HIDE",
   "PANEL_START_POSITION",
   "START_MINIMIZED",
+  "RUN_AS_ADMIN",
   "UI_LANGUAGE",
   "WHISPER_CUDA_ENABLED",
   "WHISPER_VULKAN_ENABLED",
@@ -126,7 +128,7 @@ class EnvironmentManager {
   // rewrites .env. Move such keys into encrypted storage instead.
   async _adoptPlaintextSecrets() {
     if (!this._encryptionAvailable()) return;
-    for (const name of ["GEMINI_API_KEY"]) {
+    for (const name of ["GEMINI_API_KEY", "INWORLD_API_KEY"]) {
       const value = (process.env[name] || "").trim();
       if (!value || /^your_/i.test(value)) continue;
       if (fs.existsSync(this._getSecretFilePath(name))) continue;
@@ -607,5 +609,35 @@ for (const k of BYOK_API_KEYS) {
     return this._saveKey(k.env, key);
   };
 }
+
+EnvironmentManager.prototype.hasInworldKey = function hasInworldKey() {
+  const value = (this.getInworldKey() || "").trim();
+  return value.length > 0 && !/^your_/i.test(value);
+};
+
+EnvironmentManager.prototype.getInworldKey = function getInworldKey() {
+  return this._getKey("INWORLD_API_KEY");
+};
+
+EnvironmentManager.prototype.saveInworldKey = async function saveInworldKey(key) {
+  const value = typeof key === "string" ? key.trim() : "";
+  if (this._encryptionAvailable()) {
+    await this._saveSecretKey("INWORLD_API_KEY", value);
+  } else {
+    this._saveKey("INWORLD_API_KEY", value);
+  }
+  await this.saveAllKeysToEnvFile().catch(() => {});
+  return { success: true };
+};
+
+EnvironmentManager.prototype.getRunAsAdmin = function getRunAsAdmin() {
+  return this._getKey("RUN_AS_ADMIN") === "true";
+};
+
+EnvironmentManager.prototype.saveRunAsAdmin = function saveRunAsAdmin(enabled) {
+  const result = this._saveKey("RUN_AS_ADMIN", String(!!enabled));
+  this.saveAllKeysToEnvFile().catch(() => {});
+  return result;
+};
 
 module.exports = EnvironmentManager;

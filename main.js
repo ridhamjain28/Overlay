@@ -424,13 +424,15 @@ function cleanupOrphanedLinuxRestoreToken() {
 }
 
 function syncAutoStartEntry() {
-  try {
-    if (autoStart.syncAutoStartEntry()) {
-      debugLogger.info("Re-pointed the launch-at-login entry at the current executable");
-    }
-  } catch (error) {
-    debugLogger.warn("Failed to sync the launch-at-login entry", { error: error?.message });
-  }
+  Promise.resolve(autoStart.syncAutoStartEntry())
+    .then((changed) => {
+      if (changed) {
+        debugLogger.info("Re-pointed the launch-at-login entry at the current executable");
+      }
+    })
+    .catch((error) => {
+      debugLogger.warn("Failed to sync the launch-at-login entry", { error: error?.message });
+    });
 }
 
 // Reading the login item touches the OS, and failing to answer "did the session
@@ -477,6 +479,9 @@ function initializeCoreManagers() {
   }
 
   environmentManager = new EnvironmentManager();
+  autoStart.configureAutoStart({
+    getRunAsAdmin: () => environmentManager.getRunAsAdmin(),
+  });
   const uiLanguage = environmentManager.getUiLanguage(app.getLocale());
   changeLanguage(uiLanguage);
   debugLogger.refreshLogLevel();
@@ -1229,6 +1234,12 @@ async function startApp() {
   // Phase 1: Core managers + IPC handlers before windows
   initializeCoreManagers();
   await environmentManager.init();
+  // If the user opted into administrator mode, relaunch elevated before any
+  // windows appear. A declined UAC prompt leaves this unelevated process running.
+  if (process.platform === "win32" && environmentManager.getRunAsAdmin() && !autoStart.isElevated()) {
+    const relaunch = await autoStart.relaunchElevated();
+    if (relaunch?.relaunched) return;
+  }
   // After any upgrade the GPU gets one fresh attempt: clear the remembered
   // failure before the whisper pre-warm below resolves its GPU backend.
   resetWhisperGpuFailureOnUpgrade(environmentManager);

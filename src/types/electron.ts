@@ -2773,6 +2773,26 @@ declare global {
       // Settings, which otherwise looks like a toggle that will not stick.
       getAutoStartEnabled?: () => Promise<{ enabled: boolean; requiresApproval: boolean }>;
       setAutoStartEnabled?: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+      getRunAsAdmin?: () => Promise<{ enabled: boolean; elevated: boolean; platform: string }>;
+      setRunAsAdmin?: (
+        enabled: boolean
+      ) => Promise<{ success: boolean; needsElevation?: boolean; relaunched?: boolean; error?: string }>;
+      relaunchElevated?: () => Promise<{ success: boolean; relaunched?: boolean; error?: string }>;
+      inworldHasKey?: () => Promise<{ hasKey: boolean }>;
+      inworldSaveKey?: (key: string) => Promise<{ success: boolean }>;
+      inworldClearKey?: () => Promise<{ success: boolean }>;
+      inworldSynthesize?: (payload: { text: string; voiceId?: string }) => Promise<{
+        success: boolean;
+        audioBase64Parts?: string[];
+        audioBase64?: string;
+        mimeType?: string;
+        error?: string;
+      }>;
+      inworldListVoices?: () => Promise<{
+        success: boolean;
+        voices?: Array<{ voiceId: string; displayName: string; description?: string }>;
+        source?: string;
+      }>;
 
       // Auth
       authClearSession?: () => Promise<{

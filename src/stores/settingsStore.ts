@@ -308,6 +308,8 @@ const BOOLEAN_SETTINGS = new Set([
   "keepAssistantOnTop",
   "chatMemoryEnabled",
   "startMinimized",
+  "assistantTtsProvider",
+  "inworldVoiceId",
   "meetingProcessDetection",
   "speakerDiarizationEnabled",
   "dictationSileroEnabled",
@@ -1000,6 +1002,8 @@ export interface SettingsState
   chatMemoryEnabled: boolean;
   chatContextLength: ChatContextLength;
   startMinimized: boolean;
+  assistantTtsProvider: "off" | "inworld";
+  inworldVoiceId: string;
   gcalAccounts: CalendarAccount[];
   gcalConnected: boolean;
   gcalEmail: string;
@@ -1338,6 +1342,8 @@ export interface SettingsState
   setChatMemoryEnabled: (enabled: boolean) => void;
   setChatContextLength: (value: ChatContextLength) => void;
   setStartMinimized: (enabled: boolean) => void;
+  setAssistantTtsProvider: (provider: "off" | "inworld") => void;
+  setInworldVoiceId: (voiceId: string) => void;
   setGcalAccounts: (accounts: CalendarAccount[]) => void;
   setMcalAccounts: (accounts: MicrosoftCalendarAccount[]) => void;
   setNotificationsEnabled: (value: boolean) => void;
@@ -1768,6 +1774,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       : "auto";
   })(),
   startMinimized: readBoolean("startMinimized", false),
+  assistantTtsProvider: readString("assistantTtsProvider", "off") === "inworld" ? "inworld" : "off",
+  inworldVoiceId: readString("inworldVoiceId", "Ashley") || "Ashley",
   notificationsEnabled: readBoolean("notificationsEnabled", true),
   notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
   notifyCalendarReminders: readBoolean("notifyCalendarReminders", true),
@@ -2598,6 +2606,20 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     if (isBrowser) {
       window.electronAPI?.notifyStartMinimizedChanged?.(enabled);
     }
+  },
+
+  setAssistantTtsProvider: (provider: "off" | "inworld") => {
+    const next = provider === "inworld" ? "inworld" : "off";
+    if (get().assistantTtsProvider === next) return;
+    if (isBrowser) localStorage.setItem("assistantTtsProvider", next);
+    set({ assistantTtsProvider: next });
+  },
+
+  setInworldVoiceId: (voiceId: string) => {
+    const next = (voiceId || "Ashley").trim() || "Ashley";
+    if (get().inworldVoiceId === next) return;
+    if (isBrowser) localStorage.setItem("inworldVoiceId", next);
+    set({ inworldVoiceId: next });
   },
 
   setGcalAccounts: (accounts: CalendarAccount[]) => {

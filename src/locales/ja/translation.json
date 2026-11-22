@@ -2059,7 +2059,12 @@
           "title": "システム設定での許可が必要です",
           "description": "macOS は OpenWhispr をログイン項目として登録しましたが、「ログイン項目」での許可を待っています。",
           "action": "ログイン項目を開く"
-        }
+        },
+        "launchAtLoginWindows": "Start with Windows",
+        "launchAtLoginWindowsDescription": "Launch Overlay minimized to the tray when you sign in",
+        "runAsAdministrator": "Run as administrator",
+        "runAsAdministratorDescription": "Relaunch Overlay elevated. If Start with Windows is also on, Overlay registers a logon task with highest privileges.",
+        "runAsAdministratorWarning": "Admin mode gives Overlay full control of the PC."
       },
       "waylandPaste": {
         "title": "Wayland 貼り付け設定",
@@ -2223,6 +2228,27 @@
         "forgetConfirm": "消す",
         "forgetDone": "完了しました。アシスタントは過去のチャットを忘れました。",
         "forgetFailed": "今は記憶を消せませんでした。少し待ってからもう一度お試しください。"
+      },
+      "spokenReplies": {
+        "title": "Spoken replies",
+        "description": "Have Overlay speak assistant answers aloud",
+        "enabled": "Speak assistant replies",
+        "enabledDescription": "Read answers out loud after the assistant finishes. Leave this off, or omit the API key, and Overlay behaves as before.",
+        "provider": "Voice provider",
+        "providerDescription": "Inworld generates the spoken voice in Overlay's main process.",
+        "providerInworld": "Inworld",
+        "voice": "Voice",
+        "voiceDescription": "The Inworld voice used for assistant replies",
+        "apiKey": "Inworld API key",
+        "apiKeyDescription": "Saved securely on this PC. After you save it, the key never comes back to this window.",
+        "apiKeyPlaceholder": "Paste your Inworld API key",
+        "apiKeySet": "A key is saved",
+        "apiKeySave": "Save key",
+        "apiKeyClear": "Remove key",
+        "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
+        "test": "Test voice",
+        "testPhrase": "Hello, this is Overlay.",
+        "testFailed": "Couldn't speak the test line. Check the API key and try again."
       }
     },
     "permissions": {
