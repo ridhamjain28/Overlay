@@ -8,7 +8,9 @@
   "productName": "Overlay",
   "protocols": {
     "name": "Overlay Protocol",
-    "schemes": ["overlay"]
+    "schemes": [
+      "overlay"
+    ]
   },
   "directories": {
     "output": "dist"
@@ -97,7 +99,10 @@
     {
       "from": "src/assets",
       "to": "src/assets",
-      "filter": ["**/*", "!fonts/yowza/**"]
+      "filter": [
+        "**/*",
+        "!fonts/yowza/**"
+      ]
     },
     {
       "from": "resources/bin/",
@@ -139,7 +144,11 @@
     {
       "from": "hinglish-asr",
       "to": "hinglish-asr",
-      "filter": ["requirements.txt", "server.py", "README.md"]
+      "filter": [
+        "requirements.txt",
+        "server.py",
+        "README.md"
+      ]
     },
     {
       "from": "resources/mediaremote-adapter/bin/mediaremote-adapter.pl",
@@ -152,7 +161,10 @@
   ],
   "mac": {
     "category": "public.app-category.productivity",
-    "target": ["dmg", "zip"],
+    "target": [
+      "dmg",
+      "zip"
+    ],
     "icon": "src/assets/icon.icns",
     "gatekeeperAssess": false,
     "hardenedRuntime": true,
@@ -176,7 +188,9 @@
     }
   },
   "win": {
-    "target": ["nsis"],
+    "target": [
+      "nsis"
+    ],
     "icon": "src/assets/icon.ico",
     "forceCodeSigning": false,
     "extraResources": [
@@ -184,10 +198,16 @@
         "from": "resources/bin/nircmd.exe",
         "to": "bin/nircmd.exe"
       }
-    ]
+    ],
+    "requestedExecutionLevel": "asInvoker"
   },
   "linux": {
-    "target": ["AppImage", "deb", "rpm", "tar.gz"],
+    "target": [
+      "AppImage",
+      "deb",
+      "rpm",
+      "tar.gz"
+    ],
     "icon": "src/assets/icon.png",
     "category": "Utility",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
@@ -214,7 +234,10 @@
   "deb": {
     "afterInstall": "resources/linux/after-install.sh",
     "afterRemove": "resources/linux/after-remove.sh",
-    "depends": ["ydotool", "libpipewire-0.3-0"],
+    "depends": [
+      "ydotool",
+      "libpipewire-0.3-0"
+    ],
     "fpm": [
       "--deb-recommends",
       "ydotoold",
@@ -261,7 +284,6 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "include": "resources/nsis/installer.nsh",
-    "requestedExecutionLevel": "asInvoker",
     "artifactName": "${productName}-Setup-${version}.${ext}",
     "shortcutName": "Overlay",
     "uninstallDisplayName": "Overlay"
