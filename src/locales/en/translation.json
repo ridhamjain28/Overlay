@@ -586,18 +586,6 @@
       "check": "Check again",
       "restart": "Restart Overlay",
       "restartRequired": "Restart Overlay to apply screen access."
-    },
-    "findApps": {
-      "titleScanning": "Finding your apps…",
-      "descriptionScanning": "Overlay is looking at the apps installed on this PC and matching them to ready commands.",
-      "progress": "Scanning {{stage}}…",
-      "titleDone": "Found {{count}} apps, {{ready}} have ready commands",
-      "descriptionDone": "These commands are copied to your computer. You can turn any of them off, and rescan later in Settings.",
-      "readyBadge": "Ready commands",
-      "genericBadge": "Open only",
-      "webBadge": "Web",
-      "error": "Couldn't finish scanning apps. You can try again from Settings.",
-      "retry": "Try again"
     }
   },
   "streaming": {
@@ -4265,22 +4253,60 @@
       "forgetChats": "Forget assistant memory",
       "forgetChatsDescription": "The assistant stops recalling things from past chats. The chats stay in Home.",
       "forgetButton": "Forget"
+    }
+  },
+  "appSkills": {
+    "title": "Apps & Skills",
+    "notAvailable": "App skills aren't available in this build.",
+    "settings": {
+      "description": "See which apps Overlay can control by voice, turn them on or off, and test each command."
     },
-    "appsSkills": {
-      "title": "Apps & Skills",
-      "description": "Commands Overlay can run in the apps on this PC.",
-      "rescan": "Rescan apps",
-      "scanning": "Scanning…",
-      "summary": "{{count}} apps, {{ready}} with ready commands",
-      "enabled": "Enabled",
-      "test": "Test",
-      "testOk": "Ran {{action}}",
-      "testFailed": "Couldn't run that action",
-      "learnedTitle": "Learned examples",
-      "learnedEmpty": "No learned examples yet.",
-      "learnedDelete": "Delete",
-      "search": "Filter apps",
-      "noApps": "No apps found yet. Rescan to search this PC."
+    "onboarding": {
+      "title": "Finding your apps…",
+      "description": "Overlay is looking at the apps on this PC so it can open them and do things in them for you.",
+      "summary": "Found {{found}} apps, {{withCommands}} have ready commands"
+    },
+    "phase": {
+      "default": "Working…",
+      "shortcuts": "Reading Start Menu shortcuts",
+      "apppaths": "Checking installed programs",
+      "startapps": "Checking Store apps",
+      "protocols": "Finding app links",
+      "matching": "Matching apps to commands",
+      "writing": "Saving the results"
+    },
+    "scanFailed": "Couldn't scan your apps.",
+    "loadFailed": "Couldn't load some app data.",
+    "unknownError": "Something went wrong.",
+    "searchPlaceholder": "Search apps…",
+    "noAppsFound": "No apps match your search.",
+    "noScanYet": "No apps scanned yet. Press Rescan apps.",
+    "matched": "Ready commands",
+    "unmatched": "No commands yet",
+    "readyCommands": "Commands: {{n}}",
+    "noCommandsYet": "No ready commands",
+    "enableApp": "Turn {{name}} on or off",
+    "enableAction": "Turn \"{{action}}\" on or off",
+    "showCommands": "Show commands for {{name}}",
+    "hideCommands": "Hide commands for {{name}}",
+    "risk": {
+      "safe": "Safe",
+      "confirm": "Asks first"
+    },
+    "example": "Example: {{utterance}}",
+    "test": "Test",
+    "testing": "Testing…",
+    "testOk": "It worked",
+    "testFailed": "Failed: {{error}}",
+    "lastScan": "Last scanned",
+    "neverScanned": "Not scanned yet",
+    "rescan": "Rescan apps",
+    "scanning": "Scanning…",
+    "learned": {
+      "title": "Learned commands",
+      "description": "Corrections Overlay saved from your commands, so it gets them right next time.",
+      "empty": "Nothing learned yet. Corrected commands will show up here.",
+      "deleteLabel": "Delete the learned command \"{{utterance}}\""
     }
   }
 }

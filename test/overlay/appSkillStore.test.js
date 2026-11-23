@@ -3,13 +3,13 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { loadBundledCommandDb } = require("../../src/helpers/overlay/commandMode/commandDb");
+const { sampleCommandDb } = require("./fixtures/sampleCommandDb");
 const {
   buildPackFromScan,
-  summarizePack,
   setSkillEnabled,
   readSkill,
   mergeSkill,
+  toScanResult,
 } = require("../../src/helpers/overlay/appSkillStore");
 
 function tempDir() {
@@ -18,7 +18,7 @@ function tempDir() {
 
 test("pack generation copies DB templates and gives unmatched apps a generic launch", () => {
   const dir = tempDir();
-  const db = loadBundledCommandDb();
+  const db = sampleCommandDb();
   const { catalog, skills } = buildPackFromScan({
     baseDir: dir,
     db,
@@ -29,12 +29,15 @@ test("pack generation copies DB templates and gives unmatched apps a generic lau
     ],
     fsImpl: fs,
   });
-  const summary = summarizePack(catalog);
-  assert.ok(summary.count >= 2);
-  assert.ok(summary.ready >= 1);
+  const summary = toScanResult(catalog, skills);
+  assert.ok(summary.found >= 2);
+  assert.ok(summary.withCommands >= 1);
   const spotify = skills.find((s) => s.appId === "spotify");
   assert.equal(spotify.source, "db");
   assert.ok(spotify.actions.some((a) => a.id === "play_track"));
+  const row = summary.apps.find((app) => app.appId === "spotify");
+  assert.equal(row.matched, true);
+  assert.ok(row.actionsCount >= 2);
   const generic = skills.find((s) => s.appId === "ridham-secret-tool" || s.name === "Ridham Secret Tool");
   assert.ok(generic);
   assert.equal(generic.source, "generic");
@@ -46,7 +49,7 @@ test("pack generation copies DB templates and gives unmatched apps a generic lau
 
 test("rescan merges and keeps user edits", () => {
   const dir = tempDir();
-  const db = loadBundledCommandDb();
+  const db = sampleCommandDb();
   const apps = [{ id: "spotify", name: "Spotify", exeName: "spotify.exe", target: "C:\\\\Spotify\\\\Spotify.exe" }];
   buildPackFromScan({ baseDir: dir, db, catalogApps: apps, fsImpl: fs });
   setSkillEnabled(dir, "spotify", false, fs);
@@ -73,6 +76,19 @@ test("rescan merges and keeps user edits", () => {
   const play = merged.actions.find((a) => a.id === "play_track");
   assert.ok(play.examples.some((ex) => ex.utterance === "play my coding beats"));
   assert.ok(play.examples.some((ex) => /starboy/i.test(ex.utterance)));
+});
+
+test("setSkillEnabled can toggle a single action", () => {
+  const dir = tempDir();
+  const db = sampleCommandDb();
+  const apps = [{ id: "spotify", name: "Spotify", exeName: "spotify.exe", target: "C:\\\\Spotify\\\\Spotify.exe" }];
+  buildPackFromScan({ baseDir: dir, db, catalogApps: apps, fsImpl: fs });
+  const skill = setSkillEnabled(dir, "spotify", false, fs, "play_track");
+  const play = skill.actions.find((a) => a.id === "play_track");
+  assert.equal(play.enabled, false);
+  assert.equal(skill.enabled, true);
+  const launch = skill.actions.find((a) => a.id === "launch");
+  assert.notEqual(launch.enabled, false);
 });
 
 test("mergeSkill keeps enabled and unions aliases", () => {

@@ -140,7 +140,7 @@ async function scanInstalledApps(opts = {}) {
   const apps = [];
   const seen = new Set();
 
-  report({ stage: "start-menu", current: 0, total: 4, message: "Reading Start Menu shortcuts" });
+  report({ phase: "shortcuts", done: 0, total: 6, message: "Reading Start Menu shortcuts" });
   const shortcuts = opts.shortcuts || listShortcuts(startMenuDirs(env), fsImpl);
   const readLink = opts.readShortcutLink;
   for (const shortcut of shortcuts) {
@@ -156,7 +156,7 @@ async function scanInstalledApps(opts = {}) {
     uniquePush(apps, seen, app, `exe:${app.exeName || app.target || app.id}`);
   }
 
-  report({ stage: "app-paths", current: 1, total: 4, message: "Reading App Paths" });
+  report({ phase: "apppaths", done: 1, total: 6, message: "Reading App Paths" });
   const appPaths =
     opts.appPaths ||
     (await defaultExecJson(opts.execFile, opts.appPathsScript || defaultListAppPathsScript()));
@@ -165,7 +165,7 @@ async function scanInstalledApps(opts = {}) {
     uniquePush(apps, seen, app, `exe:${app.exeName || app.id}`);
   }
 
-  report({ stage: "start-apps", current: 2, total: 4, message: "Reading installed apps" });
+  report({ phase: "startapps", done: 2, total: 6, message: "Reading installed apps" });
   const startApps =
     opts.startApps ||
     (await defaultExecJson(opts.execFile, opts.startAppsScript || defaultStartAppsScript()));
@@ -175,7 +175,7 @@ async function scanInstalledApps(opts = {}) {
     uniquePush(apps, seen, app, key);
   }
 
-  report({ stage: "protocols", current: 3, total: 4, message: "Reading URL protocols" });
+  report({ phase: "protocols", done: 3, total: 6, message: "Reading URL protocols" });
   const protocols =
     opts.protocols ||
     (await defaultExecJson(opts.execFile, opts.protocolsScript || defaultProtocolsScript()));
@@ -184,7 +184,7 @@ async function scanInstalledApps(opts = {}) {
     if (app) uniquePush(apps, seen, app, `proto:${app.protocols[0]}`);
   }
 
-  report({ stage: "done", current: 4, total: 4, message: "Scan complete" });
+  report({ phase: "protocols", done: 4, total: 6, message: "Scan sources complete" });
   return { scannedAt: new Date(opts.now || Date.now()).toISOString(), apps };
 }
 

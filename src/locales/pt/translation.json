@@ -580,18 +580,6 @@
       "check": "Verificar novamente",
       "restart": "Reiniciar app",
       "restartRequired": "Reinicie o Overlay para aplicar o acesso à tela."
-    },
-    "findApps": {
-      "titleScanning": "A procurar as tuas aplicações…",
-      "descriptionScanning": "O Overlay está a analisar as aplicações instaladas neste PC e a compará-las com comandos prontos.",
-      "progress": "A analisar {{stage}}…",
-      "titleDone": "Foram encontradas {{count}} aplicações, {{ready}} têm comandos prontos",
-      "descriptionDone": "Estes comandos são copiados para o teu computador. Podes desativar qualquer um e voltar a analisar mais tarde nas Definições.",
-      "readyBadge": "Comandos prontos",
-      "genericBadge": "Apenas abrir",
-      "webBadge": "Web",
-      "error": "Não foi possível concluir a análise das aplicações. Podes tentar novamente nas Definições.",
-      "retry": "Tentar novamente"
     }
   },
   "streaming": {
@@ -4265,22 +4253,60 @@
       "forgetChats": "Esquecer a memória do assistente",
       "forgetChatsDescription": "O assistente deixa de lembrar de chats anteriores. Os chats continuam no Início.",
       "forgetButton": "Esquecer"
+    }
+  },
+  "appSkills": {
+    "title": "Apps e habilidades",
+    "notAvailable": "As habilidades de apps não estão disponíveis nesta versão.",
+    "settings": {
+      "description": "Veja quais apps o Overlay pode controlar por voz, ative ou desative cada um e teste cada comando."
     },
-    "appsSkills": {
-      "title": "Apps e competências",
-      "description": "Comandos que o Overlay pode executar nas aplicações deste PC.",
-      "rescan": "Analisar apps novamente",
-      "scanning": "A analisar…",
-      "summary": "{{count}} aplicações, {{ready}} com comandos prontos",
-      "enabled": "Ativado",
-      "test": "Testar",
-      "testOk": "Executou {{action}}",
-      "testFailed": "Não foi possível executar essa ação",
-      "learnedTitle": "Exemplos aprendidos",
-      "learnedEmpty": "Ainda não há exemplos aprendidos.",
-      "learnedDelete": "Eliminar",
-      "search": "Filtrar aplicações",
-      "noApps": "Ainda não há aplicações. Analisa este PC novamente."
+    "onboarding": {
+      "title": "Procurando seus apps…",
+      "description": "O Overlay está analisando os apps deste PC para poder abri-los e fazer tarefas neles por você.",
+      "summary": "{{found}} apps encontrados, {{withCommands}} têm comandos prontos"
+    },
+    "phase": {
+      "default": "Trabalhando…",
+      "shortcuts": "Lendo atalhos do menu Iniciar",
+      "apppaths": "Verificando os programas instalados",
+      "startapps": "Verificando os apps da Loja",
+      "protocols": "Procurando links de apps",
+      "matching": "Associando apps a comandos",
+      "writing": "Salvando os resultados"
+    },
+    "scanFailed": "Não foi possível analisar seus apps.",
+    "loadFailed": "Não foi possível carregar alguns dados de apps.",
+    "unknownError": "Algo deu errado.",
+    "searchPlaceholder": "Pesquisar apps…",
+    "noAppsFound": "Nenhum app corresponde à sua pesquisa.",
+    "noScanYet": "Nenhum app analisado ainda. Clique em \"Analisar apps novamente\".",
+    "matched": "Comandos prontos",
+    "unmatched": "Ainda sem comandos",
+    "readyCommands": "Comandos: {{n}}",
+    "noCommandsYet": "Sem comandos prontos",
+    "enableApp": "Ativar ou desativar {{name}}",
+    "enableAction": "Ativar ou desativar \"{{action}}\"",
+    "showCommands": "Mostrar comandos de {{name}}",
+    "hideCommands": "Ocultar comandos de {{name}}",
+    "risk": {
+      "safe": "Seguro",
+      "confirm": "Pergunta antes"
+    },
+    "example": "Exemplo: {{utterance}}",
+    "test": "Testar",
+    "testing": "Testando…",
+    "testOk": "Funcionou",
+    "testFailed": "Falhou: {{error}}",
+    "lastScan": "Última análise",
+    "neverScanned": "Ainda não analisado",
+    "rescan": "Analisar apps novamente",
+    "scanning": "Analisando…",
+    "learned": {
+      "title": "Comandos aprendidos",
+      "description": "Correções que o Overlay salvou dos seus comandos, para acertar da próxima vez.",
+      "empty": "Nada aprendido ainda. Os comandos corrigidos aparecerão aqui.",
+      "deleteLabel": "Excluir o comando aprendido \"{{utterance}}\""
     }
   }
 }

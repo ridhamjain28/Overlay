@@ -3425,31 +3425,8 @@ declare global {
         cloudProvider?: string;
       }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
       overlayCommandCancel?: () => Promise<{ ok: boolean }>;
-      overlayAppInventoryGet?: () => Promise<{
-        catalog?: { scannedAt?: string | null; apps?: Array<Record<string, unknown>> };
-        skills?: Array<Record<string, unknown>>;
-        summary?: { count: number; ready: number };
-      }>;
-      overlayAppInventoryScan?: (opts?: Record<string, unknown>) => Promise<{
-        catalog?: { scannedAt?: string | null; apps?: Array<Record<string, unknown>> };
-        skills?: Array<Record<string, unknown>>;
-        summary?: { count: number; ready: number };
-      }>;
-      onOverlayAppInventoryProgress?: (
-        callback: (payload: { stage?: string; message?: string; current?: number; total?: number }) => void
-      ) => () => void;
-      overlayAppSkillsSetEnabled?: (payload: {
-        appId: string;
-        enabled: boolean;
-      }) => Promise<{ ok: boolean; skill?: Record<string, unknown> }>;
-      overlayAppSkillsTest?: (payload: {
-        appId: string;
-        actionId?: string;
-        params?: Record<string, string>;
-      }) => Promise<{ success: boolean; message?: string; error?: string }>;
-      overlayLearnedExamplesList?: () => Promise<{ examples?: Array<Record<string, unknown>> }>;
-      overlayLearnedExamplesDelete?: (id: string) => Promise<{ ok: boolean; removed?: number }>;
-      overlayLearnedExamplesRecord?: (entry: Record<string, unknown>) => Promise<{ ok: boolean }>;
+      /** App skills: scan installed apps, enable/disable their commands, review learned commands. */
+      overlayApps?: import("./overlayApps").OverlayAppsApi;
       onOverlayCommandProgress?: (
         callback: (payload: { phase?: string; code?: string }) => void
       ) => () => void;

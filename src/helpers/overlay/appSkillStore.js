@@ -208,19 +208,49 @@ function summarizePack(catalog) {
   return { count: apps.length, ready };
 }
 
-function setSkillEnabled(baseDir, appId, enabled, fsImpl = fs) {
+function setSkillEnabled(baseDir, appId, enabled, fsImpl = fs, actionId) {
   const skill = readSkill(baseDir, appId, fsImpl);
   if (!skill) return null;
-  skill.enabled = enabled === true;
+  const on = enabled === true;
+  if (actionId) {
+    const action = (skill.actions || []).find((item) => item.id === actionId);
+    if (!action) return null;
+    action.enabled = on;
+  } else {
+    skill.enabled = on;
+  }
   writeSkill(baseDir, skill, fsImpl);
   const catalog = readJson(catalogPath(baseDir), fsImpl);
-  if (catalog && Array.isArray(catalog.apps)) {
+  if (catalog && Array.isArray(catalog.apps) && !actionId) {
     catalog.apps = catalog.apps.map((app) =>
       app.id === appId ? { ...app, enabled: skill.enabled } : app
     );
     writeJson(catalogPath(baseDir), catalog, fsImpl);
   }
   return skill;
+}
+
+function toScanResult(catalog, skills = []) {
+  if (!catalog) return null;
+  const byId = new Map((skills || []).map((skill) => [skill.appId, skill]));
+  const apps = (catalog.apps || []).map((app) => {
+    const skill = byId.get(app.id || app.appId);
+    const actions = skill?.actions || [];
+    return {
+      appId: app.id || app.appId,
+      name: app.name || skill?.name || "",
+      matched: app.ready === true || skill?.source === "db",
+      actionsCount: actions.length,
+      enabled: (skill?.enabled ?? app.enabled) !== false,
+      source: app.source || skill?.source || "generic",
+    };
+  });
+  return {
+    scannedAt: catalog.scannedAt || null,
+    found: apps.length,
+    withCommands: apps.filter((app) => app.matched).length,
+    apps,
+  };
 }
 
 function getCatalog(baseDir, fsImpl = fs) {
@@ -239,6 +269,7 @@ module.exports = {
   buildPackFromScan,
   summarizePack,
   setSkillEnabled,
+  toScanResult,
   listLocalSkills,
   readSkill,
   writeSkill,

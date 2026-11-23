@@ -6,7 +6,7 @@ test("scanInstalledApps uses mocked Start Menu, App Paths, UWP and protocols", a
   const stages = [];
   const result = await scanInstalledApps({
     now: "2026-11-23T11:00:00.000Z",
-    onProgress: (p) => stages.push(p.stage),
+    onProgress: (p) => stages.push(p.phase),
     shortcuts: [{ name: "google chrome", path: "C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Chrome.lnk" }],
     readShortcutLink: () => ({ target: "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe" }),
     appPaths: [{ exe: "code.exe", path: "C:\\\\Program Files\\\\Microsoft VS Code\\\\Code.exe" }],
@@ -23,8 +23,8 @@ test("scanInstalledApps uses mocked Start Menu, App Paths, UWP and protocols", a
   assert.equal(bySource.app_paths.exeName, "code.exe");
   assert.equal(bySource.start_apps.aumid, "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify");
   assert.deepEqual(bySource.protocol.protocols, ["whatsapp:"]);
-  assert.ok(stages.includes("start-menu"));
-  assert.ok(stages.includes("done"));
+  assert.ok(stages.includes("shortcuts"));
+  assert.ok(stages.includes("protocols"));
 });
 
 test("helpers map registry and Get-StartApps rows", () => {

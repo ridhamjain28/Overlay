@@ -14,7 +14,7 @@ import LinuxPttSetupInfo from "../ui/LinuxPttSetupInfo";
 import { BIDI_VALUE_TOKEN, BidiInterpolatedText } from "../ui/BidiInterpolatedText";
 import { SectionHeader, SettingsPanel, SettingsPanelRow, SettingsRow } from "../ui/SettingsSection";
 import SpokenRepliesSettings from "./SpokenRepliesSettings";
-import AppSkillsSettings from "./AppSkillsSettings";
+import AppsSkillsSettings from "./AppsSkillsSettings";
 import MicrophoneSettings from "../ui/MicrophoneSettings";
 import {
   MIN_ASSISTANT_CHAT_IDLE_MINUTES,
@@ -471,7 +471,7 @@ export default function PreferencesSettings() {
       </div>
 
       <div>
-        <AppSkillsSettings />
+        <AppsSkillsSettings />
         <SectionHeader title={t("simpleSettings.data.title")} />
         <SettingsPanel>
           <SettingsPanelRow>

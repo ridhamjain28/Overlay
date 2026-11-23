@@ -1,20 +1,28 @@
 // Versioned command database: bundled file plus a disabled-by-default
 // remoteUrl hook for a future cloud host. An empty remoteUrl never fetches.
+//
+// File schema:
+//   { version, updatedAt, remoteUrl?, apps:[{ appId, name, aliases[],
+//      match:{ exe?, aumidPrefix?, protocols?, nameRegex? }, actions:[] }] }
 
 const fs = require("fs");
 const path = require("path");
 
 const BUNDLED_DB_PATH = path.join(__dirname, "skills", "db", "overlay-command-db.json");
 
+function asList(value) {
+  if (value == null || value === "") return [];
+  if (Array.isArray(value)) return value.map((item) => String(item));
+  return [String(value)];
+}
+
 function normalizeMatch(match) {
   const src = match && typeof match === "object" ? match : {};
   return {
-    exeNames: Array.isArray(src.exeNames) ? src.exeNames.map((v) => String(v)) : [],
-    aumidPrefixes: Array.isArray(src.aumidPrefixes) ? src.aumidPrefixes.map((v) => String(v)) : [],
-    protocols: Array.isArray(src.protocols) ? src.protocols.map((v) => String(v)) : [],
-    displayNameRegexes: Array.isArray(src.displayNameRegexes)
-      ? src.displayNameRegexes.map((v) => String(v))
-      : [],
+    exe: asList(src.exe || src.exeNames),
+    aumidPrefix: asList(src.aumidPrefix || src.aumidPrefixes),
+    protocols: asList(src.protocols),
+    nameRegex: asList(src.nameRegex || src.displayNameRegexes || src.nameRegexes),
   };
 }
 
@@ -23,6 +31,7 @@ function normalizeDb(raw) {
   const apps = Array.isArray(data.apps) ? data.apps : [];
   return {
     version: Number.isFinite(Number(data.version)) ? Number(data.version) : 1,
+    updatedAt: data.updatedAt ? String(data.updatedAt) : "",
     remoteUrl: data.remoteUrl == null ? "" : String(data.remoteUrl),
     apps: apps
       .filter((app) => app && app.appId)
@@ -73,19 +82,19 @@ function normalizeProtocol(value) {
 function appMatchesTemplate(discovered, template) {
   if (!discovered || !template) return false;
   const match = template.match || normalizeMatch();
-  const exe = String(discovered.exeName || path.basename(discovered.target || "")).toLowerCase();
-  if (match.exeNames.some((name) => name.toLowerCase() === exe)) return true;
+  const exe = String(discovered.exeName || path.basename(String(discovered.target || "").replace(/\\/g, "/"))).toLowerCase();
+  if (match.exe.some((name) => name.toLowerCase() === exe)) return true;
   const aumid = String(discovered.aumid || "");
   if (
     aumid &&
-    match.aumidPrefixes.some((prefix) => aumid.toLowerCase().startsWith(String(prefix).toLowerCase()))
+    match.aumidPrefix.some((prefix) => aumid.toLowerCase().startsWith(String(prefix).toLowerCase()))
   ) {
     return true;
   }
   const protocols = (discovered.protocols || []).map(normalizeProtocol);
   if (match.protocols.some((protocol) => protocols.includes(normalizeProtocol(protocol)))) return true;
   const name = String(discovered.name || "");
-  for (const pattern of match.displayNameRegexes) {
+  for (const pattern of match.nameRegex) {
     try {
       if (name && new RegExp(pattern, "i").test(name)) return true;
     } catch {
@@ -109,8 +118,10 @@ module.exports = {
   loadCommandDb,
   isRemoteEnabled,
   normalizeDb,
+  normalizeMatch,
   appMatchesTemplate,
   findTemplatesForApp,
   listAlwaysAvailable,
   normalizeProtocol,
+  asList,
 };

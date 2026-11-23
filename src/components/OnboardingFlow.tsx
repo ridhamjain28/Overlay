@@ -9,7 +9,7 @@ import CompactPermissionsStep from "./onboarding/CompactPermissionsStep";
 import LanguageSelectionStep from "./onboarding/LanguageSelectionStep";
 import { preferredLanguageFromSpoken } from "../helpers/overlay/hinglishRoute.js";
 import RequirementsChecklist from "./overlay/RequirementsChecklist";
-import FindAppsStep from "./onboarding/FindAppsStep";
+import FindingAppsStep from "./onboarding/FindingAppsStep";
 import ShortcutSetupStep from "./onboarding/ShortcutSetupStep";
 import AssistantHotkeyPreview from "./onboarding/AssistantHotkeyPreview";
 import DemoStep from "./onboarding/DemoStep";
@@ -66,6 +66,7 @@ import {
   type OnboardingSetupMode,
   type OnboardingStepId,
 } from "./onboarding/flow";
+import type { OverlayAppsScanStatus } from "../hooks/useOverlayAppsScan";
 import { useOnboardingSession } from "./onboarding/useOnboardingSession";
 import { usePermissionGuide } from "./onboarding/usePermissionGuide";
 import {
@@ -337,6 +338,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const setupDecisionPending =
     workspaceResolutionPending && isSetupDecisionStep(currentStepId, route);
   const notesFooterAction = getNotesFooterAction({ setupDecisionPending, hasConnectedCalendar });
+  // The Finding-apps step reports its scan status so the footer can offer Skip
+  // while it scans or fails, and Continue once it is done (or unavailable).
+  const [findingAppsStatus, setFindingAppsStatus] = useState<OverlayAppsScanStatus>("idle");
+  const findingAppsDone = findingAppsStatus === "done" || findingAppsStatus === "unavailable";
   // Screen context only reaches the model once macOS has been relaunched after
   // the grant; until then the demo must not promise the assistant can see the card.
   const screenContextActive =
@@ -902,8 +907,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       case "local-dictation":
       case "local-assistant":
         return stageReady;
-      case "find-apps":
-        return stageReady;
+      case "finding-apps":
+        return findingAppsDone;
       default:
         return true;
     }
@@ -1262,17 +1267,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </div>
         );
 
-      case "find-apps":
-        return (
-          <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden pt-2">
-            <OnboardingStepHeader
-              title={t("onboarding.findApps.titleScanning")}
-              wideTitle
-              description={t("onboarding.findApps.descriptionScanning")}
-            />
-            <FindAppsStep onReadinessChange={setStageReady} />
-          </div>
-        );
+      case "finding-apps":
+        return <FindingAppsStep onStatusChange={setFindingAppsStatus} />;
 
       case "requirements":
         return (
@@ -1319,6 +1315,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const hotkeyStep = currentStepId === "dictation-hotkey" || currentStepId === "assistant-hotkey";
   const demoStep = currentStepId === "dictation-demo" || currentStepId === "assistant-demo";
   const notesStep = currentStepId === "notes";
+  const findingAppsStep = currentStepId === "finding-apps";
   const inlineGatedStep = hotkeyStep || demoStep;
   const choiceStep = currentStepId === "setup-choice";
   const inlineProviderStep =
@@ -1333,13 +1330,16 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     !choiceStep &&
     !inlineProviderStep &&
     (!inlineGatedStep || canContinue || setupDecisionPending) &&
-    (!notesStep || notesFooterAction !== "skip");
+    (!notesStep || notesFooterAction !== "skip") &&
+    (!findingAppsStep || findingAppsDone);
   // Practice remains skippable if it cannot complete. Calendar connections are
   // optional, so Notes starts with Skip and replaces it with Continue on connect.
   // While the setup decision is pending, a disabled Continue stands in for Skip.
   const showsSkip =
     !setupDecisionPending &&
-    ((demoStep && !canContinue) || (notesStep && notesFooterAction === "skip"));
+    ((demoStep && !canContinue) ||
+      (notesStep && notesFooterAction === "skip") ||
+      (findingAppsStep && !findingAppsDone));
 
   return (
     <>

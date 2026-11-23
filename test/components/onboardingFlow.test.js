@@ -19,7 +19,7 @@ test("account flow includes the complete guided setup", async () => {
       "assistant-hotkey",
       "assistant-demo",
       "setup-choice",
-      "find-apps",
+      "finding-apps",
     ]
   );
 });
@@ -67,12 +67,12 @@ test("Overlay's guest flow is permissions, language, both hotkeys and local setu
     "dictation-hotkey",
     "assistant-hotkey",
     "local-dictation",
-    "find-apps",
+    "finding-apps",
     "requirements",
   ]);
   assert.deepEqual(
     getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: false }),
-    ["permissions", "languages", "dictation-hotkey", "local-dictation", "find-apps", "requirements"]
+    ["permissions", "languages", "dictation-hotkey", "local-dictation", "finding-apps", "requirements"]
   );
 });
 test("policy removes assistant states", async () => {
@@ -80,14 +80,14 @@ test("policy removes assistant states", async () => {
   const route = getOnboardingRoute({ authPath: "account", setupMode: null, agentAllowed: false });
   assert.equal(route.includes("assistant-hotkey"), false);
   assert.equal(route.includes("assistant-demo"), false);
-  assert.equal(route.at(-1), "find-apps");
+  assert.equal(route.at(-1), "finding-apps");
 });
 
 test("setup choice appends the selected two-stage route", async () => {
   const { getOnboardingRoute } = await load();
   assert.deepEqual(
     getOnboardingRoute({ authPath: "account", setupMode: "local", agentAllowed: false }).slice(-2),
-    ["local-dictation", "find-apps"]
+    ["local-dictation", "finding-apps"]
   );
 });
 
@@ -99,7 +99,7 @@ test("a confirmed enterprise workspace ends the account route at the last guided
     agentAllowed: true,
     skipSetupChoice: true,
   });
-  assert.equal(route.at(-1), "find-apps");
+  assert.equal(route.at(-1), "finding-apps");
   assert.equal(route.includes("setup-choice"), false);
   assert.equal(
     getOnboardingRoute({
@@ -108,7 +108,7 @@ test("a confirmed enterprise workspace ends the account route at the last guided
       agentAllowed: false,
       skipSetupChoice: true,
     }).at(-1),
-    "find-apps"
+    "finding-apps"
   );
 });
 
@@ -361,8 +361,8 @@ test("route helpers recover from ineligible steps", async () => {
   const route = getOnboardingRoute({ authPath: "guest", setupMode: null, agentAllowed: true });
   assert.equal(reconcileStepWithRoute("assistant-demo", route), "assistant-hotkey");
   assert.equal(getNextOnboardingStep("permissions", route), "languages");
-  assert.equal(getNextOnboardingStep("local-dictation", route), "find-apps");
-  assert.equal(getNextOnboardingStep("find-apps", route), "requirements");
+  assert.equal(getNextOnboardingStep("local-dictation", route), "finding-apps");
+  assert.equal(getNextOnboardingStep("finding-apps", route), "requirements");
   assert.equal(getNextOnboardingStep("requirements", route), null);
 });
 test("progress counts every step the user is shown, once each", async () => {
@@ -381,7 +381,7 @@ test("progress counts every step the user is shown, once each", async () => {
   );
   assert.deepEqual(getOnboardingProgress("languages", route), { index: 0, total: 9 });
   assert.deepEqual(getOnboardingProgress("setup-choice", route), { index: 7, total: 9 });
-  assert.deepEqual(getOnboardingProgress("find-apps", route), { index: 8, total: 9 });
+  assert.deepEqual(getOnboardingProgress("finding-apps", route), { index: 8, total: 9 });
 });
 
 test("progress total tracks the conditional parts of the route", async () => {
@@ -408,7 +408,7 @@ test("progress counts only the guest steps that draw a footer", async () => {
   assert.equal(getOnboardingProgress("permissions", guest), null);
   assert.deepEqual(getOnboardingProgress("languages", guest), { index: 0, total: 6 });
   assert.deepEqual(getOnboardingProgress("local-dictation", guest), { index: 3, total: 6 });
-  assert.deepEqual(getOnboardingProgress("find-apps", guest), { index: 4, total: 6 });
+  assert.deepEqual(getOnboardingProgress("finding-apps", guest), { index: 4, total: 6 });
   assert.deepEqual(getOnboardingProgress("requirements", guest), { index: 5, total: 6 });
 
   // An off-route step has no position to report.
@@ -448,7 +448,7 @@ test("required-models coexists with policy- and enterprise-shortened routes", as
     skipSetupChoice: true,
   });
   assert.deepEqual(route.slice(0, 3), ["auth", "required-models", "permissions"]);
-  assert.equal(route.at(-1), "find-apps");
+  assert.equal(route.at(-1), "finding-apps");
   assert.equal(route.includes("assistant-hotkey"), false);
 });
 

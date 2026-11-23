@@ -586,18 +586,6 @@
       "check": "重新檢查",
       "restart": "重新啟動",
       "restartRequired": "重新啟動 Overlay 以套用螢幕存取權限。"
-    },
-    "findApps": {
-      "titleScanning": "正在尋找你的應用程式…",
-      "descriptionScanning": "Overlay 正在查看這台電腦上已安裝的應用程式，並與現成的指令進行比對。",
-      "progress": "正在掃描 {{stage}}…",
-      "titleDone": "找到 {{count}} 個應用程式，其中 {{ready}} 個已有現成指令",
-      "descriptionDone": "這些指令會複製到你的電腦。你可以關閉其中任何一項，也可以稍後在設定中重新掃描。",
-      "readyBadge": "現成指令",
-      "genericBadge": "僅開啟",
-      "webBadge": "網頁",
-      "error": "無法完成應用程式掃描。你可以在設定中再試一次。",
-      "retry": "再試一次"
     }
   },
   "streaming": {
@@ -4265,22 +4253,60 @@
       "forgetChats": "清除助理記憶",
       "forgetChatsDescription": "助理將不再記得過去的聊天。聊天仍保留在首頁。",
       "forgetButton": "清除"
+    }
+  },
+  "appSkills": {
+    "title": "應用程式與技能",
+    "notAvailable": "此版本不支援應用程式技能。",
+    "settings": {
+      "description": "查看 Overlay 可以用語音控制哪些應用程式，開啟或關閉它們，並測試每個指令。"
     },
-    "appsSkills": {
-      "title": "應用程式與技能",
-      "description": "Overlay 可在這台電腦的應用程式中執行的指令。",
-      "rescan": "重新掃描應用程式",
-      "scanning": "正在掃描…",
-      "summary": "{{count}} 個應用程式，其中 {{ready}} 個有現成指令",
-      "enabled": "已啟用",
-      "test": "測試",
-      "testOk": "已執行 {{action}}",
-      "testFailed": "無法執行該動作",
-      "learnedTitle": "已學習的範例",
-      "learnedEmpty": "尚無已學習的範例。",
-      "learnedDelete": "刪除",
-      "search": "篩選應用程式",
-      "noApps": "尚未找到應用程式。請重新掃描這台電腦。"
+    "onboarding": {
+      "title": "正在尋找你的應用程式…",
+      "description": "Overlay 正在查看這台電腦上的應用程式，以便為你開啟它們並在其中執行操作。",
+      "summary": "找到 {{found}} 個應用程式，其中 {{withCommands}} 個有現成指令"
+    },
+    "phase": {
+      "default": "處理中…",
+      "shortcuts": "正在讀取開始功能表捷徑",
+      "apppaths": "正在檢查已安裝的程式",
+      "startapps": "正在檢查 Microsoft Store 應用程式",
+      "protocols": "正在尋找應用程式連結",
+      "matching": "正在將應用程式與指令比對",
+      "writing": "正在儲存結果"
+    },
+    "scanFailed": "無法掃描你的應用程式。",
+    "loadFailed": "無法載入部分應用程式資料。",
+    "unknownError": "發生了一些問題。",
+    "searchPlaceholder": "搜尋應用程式…",
+    "noAppsFound": "沒有符合搜尋的應用程式。",
+    "noScanYet": "尚未掃描任何應用程式。請按一下「重新掃描應用程式」。",
+    "matched": "有現成指令",
+    "unmatched": "尚無指令",
+    "readyCommands": "指令：{{n}} 個",
+    "noCommandsYet": "沒有現成指令",
+    "enableApp": "開啟或關閉 {{name}}",
+    "enableAction": "開啟或關閉「{{action}}」",
+    "showCommands": "顯示 {{name}} 的指令",
+    "hideCommands": "隱藏 {{name}} 的指令",
+    "risk": {
+      "safe": "安全",
+      "confirm": "先詢問"
+    },
+    "example": "範例：{{utterance}}",
+    "test": "測試",
+    "testing": "測試中…",
+    "testOk": "成功了",
+    "testFailed": "失敗：{{error}}",
+    "lastScan": "上次掃描",
+    "neverScanned": "尚未掃描",
+    "rescan": "重新掃描應用程式",
+    "scanning": "掃描中…",
+    "learned": {
+      "title": "已學習的指令",
+      "description": "Overlay 根據你的指令儲存的更正，下次就能做對。",
+      "empty": "還沒有學到任何內容。更正過的指令會顯示在這裡。",
+      "deleteLabel": "刪除已學習的指令「{{utterance}}」"
     }
   }
 }

@@ -586,18 +586,6 @@
       "check": "再確認",
       "restart": "アプリを再起動",
       "restartRequired": "画面アクセスを適用するにはOverlayを再起動してください。"
-    },
-    "findApps": {
-      "titleScanning": "アプリを探しています…",
-      "descriptionScanning": "この PC にインストールされているアプリを調べ、用意済みのコマンドと照合しています。",
-      "progress": "{{stage}} をスキャンしています…",
-      "titleDone": "{{count}} 個のアプリが見つかり、{{ready}} 個にコマンドが用意されています",
-      "descriptionDone": "これらのコマンドはこのパソコンにコピーされます。オフにしたり、後で設定から再スキャンしたりできます。",
-      "readyBadge": "コマンドあり",
-      "genericBadge": "起動のみ",
-      "webBadge": "ウェブ",
-      "error": "アプリのスキャンを完了できませんでした。設定から再試行できます。",
-      "retry": "再試行"
     }
   },
   "streaming": {
@@ -4265,22 +4253,60 @@
       "forgetChats": "アシスタントの記憶を消去",
       "forgetChatsDescription": "アシスタントは過去のチャットを思い出さなくなります。チャットはホームに残ります。",
       "forgetButton": "消去する"
+    }
+  },
+  "appSkills": {
+    "title": "アプリとスキル",
+    "notAvailable": "このビルドではアプリスキルを利用できません。",
+    "settings": {
+      "description": "Overlayが音声で操作できるアプリを確認し、オン・オフを切り替えて、各コマンドをテストできます。"
     },
-    "appsSkills": {
-      "title": "アプリとスキル",
-      "description": "この PC のアプリで Overlay が実行できるコマンドです。",
-      "rescan": "アプリを再スキャン",
-      "scanning": "スキャン中…",
-      "summary": "{{count}} 個のアプリ、コマンドあり {{ready}} 個",
-      "enabled": "有効",
-      "test": "テスト",
-      "testOk": "{{action}} を実行しました",
-      "testFailed": "その操作を実行できませんでした",
-      "learnedTitle": "学習した例",
-      "learnedEmpty": "学習した例はまだありません。",
-      "learnedDelete": "削除",
-      "search": "アプリを絞り込む",
-      "noApps": "アプリはまだ見つかりません。この PC を再スキャンしてください。"
+    "onboarding": {
+      "title": "アプリを検索中…",
+      "description": "Overlayはこの PC のアプリを調べ、アプリを開いたり、その中で操作を代行したりできるようにしています。",
+      "summary": "{{found}} 個のアプリが見つかりました。{{withCommands}} 個にコマンドが用意されています"
+    },
+    "phase": {
+      "default": "処理中…",
+      "shortcuts": "スタートメニューのショートカットを読み取り中",
+      "apppaths": "インストール済みのプログラムを確認中",
+      "startapps": "ストアアプリを確認中",
+      "protocols": "アプリのリンクを検索中",
+      "matching": "アプリとコマンドを照合中",
+      "writing": "結果を保存中"
+    },
+    "scanFailed": "アプリをスキャンできませんでした。",
+    "loadFailed": "一部のアプリデータを読み込めませんでした。",
+    "unknownError": "問題が発生しました。",
+    "searchPlaceholder": "アプリを検索…",
+    "noAppsFound": "検索に一致するアプリがありません。",
+    "noScanYet": "まだアプリをスキャンしていません。「アプリを再スキャン」を押してください。",
+    "matched": "コマンドあり",
+    "unmatched": "コマンドなし",
+    "readyCommands": "コマンド: {{n}} 件",
+    "noCommandsYet": "用意されたコマンドなし",
+    "enableApp": "{{name}} のオン・オフを切り替え",
+    "enableAction": "「{{action}}」のオン・オフを切り替え",
+    "showCommands": "{{name}} のコマンドを表示",
+    "hideCommands": "{{name}} のコマンドを非表示",
+    "risk": {
+      "safe": "安全",
+      "confirm": "先に確認"
+    },
+    "example": "例: {{utterance}}",
+    "test": "テスト",
+    "testing": "テスト中…",
+    "testOk": "成功しました",
+    "testFailed": "失敗: {{error}}",
+    "lastScan": "最終スキャン",
+    "neverScanned": "まだスキャンしていません",
+    "rescan": "アプリを再スキャン",
+    "scanning": "スキャン中…",
+    "learned": {
+      "title": "学習したコマンド",
+      "description": "Overlayがあなたのコマンドから保存した修正です。次回から正しく実行されます。",
+      "empty": "まだ学習した内容はありません。修正したコマンドがここに表示されます。",
+      "deleteLabel": "学習したコマンド「{{utterance}}」を削除"
     }
   }
 }

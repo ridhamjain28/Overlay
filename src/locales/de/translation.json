@@ -586,18 +586,6 @@
       "check": "Erneut prüfen",
       "restart": "App neu starten",
       "restartRequired": "Starte Overlay für den Bildschirmzugriff neu."
-    },
-    "findApps": {
-      "titleScanning": "Deine Apps werden gesucht…",
-      "descriptionScanning": "Overlay prüft die auf diesem PC installierten Apps und vergleicht sie mit fertigen Befehlen.",
-      "progress": "Scan: {{stage}}…",
-      "titleDone": "{{count}} Apps gefunden, {{ready}} haben fertige Befehle",
-      "descriptionDone": "Diese Befehle werden auf deinem Computer gespeichert. Du kannst sie jederzeit deaktivieren und später in den Einstellungen erneut scannen.",
-      "readyBadge": "Fertige Befehle",
-      "genericBadge": "Nur öffnen",
-      "webBadge": "Web",
-      "error": "Der App-Scan konnte nicht abgeschlossen werden. Du kannst es in den Einstellungen erneut versuchen.",
-      "retry": "Erneut versuchen"
     }
   },
   "streaming": {
@@ -4265,22 +4253,60 @@
       "forgetChats": "Gedächtnis des Assistenten löschen",
       "forgetChatsDescription": "Der Assistent erinnert sich nicht mehr an frühere Chats. Die Chats bleiben auf der Startseite.",
       "forgetButton": "Vergessen"
+    }
+  },
+  "appSkills": {
+    "title": "Apps & Skills",
+    "notAvailable": "App-Skills sind in dieser Version nicht verfügbar.",
+    "settings": {
+      "description": "Sehen Sie, welche Apps Overlay per Sprache steuern kann, schalten Sie sie ein oder aus und testen Sie jeden Befehl."
     },
-    "appsSkills": {
-      "title": "Apps & Skills",
-      "description": "Befehle, die Overlay in den Apps auf diesem PC ausführen kann.",
-      "rescan": "Apps erneut scannen",
-      "scanning": "Wird gescannt…",
-      "summary": "{{count}} Apps, {{ready}} mit fertigen Befehlen",
-      "enabled": "Aktiviert",
-      "test": "Testen",
-      "testOk": "{{action}} ausgeführt",
-      "testFailed": "Diese Aktion konnte nicht ausgeführt werden",
-      "learnedTitle": "Gelernte Beispiele",
-      "learnedEmpty": "Noch keine gelernten Beispiele.",
-      "learnedDelete": "Löschen",
-      "search": "Apps filtern",
-      "noApps": "Noch keine Apps gefunden. Scanne diesen PC erneut."
+    "onboarding": {
+      "title": "Apps werden gesucht…",
+      "description": "Overlay sieht sich die Apps auf diesem PC an, damit es sie öffnen und Aufgaben darin für Sie erledigen kann.",
+      "summary": "{{found}} Apps gefunden, {{withCommands}} haben fertige Befehle"
+    },
+    "phase": {
+      "default": "Wird ausgeführt…",
+      "shortcuts": "Startmenü-Verknüpfungen werden gelesen",
+      "apppaths": "Installierte Programme werden geprüft",
+      "startapps": "Store-Apps werden geprüft",
+      "protocols": "App-Links werden gesucht",
+      "matching": "Apps werden Befehlen zugeordnet",
+      "writing": "Ergebnisse werden gespeichert"
+    },
+    "scanFailed": "Ihre Apps konnten nicht gescannt werden.",
+    "loadFailed": "Einige App-Daten konnten nicht geladen werden.",
+    "unknownError": "Etwas ist schiefgelaufen.",
+    "searchPlaceholder": "Apps suchen…",
+    "noAppsFound": "Keine Apps entsprechen Ihrer Suche.",
+    "noScanYet": "Noch keine Apps gescannt. Klicken Sie auf „Apps neu scannen“.",
+    "matched": "Fertige Befehle",
+    "unmatched": "Noch keine Befehle",
+    "readyCommands": "Befehle: {{n}}",
+    "noCommandsYet": "Keine fertigen Befehle",
+    "enableApp": "{{name}} ein- oder ausschalten",
+    "enableAction": "„{{action}}“ ein- oder ausschalten",
+    "showCommands": "Befehle für {{name}} anzeigen",
+    "hideCommands": "Befehle für {{name}} ausblenden",
+    "risk": {
+      "safe": "Sicher",
+      "confirm": "Fragt zuerst"
+    },
+    "example": "Beispiel: {{utterance}}",
+    "test": "Testen",
+    "testing": "Wird getestet…",
+    "testOk": "Hat funktioniert",
+    "testFailed": "Fehlgeschlagen: {{error}}",
+    "lastScan": "Zuletzt gescannt",
+    "neverScanned": "Noch nicht gescannt",
+    "rescan": "Apps neu scannen",
+    "scanning": "Wird gescannt…",
+    "learned": {
+      "title": "Gelernte Befehle",
+      "description": "Korrekturen, die Overlay aus Ihren Befehlen gespeichert hat, damit es sie beim nächsten Mal richtig versteht.",
+      "empty": "Noch nichts gelernt. Korrigierte Befehle erscheinen hier.",
+      "deleteLabel": "Den gelernten Befehl „{{utterance}}“ löschen"
     }
   }
 }

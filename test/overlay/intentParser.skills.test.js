@@ -4,13 +4,7 @@ const { parseIntentHeuristic, parseIntent, buildIntentParseMessages } = require(
 const { commandSkillSystemPrompt } = require("../../src/helpers/overlay/commandMode/skillLoader");
 const { parseAppSkillIntent } = require("../../src/helpers/overlay/commandMode/appSkillMatcher");
 const { createCommandDispatcher } = require("../../src/helpers/overlay/commandMode/actionDispatcher");
-const { loadBundledCommandDb } = require("../../src/helpers/overlay/commandMode/commandDb");
-const { skillFromTemplate } = require("../../src/helpers/overlay/appSkillStore");
-
-function spotifySkill() {
-  const db = loadBundledCommandDb();
-  return skillFromTemplate(db.apps.find((a) => a.appId === "spotify"), { target: "C:\\\\Spotify\\\\Spotify.exe" });
-}
+const { spotifySkill } = require("./fixtures/sampleCommandDb");
 
 test("exact skill examples and aliases match without the LLM", () => {
   const skills = [spotifySkill()];

@@ -1252,18 +1252,19 @@ contextBridge.exposeInMainWorld("electronAPI", {
   ),
   // Feature B: get configured state of third-party apps
   overlayGetAppConfigs: () => ipcRenderer.invoke("overlay-app-configs"),
-  overlayAppInventoryGet: () => ipcRenderer.invoke("overlay-app-inventory-get"),
-  overlayAppInventoryScan: (opts) => ipcRenderer.invoke("overlay-app-inventory-scan", opts),
-  onOverlayAppInventoryProgress: registerListener(
-    "overlay-app-inventory-progress",
-    (callback) => (_event, payload) => callback(payload)
-  ),
-  overlayAppSkillsSetEnabled: (payload) =>
-    ipcRenderer.invoke("overlay-app-skills-set-enabled", payload),
-  overlayAppSkillsTest: (payload) => ipcRenderer.invoke("overlay-app-skills-test", payload),
-  overlayLearnedExamplesList: () => ipcRenderer.invoke("overlay-learned-examples-list"),
-  overlayLearnedExamplesDelete: (id) => ipcRenderer.invoke("overlay-learned-examples-delete", id),
-  overlayLearnedExamplesRecord: (entry) => ipcRenderer.invoke("overlay-learned-examples-record", entry),
+  overlayApps: {
+    scan: () => ipcRenderer.invoke("overlay-apps-scan"),
+    onScanProgress: registerListener(
+      "overlay-apps-scan-progress",
+      (callback) => (_event, payload) => callback(payload)
+    ),
+    list: () => ipcRenderer.invoke("overlay-apps-list"),
+    setEnabled: (payload) => ipcRenderer.invoke("overlay-apps-set-enabled", payload),
+    test: (payload) => ipcRenderer.invoke("overlay-apps-test", payload),
+    learnedList: () => ipcRenderer.invoke("overlay-apps-learned-list"),
+    learnedDelete: (id) => ipcRenderer.invoke("overlay-apps-learned-delete", id),
+    getSummary: () => ipcRenderer.invoke("overlay-apps-get-summary"),
+  },
   // Feature C: intent detection, calendar/reminder scheduling and todos
   overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
   overlayIntentExtract: (text, opts) => ipcRenderer.invoke("overlay-intent-extract", text, opts),

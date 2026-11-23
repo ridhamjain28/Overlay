@@ -774,17 +774,13 @@ function registerOverlayIpc({
 
   function sendSkillProgress(event, payload) {
     try {
-      event.sender.send("overlay-app-inventory-progress", payload);
+      event.sender.send("overlay-apps-scan-progress", payload);
     } catch {
       // The window may have gone away.
     }
   }
 
-  ipcMain.handle("overlay-app-inventory-get", async () => {
-    return appSkills.listSkillsState(skillsDir);
-  });
-
-  ipcMain.handle("overlay-app-inventory-scan", async (event, _opts = {}) => {
+  ipcMain.handle("overlay-apps-scan", async (event) => {
     const result = await appSkills.rescanAndBuildPack({
       baseDir: skillsDir,
       scanOpts: {
@@ -794,33 +790,45 @@ function registerOverlayIpc({
       },
       onProgress: (progress) => sendSkillProgress(event, progress),
     });
-    return { catalog: result.catalog, skills: result.skills, summary: result.summary };
+    return result.scanResult;
   });
 
-  ipcMain.handle("overlay-app-skills-set-enabled", async (_event, payload = {}) => {
-    const skill = appSkills.setSkillEnabled(skillsDir, String(payload.appId || ""), payload.enabled === true);
-    return { ok: Boolean(skill), skill };
+  ipcMain.handle("overlay-apps-list", async () => {
+    return appSkills.listSkills(skillsDir);
   });
 
-  ipcMain.handle("overlay-app-skills-test", async (_event, payload = {}) => {
+  ipcMain.handle("overlay-apps-get-summary", async () => {
+    return appSkills.getSummary(skillsDir);
+  });
+
+  ipcMain.handle("overlay-apps-set-enabled", async (_event, payload = {}) => {
+    appSkills.setEnabled(skillsDir, {
+      appId: String(payload.appId || ""),
+      actionId: payload.actionId,
+      enabled: payload.enabled === true,
+    });
+  });
+
+  ipcMain.handle("overlay-apps-test", async (_event, payload = {}) => {
     const skill = readSkill(skillsDir, String(payload.appId || ""));
-    if (!skill) return { success: false, error: "Unknown app" };
+    if (!skill) return { ok: false, error: "Unknown app" };
     const actionId = String(payload.actionId || (skill.actions || []).find((a) => a.id === "launch" || a.id === "open")?.id || "");
-    return commandDispatcher.perform(
+    const result = await commandDispatcher.perform(
       { action: "app_action", args: { appId: skill.appId, actionId, params: payload.params || {} } },
       { confirmed: true, autoRunTrusted: true }
     );
+    return { ok: result?.success === true, error: result?.success ? undefined : result?.error };
   });
 
-  ipcMain.handle("overlay-learned-examples-list", async () => {
-    return { examples: readAll(skillsDir) };
+  ipcMain.handle("overlay-apps-learned-list", async () => {
+    return readAll(skillsDir);
   });
 
-  ipcMain.handle("overlay-learned-examples-delete", async (_event, id) => {
-    return deleteExample(skillsDir, String(id || ""));
+  ipcMain.handle("overlay-apps-learned-delete", async (_event, id) => {
+    deleteExample(skillsDir, String(id || ""));
   });
 
-  ipcMain.handle("overlay-learned-examples-record", async (_event, entry = {}) => {
+  ipcMain.handle("overlay-apps-learned-record", async (_event, entry = {}) => {
     return recordExample(skillsDir, entry);
   });
 

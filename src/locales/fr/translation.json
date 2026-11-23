@@ -586,18 +586,6 @@
       "check": "Vérifier",
       "restart": "Relancer l’app",
       "restartRequired": "Redémarrez Overlay pour appliquer l’accès à l’écran."
-    },
-    "findApps": {
-      "titleScanning": "Recherche de vos applications…",
-      "descriptionScanning": "Overlay examine les applications installées sur ce PC et les compare aux commandes prêtes à l’emploi.",
-      "progress": "Analyse de {{stage}}…",
-      "titleDone": "{{count}} applications trouvées, {{ready}} ont des commandes prêtes",
-      "descriptionDone": "Ces commandes sont copiées sur votre ordinateur. Vous pouvez en désactiver certaines et relancer l’analyse plus tard dans les paramètres.",
-      "readyBadge": "Commandes prêtes",
-      "genericBadge": "Ouverture uniquement",
-      "webBadge": "Web",
-      "error": "L’analyse des applications n’a pas pu se terminer. Vous pouvez réessayer dans les paramètres.",
-      "retry": "Réessayer"
     }
   },
   "streaming": {
@@ -4265,22 +4253,60 @@
       "forgetChats": "Oublier la mémoire de l’assistant",
       "forgetChatsDescription": "L’assistant ne se souviendra plus des discussions passées. Elles restent dans Accueil.",
       "forgetButton": "Oublier"
+    }
+  },
+  "appSkills": {
+    "title": "Apps et compétences",
+    "notAvailable": "Les compétences d'apps ne sont pas disponibles dans cette version.",
+    "settings": {
+      "description": "Voyez quelles apps Overlay peut piloter à la voix, activez-les ou désactivez-les, et testez chaque commande."
     },
-    "appsSkills": {
-      "title": "Applications et compétences",
-      "description": "Commandes qu’Overlay peut exécuter dans les applications de ce PC.",
-      "rescan": "Réanalyser les applications",
-      "scanning": "Analyse…",
-      "summary": "{{count}} applications, {{ready}} avec des commandes prêtes",
-      "enabled": "Activé",
-      "test": "Tester",
-      "testOk": "{{action}} exécuté",
-      "testFailed": "Impossible d’exécuter cette action",
-      "learnedTitle": "Exemples appris",
-      "learnedEmpty": "Aucun exemple appris pour le moment.",
-      "learnedDelete": "Supprimer",
-      "search": "Filtrer les applications",
-      "noApps": "Aucune application pour le moment. Relancez l’analyse de ce PC."
+    "onboarding": {
+      "title": "Recherche de vos apps…",
+      "description": "Overlay examine les apps de ce PC pour pouvoir les ouvrir et y effectuer des tâches à votre place.",
+      "summary": "{{found}} apps trouvées, {{withCommands}} ont des commandes prêtes"
+    },
+    "phase": {
+      "default": "En cours…",
+      "shortcuts": "Lecture des raccourcis du menu Démarrer",
+      "apppaths": "Vérification des programmes installés",
+      "startapps": "Vérification des apps du Store",
+      "protocols": "Recherche des liens d'apps",
+      "matching": "Association des apps aux commandes",
+      "writing": "Enregistrement des résultats"
+    },
+    "scanFailed": "Impossible d'analyser vos apps.",
+    "loadFailed": "Impossible de charger certaines données d'apps.",
+    "unknownError": "Une erreur s'est produite.",
+    "searchPlaceholder": "Rechercher des apps…",
+    "noAppsFound": "Aucune app ne correspond à votre recherche.",
+    "noScanYet": "Aucune app analysée pour l'instant. Cliquez sur « Réanalyser les apps ».",
+    "matched": "Commandes prêtes",
+    "unmatched": "Pas encore de commandes",
+    "readyCommands": "Commandes : {{n}}",
+    "noCommandsYet": "Aucune commande prête",
+    "enableApp": "Activer ou désactiver {{name}}",
+    "enableAction": "Activer ou désactiver « {{action}} »",
+    "showCommands": "Afficher les commandes de {{name}}",
+    "hideCommands": "Masquer les commandes de {{name}}",
+    "risk": {
+      "safe": "Sûr",
+      "confirm": "Demande d'abord"
+    },
+    "example": "Exemple : {{utterance}}",
+    "test": "Tester",
+    "testing": "Test en cours…",
+    "testOk": "Ça a fonctionné",
+    "testFailed": "Échec : {{error}}",
+    "lastScan": "Dernière analyse",
+    "neverScanned": "Pas encore analysé",
+    "rescan": "Réanalyser les apps",
+    "scanning": "Analyse en cours…",
+    "learned": {
+      "title": "Commandes apprises",
+      "description": "Les corrections qu'Overlay a enregistrées à partir de vos commandes, pour mieux les comprendre la prochaine fois.",
+      "empty": "Rien d'appris pour l'instant. Les commandes corrigées apparaîtront ici.",
+      "deleteLabel": "Supprimer la commande apprise « {{utterance}} »"
     }
   }
 }
