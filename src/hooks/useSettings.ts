@@ -400,6 +400,8 @@ function useSettingsInternal() {
     setAutoUpdatesEnabled: store.setAutoUpdatesEnabled,
     audioCuesEnabled: store.audioCuesEnabled,
     setAudioCuesEnabled: store.setAudioCuesEnabled,
+    soundEffectsEnabled: store.soundEffectsEnabled,
+    setSoundEffectsEnabled: store.setSoundEffectsEnabled,
     pauseMediaOnDictation: store.pauseMediaOnDictation,
     setPauseMediaOnDictation: store.setPauseMediaOnDictation,
     floatingIconAutoHide: store.floatingIconAutoHide,

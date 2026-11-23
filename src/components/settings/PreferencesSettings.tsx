@@ -190,6 +190,8 @@ export default function PreferencesSettings() {
   const setAskBeforeEveryAction = useSettingsStore((s) => s.setAskBeforeEveryAction);
   const autoSaveCreatedItems = useSettingsStore((s) => s.autoSaveCreatedItems);
   const setAutoSaveCreatedItems = useSettingsStore((s) => s.setAutoSaveCreatedItems);
+  const soundEffectsEnabled = useSettingsStore((s) => s.soundEffectsEnabled);
+  const setSoundEffectsEnabled = useSettingsStore((s) => s.setSoundEffectsEnabled);
 
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [autoStartNeedsApproval, setAutoStartNeedsApproval] = useState(false);
@@ -355,6 +357,23 @@ export default function PreferencesSettings() {
           description={t("settingsPage.general.spokenReplies.description")}
         />
         <SpokenRepliesSettings mode="all" />
+      </div>
+
+      <div>
+        <SectionHeader
+          title={t("simpleSettings.soundEffects.title")}
+          description={t("simpleSettings.soundEffects.dictationSoundsDescription")}
+        />
+        <SettingsPanel>
+          <SettingsPanelRow>
+            <SettingsRow
+              label={t("simpleSettings.soundEffects.dictationSounds")}
+              description={t("simpleSettings.soundEffects.dictationSoundsDescription")}
+            >
+              <Toggle checked={soundEffectsEnabled} onChange={setSoundEffectsEnabled} />
+            </SettingsRow>
+          </SettingsPanelRow>
+        </SettingsPanel>
       </div>
 
       <div>
