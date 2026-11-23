@@ -26,6 +26,7 @@
 const path = require("path");
 const fs = require("fs");
 const { execFile } = require("child_process");
+const { safeStorage, clipboard } = require("electron");
 const {
   streamOpenClaw,
   streamGemini,
@@ -677,7 +678,7 @@ function registerOverlayIpc({
     appDataDir: app.getPath("appData"),
     userDataDir: app.getPath("userData"),
     openBrowser: (url) => openExternalSoon(url),
-    safeStorage: electron.safeStorage,
+    safeStorage,
   });
   mcpManager.init().catch((err) => {
     debugLogger?.warn?.("MCP manager init failed", { error: err?.message });
@@ -1208,7 +1209,6 @@ function registerOverlayIpc({
         debugLogger,
         app,
       });
-      const { clipboard } = require("electron");
       if (clipboard && typeof clipboard.writeText === "function") {
         clipboard.writeText(report);
       }
