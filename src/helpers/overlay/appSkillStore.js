@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadBundledCommandDb, findTemplatesForApp, listAlwaysAvailable } = require("./commandMode/commandDb");
 const { slugify } = require("./appInventory");
+const customSkillsService = require("./customSkillsService");
 
 const CATALOG_NAME = "apps-catalog.json";
 const APPS_DIRNAME = "apps";
@@ -120,8 +121,23 @@ function mergeActions(existingActions = [], incomingActions = []) {
   return Array.from(byId.values());
 }
 
+function mergeCustomActions(existingActions = [], customActions = []) {
+  const byId = new Map();
+  for (const act of existingActions) {
+    if (act && act.id) byId.set(act.id, { ...act });
+  }
+  for (const act of customActions) {
+    if (act && act.id) {
+      const existing = byId.get(act.id);
+      byId.set(act.id, existing ? { ...existing, ...act, source: "custom" } : { ...act, source: "custom" });
+    }
+  }
+  return Array.from(byId.values());
+}
+
 function mergeSkill(existing, incoming) {
   if (!existing) return incoming;
+  const isCustomIncoming = incoming.source === "custom";
   return {
     ...incoming,
     enabled: existing.enabled != null ? existing.enabled : incoming.enabled,
@@ -129,12 +145,19 @@ function mergeSkill(existing, incoming) {
     target: incoming.target || existing.target,
     aumid: incoming.aumid || existing.aumid,
     protocols: Array.from(new Set([...(incoming.protocols || []), ...(existing.protocols || [])])),
-    actions: mergeActions(existing.actions, incoming.actions),
+    actions: isCustomIncoming
+      ? mergeCustomActions(existing.actions, incoming.actions)
+      : mergeActions(existing.actions, incoming.actions),
   };
 }
 
 function readSkill(baseDir, appId, fsImpl = fs) {
-  return readJson(skillPath(baseDir, appId), fsImpl);
+  const base = readJson(skillPath(baseDir, appId), fsImpl);
+  const customSkills = customSkillsService.loadCustomSkills(baseDir, fsImpl);
+  const custom = customSkills.find((s) => s && s.appId === appId);
+  if (!custom) return base;
+  if (!base) return custom;
+  return mergeSkill(base, custom);
 }
 
 function writeSkill(baseDir, skill, fsImpl = fs) {
@@ -148,12 +171,27 @@ function listLocalSkills(baseDir, fsImpl = fs) {
   try {
     names = fsImpl.readdirSync(dir);
   } catch {
-    return [];
+    names = [];
   }
-  return names
+  const localSkills = names
     .filter((name) => name.endsWith(".json"))
     .map((name) => readJson(path.join(dir, name), fsImpl))
     .filter(Boolean);
+
+  const customSkills = customSkillsService.loadCustomSkills(baseDir, fsImpl);
+  if (!customSkills.length) return localSkills;
+
+  const byId = new Map(localSkills.map((s) => [s.appId, s]));
+  for (const custom of customSkills) {
+    if (!custom || !custom.appId) continue;
+    const existing = byId.get(custom.appId);
+    if (existing) {
+      byId.set(custom.appId, mergeSkill(existing, custom));
+    } else {
+      byId.set(custom.appId, custom);
+    }
+  }
+  return Array.from(byId.values());
 }
 
 function buildPackFromScan({ catalogApps, db, baseDir, fsImpl = fs, now = new Date() }) {

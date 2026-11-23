@@ -40,6 +40,7 @@ const {
 } = require("./commandMode");
 const { createComposeCompleter } = require("./commandMode/composeClient");
 const appSkills = require("./appSkillsService");
+const customSkillsService = require("./customSkillsService");
 const { listLocalSkills, readSkill } = require("./appSkillStore");
 const { searchExamples, readAll, deleteExample, recordExample } = require("./learnedStore");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
@@ -828,6 +829,22 @@ function registerOverlayIpc({
 
   ipcMain.handle("overlay-apps-learned-record", async (_event, entry = {}) => {
     return recordExample(skillsDir, entry);
+  });
+
+  ipcMain.handle("overlay-apps-custom-get", async () => {
+    return customSkillsService.getCustomSkills(skillsDir);
+  });
+
+  ipcMain.handle("overlay-apps-custom-save", async (_event, text) => {
+    return customSkillsService.saveCustomSkills(skillsDir, text);
+  });
+
+  ipcMain.handle("overlay-apps-custom-validate", async (_event, text) => {
+    return customSkillsService.validateCustomSkillsText(text);
+  });
+
+  ipcMain.handle("overlay-apps-custom-open-file", async () => {
+    return customSkillsService.openCustomFile(skillsDir, shell);
   });
 
 

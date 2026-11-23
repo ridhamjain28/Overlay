@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, ChevronRight, Loader2, RefreshCw, Search, Trash2, X } from "../icons";
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Loader2,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Search,
+  Trash2,
+  X,
+} from "../icons";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Toggle } from "../ui/toggle";
@@ -223,6 +237,477 @@ function AppRowItem({
   );
 }
 
+function AddAppForm({
+  availableApps,
+  onAppAdded,
+}: {
+  availableApps: AppRow[];
+  onAppAdded: () => void;
+}) {
+  const { t } = useTranslation();
+  const [name, setName] = useState("");
+  const [aliases, setAliases] = useState("");
+  const [targetType, setTargetType] = useState<"installed" | "url" | "uri" | "command">("installed");
+  const [selectedAppId, setSelectedAppId] = useState("");
+  const [customTarget, setCustomTarget] = useState("");
+  const [actionId, setActionId] = useState("launch");
+  const [actionDesc, setActionDesc] = useState("");
+  const [paramName, setParamName] = useState("");
+  const [risk, setRisk] = useState<"safe" | "confirm">("safe");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleSelectApp = (appId: string) => {
+    setSelectedAppId(appId);
+    const found = availableApps.find((a) => a.appId === appId);
+    if (found) {
+      if (!name) setName(found.name);
+      if (!actionDesc) setActionDesc(`Open ${found.name}`);
+    }
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const api = getOverlayAppsApi();
+    if (!api) return;
+
+    if (!name.trim()) {
+      setFeedback({ type: "error", message: `${t("appSkills.custom.appName")} is required` });
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback(null);
+
+    try {
+      const current = await api.customGet();
+      let parsed: { version?: number; apps?: any[] } = { version: 1, apps: [] };
+      try {
+        parsed = JSON.parse(current.text);
+      } catch {
+        parsed = { version: 1, apps: [] };
+      }
+      if (!Array.isArray(parsed.apps)) parsed.apps = [];
+
+      let howType = "cli";
+      let howTemplate = "";
+      if (targetType === "installed") {
+        const found = availableApps.find((a) => a.appId === selectedAppId);
+        if (found?.skill?.target) {
+          howType = found.skill.kind === "web" ? "uri" : "cli";
+          howTemplate = found.skill.target;
+        } else if (found?.source) {
+          howTemplate = found.name;
+        } else {
+          howTemplate = customTarget.trim() || name.trim();
+        }
+      } else if (targetType === "url" || targetType === "uri") {
+        howType = "uri";
+        howTemplate = customTarget.trim();
+      } else {
+        howType = "cli";
+        howTemplate = customTarget.trim();
+      }
+
+      const slug =
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9_-]+/g, "-")
+          .replace(/^-+|-+$/g, "") || "custom-app";
+
+      const params = paramName.trim()
+        ? [{ name: paramName.trim(), type: "string", required: false }]
+        : [];
+
+      const newApp = {
+        appId: slug,
+        name: name.trim(),
+        aliases: aliases
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean),
+        enabled: true,
+        actions: [
+          {
+            id: actionId.trim() || "launch",
+            description: actionDesc.trim() || `Open ${name.trim()}`,
+            params,
+            how: { type: howType, template: howTemplate },
+            examples: [{ utterance: `open ${name.trim().toLowerCase()}`, params: {} }],
+            risk,
+            enabled: true,
+          },
+        ],
+      };
+
+      const existingIdx = parsed.apps.findIndex((a: any) => a.appId === slug);
+      if (existingIdx >= 0) {
+        parsed.apps[existingIdx] = newApp;
+      } else {
+        parsed.apps.push(newApp);
+      }
+
+      const saveRes = await api.customSave(JSON.stringify(parsed, null, 2));
+      if (!saveRes.ok && saveRes.errors?.length) {
+        setFeedback({ type: "error", message: saveRes.errors.join(", ") });
+      } else {
+        setFeedback({ type: "success", message: t("appSkills.custom.appAddedSuccess") });
+        setName("");
+        setAliases("");
+        setCustomTarget("");
+        setActionDesc("");
+        setParamName("");
+        onAppAdded();
+      }
+    } catch (err: any) {
+      setFeedback({ type: "error", message: err.message || t("appSkills.unknownError") });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => void handleAdd(e)} className="space-y-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">{t("appSkills.custom.appName")}</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("appSkills.custom.appNamePlaceholder")}
+            className="h-8 text-xs"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">{t("appSkills.custom.appAliases")}</label>
+          <Input
+            value={aliases}
+            onChange={(e) => setAliases(e.target.value)}
+            placeholder={t("appSkills.custom.appAliasesPlaceholder")}
+            className="h-8 text-xs"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">{t("appSkills.custom.targetType")}</label>
+          <select
+            value={targetType}
+            onChange={(e) => setTargetType(e.target.value as any)}
+            className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="installed">{t("appSkills.custom.targetInstalled")}</option>
+            <option value="url">{t("appSkills.custom.targetUrl")}</option>
+            <option value="uri">{t("appSkills.custom.targetUri")}</option>
+            <option value="command">{t("appSkills.custom.targetCommand")}</option>
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">
+            {targetType === "installed" ? t("appSkills.custom.targetInstalled") : t("appSkills.custom.actionTemplate")}
+          </label>
+          {targetType === "installed" ? (
+            <select
+              value={selectedAppId}
+              onChange={(e) => handleSelectApp(e.target.value)}
+              className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">{t("appSkills.custom.selectInstalledApp")}</option>
+              {availableApps.map((a) => (
+                <option key={a.appId} value={a.appId}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Input
+              value={customTarget}
+              onChange={(e) => setCustomTarget(e.target.value)}
+              placeholder={
+                targetType === "url"
+                  ? "https://example.com"
+                  : targetType === "uri"
+                    ? "spotify:album:..."
+                    : "mytool.exe {file}"
+              }
+              className="h-8 text-xs font-mono"
+              required
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">{t("appSkills.custom.actionName")}</label>
+          <Input
+            value={actionId}
+            onChange={(e) => setActionId(e.target.value)}
+            placeholder={t("appSkills.custom.actionNamePlaceholder")}
+            className="h-8 text-xs font-mono"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">{t("appSkills.custom.actionDescription")}</label>
+          <Input
+            value={actionDesc}
+            onChange={(e) => setActionDesc(e.target.value)}
+            placeholder={t("appSkills.custom.actionDescriptionPlaceholder")}
+            className="h-8 text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-foreground">{t("appSkills.custom.risk")}</label>
+          <select
+            value={risk}
+            onChange={(e) => setRisk(e.target.value as any)}
+            className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="safe">{t("appSkills.custom.riskSafe")}</option>
+            <option value="confirm">{t("appSkills.custom.riskConfirm")}</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-foreground">{t("appSkills.custom.paramName")}</label>
+        <Input
+          value={paramName}
+          onChange={(e) => setParamName(e.target.value)}
+          placeholder={t("appSkills.custom.paramNamePlaceholder")}
+          className="h-8 text-xs font-mono"
+        />
+      </div>
+
+      {feedback && (
+        <div
+          role="alert"
+          className={`flex items-center gap-2 rounded-md p-2 text-xs ${
+            feedback.type === "success"
+              ? "bg-success/10 text-success"
+              : "bg-destructive/10 text-destructive"
+          }`}
+        >
+          {feedback.type === "success" ? (
+            <Check className="size-3.5" aria-hidden="true" />
+          ) : (
+            <AlertCircle className="size-3.5" aria-hidden="true" />
+          )}
+          <span>{feedback.message}</span>
+        </div>
+      )}
+
+      <div className="flex justify-end pt-1">
+        <Button type="submit" size="sm" disabled={submitting}>
+          {submitting ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <Plus className="size-3.5" aria-hidden="true" />
+          )}
+          {t("appSkills.custom.addAppButton")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function CustomJsonEditor({
+  editorKey,
+  onSaved,
+}: {
+  editorKey: number;
+  onSaved: () => void;
+}) {
+  const { t } = useTranslation();
+  const [text, setText] = useState("");
+  const [path, setPath] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [status, setStatus] = useState<"idle" | "valid" | "saved">("idle");
+  const [validating, setValidating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
+
+  const loadData = useCallback(async () => {
+    const api = getOverlayAppsApi();
+    if (!api) return;
+    try {
+      const res = await api.customGet();
+      setText(res.text || "");
+      setPath(res.path || "");
+      setErrors(res.errors || []);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData, editorKey]);
+
+  const handleScroll = () => {
+    if (textareaRef.current && gutterRef.current) {
+      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  };
+
+  const handleValidate = async () => {
+    const api = getOverlayAppsApi();
+    if (!api) return;
+    setValidating(true);
+    setStatus("idle");
+    try {
+      const res = await api.customValidate(text);
+      setErrors(res.errors || []);
+      if (res.ok) setStatus("valid");
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    const api = getOverlayAppsApi();
+    if (!api) return;
+    setSaving(true);
+    setStatus("idle");
+    try {
+      const res = await api.customSave(text);
+      setErrors(res.errors || []);
+      if (res.ok) {
+        setStatus("saved");
+        onSaved();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleOpenFile = async () => {
+    const api = getOverlayAppsApi();
+    if (!api) return;
+    await api.customOpenFile();
+  };
+
+  const handleReset = async () => {
+    const api = getOverlayAppsApi();
+    if (!api) return;
+    const res = await api.customGet();
+    setText(res.text || "");
+    setErrors([]);
+    setStatus("idle");
+  };
+
+  const lines = text.split("\n");
+  const lineCount = Math.max(1, lines.length);
+
+  return (
+    <div className="space-y-3">
+      {path && (
+        <p dir="auto" className="font-mono text-[11px] text-muted-foreground/70 truncate">
+          {path}
+        </p>
+      )}
+
+      <div className="flex rounded-md border border-border bg-muted/10 dark:bg-surface-2 overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+        <div
+          ref={gutterRef}
+          aria-hidden="true"
+          className="w-10 select-none overflow-hidden border-e border-border/60 bg-muted/30 py-2 pe-2 text-end font-mono text-[11px] leading-relaxed text-muted-foreground/40"
+        >
+          {Array.from({ length: lineCount }, (_, i) => (
+            <div key={i + 1}>{i + 1}</div>
+          ))}
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setStatus("idle");
+          }}
+          onScroll={handleScroll}
+          spellCheck={false}
+          autoCapitalize="off"
+          autoCorrect="off"
+          rows={16}
+          className="flex-1 resize-y bg-transparent p-2 font-mono text-xs leading-relaxed text-foreground outline-none whitespace-pre min-h-[16rem]"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {status === "valid" && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+              <Check className="size-3.5" aria-hidden="true" />
+              {t("appSkills.custom.valid")}
+            </span>
+          )}
+          {status === "saved" && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-success">
+              <Check className="size-3.5" aria-hidden="true" />
+              {t("appSkills.custom.saved")}
+            </span>
+          )}
+          {errors.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+              <AlertCircle className="size-3.5" aria-hidden="true" />
+              {t("appSkills.custom.errorsFound", { count: errors.length })}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => void handleReset()}>
+            <RotateCcw className="size-3.5" aria-hidden="true" />
+            {t("appSkills.custom.resetTemplate")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void handleOpenFile()}>
+            <FolderOpen className="size-3.5" aria-hidden="true" />
+            {t("appSkills.custom.openFile")}
+          </Button>
+          <Button variant="outline" size="sm" disabled={validating} onClick={() => void handleValidate()}>
+            {validating ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Check className="size-3.5" aria-hidden="true" />
+            )}
+            {t("appSkills.custom.validate")}
+          </Button>
+          <Button size="sm" disabled={saving} onClick={() => void handleSave()}>
+            {saving ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Save className="size-3.5" aria-hidden="true" />
+            )}
+            {t("appSkills.custom.save")}
+          </Button>
+        </div>
+      </div>
+
+      {errors.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive space-y-1"
+        >
+          <p className="font-medium">
+            {t("appSkills.custom.errorsFound", { count: errors.length })}:
+          </p>
+          <ul className="list-disc ps-4 space-y-0.5">
+            {errors.map((err, i) => (
+              <li key={i} className="break-words">
+                {err}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AppsSkillsSettings() {
   const { t, i18n } = useTranslation();
   const api = getOverlayAppsApi();
@@ -236,6 +721,7 @@ export default function AppsSkillsSettings() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [customEditorKey, setCustomEditorKey] = useState(0);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -491,6 +977,57 @@ export default function AppsSkillsSettings() {
             ))
           )}
         </SettingsPanel>
+      </div>
+
+      <div>
+        <SectionHeader
+          title={t("appSkills.custom.title")}
+          description={t("appSkills.custom.description")}
+        />
+        <div className="space-y-4">
+          <SettingsPanel>
+            <SettingsPanelRow>
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-xs font-medium text-foreground">
+                    {t("appSkills.custom.addAppTitle")}
+                  </h4>
+                  <p className="text-xs text-muted-foreground/80">
+                    {t("appSkills.custom.addAppDescription")}
+                  </p>
+                </div>
+                <AddAppForm
+                  availableApps={rows}
+                  onAppAdded={() => {
+                    void reload();
+                    setCustomEditorKey((k) => k + 1);
+                  }}
+                />
+              </div>
+            </SettingsPanelRow>
+          </SettingsPanel>
+
+          <SettingsPanel>
+            <SettingsPanelRow>
+              <div className="space-y-3">
+                <div>
+                  <h4 className="text-xs font-medium text-foreground">
+                    {t("appSkills.custom.editorTitle")}
+                  </h4>
+                  <p className="text-xs text-muted-foreground/80">
+                    {t("appSkills.custom.editorDescription")}
+                  </p>
+                </div>
+                <CustomJsonEditor
+                  editorKey={customEditorKey}
+                  onSaved={() => {
+                    void reload();
+                  }}
+                />
+              </div>
+            </SettingsPanelRow>
+          </SettingsPanel>
+        </div>
       </div>
 
       <div>

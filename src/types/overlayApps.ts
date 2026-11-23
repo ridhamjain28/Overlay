@@ -58,6 +58,11 @@ export interface AppSkill {
   aliases: string[];
   enabled: boolean;
   actions: AppSkillAction[];
+  kind?: string;
+  source?: string;
+  target?: string;
+  aumid?: string;
+  protocols?: string[];
 }
 
 export interface Learned {
@@ -69,6 +74,22 @@ export interface Learned {
   plan: unknown;
   source: string;
   timestamp: string | number;
+}
+
+export interface CustomSkillsGetResult {
+  text: string;
+  path: string;
+  errors: string[];
+}
+
+export interface CustomSkillsSaveResult {
+  ok: boolean;
+  errors: string[];
+}
+
+export interface CustomSkillsValidateResult {
+  ok: boolean;
+  errors: string[];
 }
 
 export interface OverlayAppsApi {
@@ -85,4 +106,8 @@ export interface OverlayAppsApi {
   learnedList(): Promise<Learned[]>;
   learnedDelete(id: string): Promise<void>;
   getSummary(): Promise<ScanResult | null>;
+  customGet(): Promise<CustomSkillsGetResult>;
+  customSave(text: string): Promise<CustomSkillsSaveResult>;
+  customValidate(text: string): Promise<CustomSkillsValidateResult>;
+  customOpenFile(): Promise<void>;
 }
