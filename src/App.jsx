@@ -15,7 +15,6 @@ import { useMainProcessNotifications } from "./hooks/useMainProcessNotifications
 import { useListeningEntrancePhase } from "./hooks/useListeningEntrancePhase";
 import { useWindowResizeCompensation } from "./hooks/useWindowResizeCompensation";
 import { useSettingsStore, OVERLAY_DEFAULT_OLLAMA_URL } from "./stores/settingsStore";
-import { resolveCommandParsing } from "./stores/aiProvider";
 import { isAgentAllowed } from "./stores/policyRules";
 import { usePolicyStore } from "./stores/policyStore";
 import { useTranscriptionContextAllowed } from "./hooks/usePolicy";
@@ -240,12 +239,19 @@ export default function App() {
     window.electronAPI?.overlaySetChatContextLength?.(chatContextLength);
   }, [chatContextLength]);
   useEffect(() => {
-    const parsing = resolveCommandParsing();
-    const models = [parsing.model, "qwen3:4b-instruct"].filter(Boolean);
-    window.electronAPI?.overlayOllamaWarmup?.({
-      baseUrl: parsing.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
-      models,
+    let cancelled = false;
+    void import("./stores/aiProvider").then(({ resolveCommandParsing }) => {
+      if (cancelled) return;
+      const parsing = resolveCommandParsing();
+      const models = [parsing.model, "qwen3:4b-instruct"].filter(Boolean);
+      window.electronAPI?.overlayOllamaWarmup?.({
+        baseUrl: parsing.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
+        models,
+      });
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
     const unsubscribe = window.electronAPI?.onOverlayAssistantCollapse?.(() => {
