@@ -45,3 +45,90 @@ test("rescan emits contract progress phases and returns a ScanResult", async () 
   assert.ok(summary.apps.some((app) => app.appId === "spotify" && app.matched));
   assert.equal(getSummary(dir, fs).found, summary.found);
 });
+
+const { testSkillAction } = require("../../src/helpers/overlay/appSkillsService");
+const { createCommandDispatcher } = require("../../src/helpers/overlay/commandMode/actionDispatcher");
+
+test("testSkillAction asks to confirm risk=confirm actions and does not pre-confirm", async () => {
+  const opened = [];
+  const confirms = [];
+  const skill = {
+    appId: "microsoft-teams",
+    name: "Microsoft Teams",
+    enabled: true,
+    actions: [
+      {
+        id: "start-call",
+        description: "Start a call",
+        params: [{ name: "users", type: "string", required: true }],
+        how: { type: "url", template: "https://teams.microsoft.com/l/call/0/0?users={users}" },
+        examples: [],
+        risk: "confirm",
+      },
+      {
+        id: "launch",
+        description: "Open Teams",
+        params: [],
+        how: { type: "url", template: "https://teams.microsoft.com/" },
+        examples: [],
+        risk: "safe",
+      },
+    ],
+  };
+  const dispatcher = createCommandDispatcher({
+    platform: "linux",
+    autoRunTrusted: true,
+    getAutoRunTrusted: () => true,
+    getAppSkill: () => skill,
+    openExternal: async (url) => opened.push(url),
+    confirm: async (message) => {
+      confirms.push(message);
+      return false;
+    },
+  });
+
+  const denied = await testSkillAction({
+    skill,
+    actionId: "start-call",
+    params: { users: "ada@contoso.com" },
+    perform: (request, options) => dispatcher.perform(request, options),
+  });
+  assert.equal(denied.ok, false);
+  assert.match(String(denied.error || ""), /cancelled/i);
+  assert.equal(confirms.length, 1);
+  assert.equal(opened.length, 0);
+
+  confirms.length = 0;
+  const allowedDispatcher = createCommandDispatcher({
+    platform: "linux",
+    autoRunTrusted: true,
+    getAutoRunTrusted: () => true,
+    getAppSkill: () => skill,
+    openExternal: async (url) => opened.push(url),
+    confirm: async (message) => {
+      confirms.push(message);
+      return true;
+    },
+  });
+  const allowed = await testSkillAction({
+    skill,
+    actionId: "start-call",
+    params: { users: "ada@contoso.com" },
+    perform: (request, options) => allowedDispatcher.perform(request, options),
+  });
+  assert.equal(allowed.ok, true);
+  assert.equal(confirms.length, 1);
+  assert.equal(opened[0], "https://teams.microsoft.com/l/call/0/0?users=ada%40contoso.com");
+
+  confirms.length = 0;
+  opened.length = 0;
+  const safe = await testSkillAction({
+    skill,
+    actionId: "launch",
+    params: {},
+    perform: (request, options) => allowedDispatcher.perform(request, options),
+  });
+  assert.equal(safe.ok, true);
+  assert.equal(confirms.length, 0);
+  assert.equal(opened[0], "https://teams.microsoft.com/");
+});

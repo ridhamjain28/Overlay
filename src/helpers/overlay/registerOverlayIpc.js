@@ -810,14 +810,12 @@ function registerOverlayIpc({
   });
 
   ipcMain.handle("overlay-apps-test", async (_event, payload = {}) => {
-    const skill = readSkill(skillsDir, String(payload.appId || ""));
-    if (!skill) return { ok: false, error: "Unknown app" };
-    const actionId = String(payload.actionId || (skill.actions || []).find((a) => a.id === "launch" || a.id === "open")?.id || "");
-    const result = await commandDispatcher.perform(
-      { action: "app_action", args: { appId: skill.appId, actionId, params: payload.params || {} } },
-      { confirmed: true, autoRunTrusted: true }
-    );
-    return { ok: result?.success === true, error: result?.success ? undefined : result?.error };
+    return appSkills.testSkillAction({
+      skill: readSkill(skillsDir, String(payload.appId || "")),
+      actionId: payload.actionId,
+      params: payload.params || {},
+      perform: (request, options) => commandDispatcher.perform(request, options),
+    });
   });
 
   ipcMain.handle("overlay-apps-learned-list", async () => {

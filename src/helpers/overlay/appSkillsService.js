@@ -83,6 +83,24 @@ function setEnabled(baseDir, { appId, actionId, enabled }, fsImpl = fs) {
   return setSkillEnabled(baseDir, String(appId || ""), enabled === true, fsImpl, actionId);
 }
 
+
+async function testSkillAction({ skill, actionId, params, perform }) {
+  if (!skill) return { ok: false, error: "Unknown app" };
+  const resolvedActionId = String(
+    actionId || (skill.actions || []).find((action) => action.id === "launch" || action.id === "open")?.id || ""
+  );
+  // Do not pre-confirm. Safe actions still auto-run via autoRunTrusted;
+  // risk=confirm goes through the dispatcher's native confirmation dialog.
+  const result = await perform(
+    {
+      action: "app_action",
+      args: { appId: skill.appId, actionId: resolvedActionId, params: params || {} },
+    },
+    { autoRunTrusted: true }
+  );
+  return { ok: result?.success === true, error: result?.success ? undefined : result?.error };
+}
+
 module.exports = {
   skillsDirFor,
   rescanAndBuildPack,
@@ -90,6 +108,7 @@ module.exports = {
   listSkills,
   getSummary,
   setEnabled,
+  testSkillAction,
   setSkillEnabled,
   readSkill,
   fillActionTemplate,
