@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Monitor, Moon, Plus, Sun } from "../icons";
+import { AlertTriangle, Check, Copy, Monitor, Moon, Plus, Sun } from "../icons";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { AlertDialog, ConfirmDialog } from "../ui/dialog";
 import { clearTranscriptions as clearTranscriptionStore } from "../../stores/transcriptionStore";
@@ -196,6 +196,8 @@ export default function PreferencesSettings() {
   const [autoStartLoading, setAutoStartLoading] = useState(true);
   const [runAsAdminEnabled, setRunAsAdminEnabled] = useState(false);
   const [runAsAdminLoading, setRunAsAdminLoading] = useState(platform === "win32");
+  const [reportCopied, setReportCopied] = useState(false);
+  const [isCopyingReport, setIsCopyingReport] = useState(false);
 
   const readAutoStartState = useCallback(async () => {
     if (!window.electronAPI?.getAutoStartEnabled) return;
@@ -252,6 +254,29 @@ export default function PreferencesSettings() {
       logger.error("Failed to set run-as-admin", error, "settings");
     } finally {
       setRunAsAdminLoading(false);
+    }
+  };
+
+  const handleCopyDiagnosticReport = async () => {
+    try {
+      setIsCopyingReport(true);
+      if (window.electronAPI?.overlayDiagnosticsCopy) {
+        const res = await window.electronAPI.overlayDiagnosticsCopy();
+        if (!res?.ok && res?.error) {
+          throw new Error(res.error);
+        }
+      } else if (window.electronAPI?.overlayDiagnosticsGet) {
+        const report = await window.electronAPI.overlayDiagnosticsGet();
+        if (typeof report === "string" && report) {
+          await navigator.clipboard.writeText(report);
+        }
+      }
+      setReportCopied(true);
+      setTimeout(() => setReportCopied(false), 2500);
+    } catch (err) {
+      logger.error("Failed to copy diagnostic report", err, "settings");
+    } finally {
+      setIsCopyingReport(false);
     }
   };
 
@@ -501,6 +526,46 @@ export default function PreferencesSettings() {
             >
               <Button variant="outline" size="sm" onClick={handleForgetChats}>
                 {t("simpleSettings.data.forgetButton")}
+              </Button>
+            </SettingsRow>
+          </SettingsPanelRow>
+        </SettingsPanel>
+      </div>
+
+      <div>
+        <SectionHeader
+          title={t("settingsPage.general.troubleshooting.title", { defaultValue: "Troubleshooting" })}
+        />
+        <SettingsPanel>
+          <SettingsPanelRow>
+            <SettingsRow
+              label={t("settingsPage.general.troubleshooting.diagnosticsTitle", {
+                defaultValue: "Diagnostic Report",
+              })}
+              description={t("settingsPage.general.troubleshooting.diagnosticsDescription", {
+                defaultValue:
+                  "Generate a sanitized diagnostic report with system hardware, default audio input status, Ollama reachability, and recent logs for troubleshooting.",
+              })}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyDiagnosticReport}
+                disabled={isCopyingReport}
+              >
+                {reportCopied ? (
+                  <>
+                    <Check className="me-1.5 h-3.5 w-3.5 text-emerald-500" />
+                    {t("common.copied", { defaultValue: "Copied!" })}
+                  </>
+                ) : (
+                  <>
+                    <Copy className="me-1.5 h-3.5 w-3.5" />
+                    {t("settingsPage.general.troubleshooting.copyReport", {
+                      defaultValue: "Copy Diagnostic Report",
+                    })}
+                  </>
+                )}
               </Button>
             </SettingsRow>
           </SettingsPanelRow>

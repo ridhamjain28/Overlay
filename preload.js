@@ -1064,6 +1064,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   // Hotkey registration events (for notifying user when hotkey fails)
+  notifyAudioDeviceFallback: (data) => ipcRenderer.send("audio-device-fallback", data),
+  onAudioDeviceFallback: (callback) => {
+    const listener = (_event, data) => callback?.(data);
+    ipcRenderer.on("audio-device-fallback", listener);
+    return () => ipcRenderer.removeListener("audio-device-fallback", listener);
+  },
   onHotkeyFallbackUsed: (callback) => {
     const listener = (_event, data) => callback?.(data);
     ipcRenderer.on("hotkey-fallback-used", listener);
@@ -1303,6 +1309,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlayCalendarEventCreate: (payload) =>
     ipcRenderer.invoke("overlay-calendar-event-create", payload),
   overlayTodoCreate: (todoData) => ipcRenderer.invoke("overlay-todo-create", todoData),
+  overlayDiagnosticsGet: () => ipcRenderer.invoke("overlay-diagnostics-get"),
+  overlayDiagnosticsCopy: () => ipcRenderer.invoke("overlay-diagnostics-copy"),
 
   // Agent conversation persistence
   createAgentConversation: (title, noteId, spaceId, folderId) =>

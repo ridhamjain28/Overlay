@@ -62,6 +62,7 @@ const {
 const { createChatMemoryStore } = require("./chatMemoryStore");
 const { detectHardware } = require("./hardwareProfile");
 const { selectLocalModel, recommendPull } = require("./modelAutoSelect");
+const { generateDiagnosticReport } = require("./diagnosticReport");
 
 // Model tags look like qwen3.5:4b-q4_K_M; refuse anything that could read as a flag.
 const MODEL_TAG = /^[A-Za-z0-9][\w.:/-]{0,120}$/;
@@ -1189,6 +1190,32 @@ function registerOverlayIpc({
 
   ipcMain.handle("overlay-mcp-permissions-revoke", async (_event, { key }) => {
     return { ok: mcpManager.revokePermission(key) };
+  });
+
+  // System Diagnostics IPC
+  ipcMain.handle("overlay-diagnostics-get", async () => {
+    return generateDiagnosticReport({
+      mcpManager,
+      debugLogger,
+      app,
+    });
+  });
+
+  ipcMain.handle("overlay-diagnostics-copy", async () => {
+    try {
+      const report = await generateDiagnosticReport({
+        mcpManager,
+        debugLogger,
+        app,
+      });
+      const { clipboard } = require("electron");
+      if (clipboard && typeof clipboard.writeText === "function") {
+        clipboard.writeText(report);
+      }
+      return { ok: true, report };
+    } catch (err) {
+      return { ok: false, error: err?.message || String(err) };
+    }
   });
 
 
