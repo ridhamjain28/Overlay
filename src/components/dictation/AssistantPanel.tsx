@@ -48,7 +48,7 @@ import {
   type AssistantResponseDelivery,
 } from "../../helpers/assistantResponseDelivery";
 import { buildAssistantCommandSendOptions } from "./assistantCommandOptions";
-import { runCommandModeIfEnabled } from "../../services/overlay/runCommandMode";
+import { runCommandOrchestrator } from "../../services/overlay/runCommandMode";
 import { resolveCommandParsing, useAiProvider } from "../../stores/aiProvider";
 import { commandReferencesSelection } from "../../helpers/overlay/commandMode/typedClause";
 import { touchAssistantChatActivity } from "../../helpers/overlay/assistantChatContinuity";
@@ -154,6 +154,7 @@ export function AssistantPanel({
   });
   const commandModeEnabled = useSettingsStore((s) => s.commandModeEnabled);
   const commandModeAutoRunTrusted = useSettingsStore((s) => s.commandModeAutoRunTrusted);
+  const autoSaveCreatedItems = useSettingsStore((s) => s.autoSaveCreatedItems);
   const commandModeParser = useSettingsStore((s) => s.commandModeParser);
   const chatAgentModel = useSettingsStore((s) => s.chatAgentModel);
   const chatAgentRemoteUrl = useSettingsStore((s) => s.chatAgentRemoteUrl);
@@ -163,6 +164,7 @@ export function AssistantPanel({
     () => ({
       enabled: commandModeEnabled,
       autoRunTrusted: commandModeAutoRunTrusted,
+      autoSaveCreatedItems,
       ...resolveCommandParsing(undefined, aiProvider),
     }),
     // The chat/parser settings are inputs of resolveCommandParsing from the store.
@@ -170,6 +172,7 @@ export function AssistantPanel({
     [
       commandModeEnabled,
       commandModeAutoRunTrusted,
+      autoSaveCreatedItems,
       commandModeParser,
       chatAgentModel,
       chatAgentRemoteUrl,
@@ -215,9 +218,8 @@ export function AssistantPanel({
   }, []);
   const tryCommandMode = useCallback(
     async (text: string): Promise<boolean> => {
-      if (!commandSettings.enabled) return false;
       try {
-        const outcome = await runCommandModeIfEnabled(text, commandSettings);
+        const outcome = await runCommandOrchestrator(text, commandSettings);
         if (!outcome.handled) return false;
         await recordCommandTurn(text, outcome.message);
         return true;

@@ -312,6 +312,7 @@ const BOOLEAN_SETTINGS = new Set([
   "keepAssistantOnTop",
   "commandModeEnabled",
   "commandModeAutoRunTrusted",
+  "autoSaveCreatedItems",
   "chatMemoryEnabled",
   "startMinimized",
   "assistantTtsProvider",
@@ -1008,6 +1009,7 @@ export interface SettingsState
   keepAssistantOnTop: boolean;
   commandModeEnabled: boolean;
   commandModeAutoRunTrusted: boolean;
+  autoSaveCreatedItems: boolean;
   commandModeParser: "local" | "cloud";
   assistantChatIdleMinutes: number;
   chatMemoryEnabled: boolean;
@@ -1354,6 +1356,7 @@ export interface SettingsState
   setKeepAssistantOnTop: (enabled: boolean) => void;
   setCommandModeEnabled: (enabled: boolean) => void;
   setCommandModeAutoRunTrusted: (enabled: boolean) => void;
+  setAutoSaveCreatedItems: (enabled: boolean) => void;
   setCommandModeParser: (value: "local" | "cloud") => void;
   setAssistantChatIdleMinutes: (minutes: number) => void;
   setChatMemoryEnabled: (enabled: boolean) => void;
@@ -1802,6 +1805,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
   commandModeEnabled: readBoolean("commandModeEnabled", false),
   commandModeAutoRunTrusted: readBoolean("commandModeAutoRunTrusted", false),
+  autoSaveCreatedItems: readBoolean("autoSaveCreatedItems", true),
   commandModeParser: ((): "local" | "cloud" => {
     const v = readString("commandModeParser", "local");
     return v === "cloud" ? "cloud" : "local";
@@ -2660,6 +2664,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       window.electronAPI?.overlaySetCommandModePrefs?.({
         enabled,
         autoRunTrusted: get().commandModeAutoRunTrusted,
+        autoSaveCreatedItems: get().autoSaveCreatedItems,
       });
     }
   },
@@ -2672,6 +2677,21 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       window.electronAPI?.overlaySetCommandModePrefs?.({
         enabled: get().commandModeEnabled,
         autoRunTrusted: enabled,
+        autoSaveCreatedItems: get().autoSaveCreatedItems,
+      });
+    }
+  },
+
+
+  setAutoSaveCreatedItems: (enabled: boolean) => {
+    if (get().autoSaveCreatedItems === enabled) return;
+    if (isBrowser) localStorage.setItem("autoSaveCreatedItems", String(enabled));
+    set({ autoSaveCreatedItems: enabled });
+    if (isBrowser) {
+      window.electronAPI?.overlaySetCommandModePrefs?.({
+        enabled: get().commandModeEnabled,
+        autoRunTrusted: get().commandModeAutoRunTrusted,
+        autoSaveCreatedItems: enabled,
       });
     }
   },

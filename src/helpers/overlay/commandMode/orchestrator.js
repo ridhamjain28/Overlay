@@ -1,0 +1,511 @@
+// One planner, one executor. Chat and voice both call orchestrate() once.
+// A plan is an ordered list of typed steps; the executor runs exactly those
+// steps, verifies each one, and never invents a web search of the raw
+// utterance unless the plan already contains a search step.
+
+const { URL } = require("url");
+
+const DEDUPE_MS = 2500;
+const DEFAULT_SUBMIT_TIMEOUT_MS = 12000;
+const NEVER_AUTOSUBMIT_APP_IDS = new Set([
+  "gmail",
+  "google-gmail",
+  "whatsapp",
+  "teams",
+  "microsoft-teams",
+  "outlook",
+  "mail",
+  "slack",
+  "telegram",
+  "discord",
+  "messages",
+]);
+
+function normalizeKey(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cloneSteps(steps) {
+  return (Array.isArray(steps) ? steps : []).map((step) => ({
+    action: String(step?.action || "").trim(),
+    args: { ...(step?.args || {}) },
+    source: step?.source,
+    postcheck: step?.postcheck,
+  }));
+}
+
+function intentSteps(intent) {
+  if (!intent) return [];
+  if (Array.isArray(intent.steps) && intent.steps.length) return cloneSteps(intent.steps);
+  if (intent.action && intent.action !== "none") {
+    return [{ action: intent.action, args: { ...(intent.args || {}) }, source: intent.source }];
+  }
+  return [];
+}
+
+function stepUrl(step) {
+  const raw =
+    (step && step.args && (step.args.url || step.args.uri || step.args.value)) ||
+    (typeof step === "string" ? step : "");
+  return String(raw || "").trim();
+}
+
+function isSearchUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    if (host === "google.com" && parsed.pathname.startsWith("/search")) return true;
+    if (host === "bing.com" && parsed.pathname.startsWith("/search")) return true;
+    if (host === "duckduckgo.com" && parsed.searchParams.has("q")) return true;
+    return false;
+  } catch {
+    return /google\.[^/]+\/search\?/i.test(url);
+  }
+}
+
+function searchQueryOf(url) {
+  try {
+    return new URL(url).searchParams.get("q") || "";
+  } catch {
+    const match = String(url || "").match(/[?&]q=([^&]+)/);
+    return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : "";
+  }
+}
+
+function isCalendarPrefillUrl(url) {
+  const value = String(url || "");
+  if (!/calendar\.google\.com/i.test(value)) return false;
+  return /eventedit|action=TEMPLATE|calendar\/u\/\d+\/r\/eventedit/i.test(value);
+}
+
+function isCalendarPrefillStep(step) {
+  if (!step) return false;
+  const url = stepUrl(step);
+  if (isCalendarPrefillUrl(url)) return true;
+  if (step.action === "app_action") {
+    const appId = String(step.args?.appId || "").toLowerCase();
+    const actionId = String(step.args?.actionId || "").toLowerCase();
+    if (appId.includes("calendar") && /create|add|event/i.test(actionId)) return true;
+  }
+  return false;
+}
+
+function isMessagingStep(step) {
+  if (!step) return false;
+  const appId = String(step.args?.appId || step.args?.app || "").toLowerCase();
+  if (NEVER_AUTOSUBMIT_APP_IDS.has(appId)) return true;
+  const url = stepUrl(step);
+  if (/mail\.google\.com|wa\.me|web\.whatsapp|teams\.microsoft|outlook\.live|outlook\.office/i.test(url)) {
+    return true;
+  }
+  return false;
+}
+
+function isRawUtteranceSearch(url, text) {
+  if (!isSearchUrl(url)) return false;
+  const query = searchQueryOf(url);
+  const nq = normalizeKey(query);
+  const nt = normalizeKey(text);
+  if (!nq || !nt) return false;
+  if (nq === nt) return true;
+  const words = nq.split(" ").filter(Boolean);
+  if (words.length >= 6 && (nt.includes(nq) || nq.includes(nt))) return true;
+  return false;
+}
+
+function looksLikeCreateOrSave(text) {
+  return /\b(add|create|save|schedule|book|make|set up|setup|put)\b/i.test(String(text || ""));
+}
+
+/**
+ * Drop a search of the raw utterance when the plan already does real work,
+ * or when the only "search" is the command text itself.
+ */
+function sanitizePlan(text, steps) {
+  const list = cloneSteps(steps);
+  const hasWork = list.some((step) => {
+    if (!step.action || step.action === "none") return false;
+    if (step.action === "open_url" && isRawUtteranceSearch(stepUrl(step), text)) return false;
+    return true;
+  });
+  return list.filter((step) => {
+    if (!step.action || step.action === "none") return false;
+    if (step.action === "open_url" && isRawUtteranceSearch(stepUrl(step), text) && hasWork) {
+      return false;
+    }
+    if (step.action === "open_url" && isRawUtteranceSearch(stepUrl(step), text) && !hasWork) {
+      // A lone search of the raw command is not a real search intent.
+      if (looksLikeCreateOrSave(text) || /\b(calendar|event|meeting|appointment)\b/i.test(text)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function submitSpecForStep(step, { autoSaveCreatedItems = true } = {}) {
+  if (!autoSaveCreatedItems) return null;
+  if (isMessagingStep(step)) return null;
+  const auto = step.args?.autoSubmit ?? step.autoSubmit;
+  const wantsAuto =
+    auto === true ||
+    (auto && typeof auto === "object" && auto.enabled !== false) ||
+    (auto == null && isCalendarPrefillStep(step));
+  if (!wantsAuto) return null;
+  const fromDb = auto && typeof auto === "object" ? auto : {};
+  return {
+    matchTitle: fromDb.matchTitle || "Calendar",
+    matchUrl: fromDb.matchUrl || "eventedit",
+    keys: fromDb.keys || "control+s",
+    leaveUrl: fromDb.leaveUrl || "eventedit",
+    timeoutMs: Number(fromDb.timeoutMs) || DEFAULT_SUBMIT_TIMEOUT_MS,
+  };
+}
+
+function attachFinishSteps(text, steps, options = {}) {
+  const { autoSaveCreatedItems = true } = options;
+  if (!looksLikeCreateOrSave(text) && !steps.some(isCalendarPrefillStep)) return cloneSteps(steps);
+  const out = [];
+  for (const step of cloneSteps(steps)) {
+    out.push(step);
+    const spec = submitSpecForStep(step, { autoSaveCreatedItems });
+    if (!spec) continue;
+    out.push({
+      action: "submit_page",
+      args: { ...spec, sourceUrl: stepUrl(step) },
+      source: "autoSubmit",
+    });
+  }
+  return out;
+}
+
+function compactStampParts(value) {
+  const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/);
+  if (!match) return null;
+  return {
+    year: match[1],
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+  };
+}
+
+function formatClock(hour, minute) {
+  const mer = hour >= 12 ? "PM" : "AM";
+  const h = hour % 12 || 12;
+  if (!minute) return `${h} ${mer}`;
+  return `${h}:${String(minute).padStart(2, "0")} ${mer}`;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function capFirst(value) {
+  const title = String(value || "event").trim() || "event";
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+function formatCalendarOutcome(steps, success, saved) {
+  const step = (steps || []).find(isCalendarPrefillStep);
+  if (!step) return null;
+  const url = stepUrl(step);
+  let title = step.args?.params?.title || step.args?.title || "";
+  let start = step.args?.params?.start || step.args?.start;
+  let end = step.args?.params?.end || step.args?.end;
+  try {
+    const parsed = new URL(url);
+    title = title || parsed.searchParams.get("text") || "event";
+    const dates = parsed.searchParams.get("dates") || "";
+    const [s, e] = dates.split("/");
+    start = start || s;
+    end = end || e;
+  } catch {
+    // Ignore unparsable template URLs.
+  }
+  const from = compactStampParts(start);
+  const to = compactStampParts(end);
+  const when = from
+    ? `${MONTHS[from.month - 1]} ${from.day}${
+        to ? `, ${formatClock(from.hour, from.minute).replace(" PM", "").replace(" AM", "")}–${formatClock(to.hour, to.minute)}`.replace("–", "–") : ""
+      }`
+    : "";
+  const prettyTitle = capFirst(title);
+  // Prefer the requested "Nov 24, 5-7 PM" style when both stamps exist.
+  let whenPretty = when;
+  if (from && to) {
+    const startClock = formatClock(from.hour, from.minute);
+    const endClock = formatClock(to.hour, to.minute);
+    const startBit = startClock.replace(/ (AM|PM)$/, "");
+    const mer = endClock.endsWith("PM") ? "PM" : "AM";
+    whenPretty = `${MONTHS[from.month - 1]} ${from.day}, ${startBit}-${endClock.replace(/ (AM|PM)$/, "")} ${mer}`;
+  }
+  if (!success) return `Could not add ${prettyTitle} to your calendar${whenPretty ? ` for ${whenPretty}` : ""}.`;
+  if (saved === false) {
+    return `Opened ${prettyTitle} in your calendar${whenPretty ? ` for ${whenPretty}` : ""}, but it was not saved.`;
+  }
+  return `Added ${prettyTitle} to your calendar${whenPretty ? ` for ${whenPretty}` : ""}.`;
+}
+
+function formatSearchOutcome(step) {
+  const url = stepUrl(step);
+  const query = searchQueryOf(url) || "the web";
+  const browser = step.args?.browser;
+  return browser
+    ? `Opened a search for ${query} in ${browser}.`
+    : `Opened a search for ${query}.`;
+}
+
+function formatOutcome(text, steps, results) {
+  const ok = !results.some((row) => row && row.success === false);
+  const calendar = formatCalendarOutcome(steps, ok, results.some((row) => row && row.action === "submit_page")
+    ? results.find((row) => row.action === "submit_page")?.success
+    : undefined);
+  if (calendar) return calendar;
+  const first = steps[0];
+  if (!first) return ok ? "Done." : "The command failed.";
+  if (first.action === "open_url" && isSearchUrl(stepUrl(first))) return formatSearchOutcome(first);
+  if (first.action === "open_app") {
+    const app = first.args?.app || "the app";
+    const typed = steps.some((step) => step.action === "type" || step.action === "compose_text");
+    if (typed) return `Opened ${app} and started writing.`;
+    return `Opened ${app}.`;
+  }
+  if (first.action === "app_action") {
+    return ok ? `Ran ${first.args?.actionId || "the action"} in ${first.args?.appId || "the app"}.` : "The action failed.";
+  }
+  if (!ok) {
+    const failed = results.find((row) => row && row.success === false);
+    return failed?.message || failed?.error || "The command failed.";
+  }
+  return results[results.length - 1]?.message || "Done.";
+}
+
+function windowMatches(win, spec) {
+  if (!win) return false;
+  const title = String(win.title || win.windowTitle || "");
+  const url = String(win.url || "");
+  if (spec.matchUrl && url && url.toLowerCase().includes(String(spec.matchUrl).toLowerCase())) return true;
+  if (spec.matchTitle && title.toLowerCase().includes(String(spec.matchTitle).toLowerCase())) return true;
+  if (spec.leaveUrl && url && !url.toLowerCase().includes(String(spec.leaveUrl).toLowerCase())) return true;
+  return false;
+}
+
+function createOrchestrator(deps = {}) {
+  const recent = new Map();
+  const inFlight = new Set();
+  const parseIntent = deps.parseIntent;
+  const perform = deps.perform;
+  const listWindows = deps.listWindows;
+  const focusWindow = deps.focusWindow;
+  const sendKeys = deps.sendKeys;
+  const sleep = deps.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const now = deps.now || (() => Date.now());
+
+  function remember(key) {
+    recent.set(key, now());
+    for (const [item, at] of recent) {
+      if (now() - at > DEDUPE_MS * 4) recent.delete(item);
+    }
+  }
+
+  function wasRecent(key) {
+    const at = recent.get(key);
+    return at != null && now() - at < DEDUPE_MS;
+  }
+
+  async function readWindows() {
+    if (typeof listWindows !== "function") return { unsupported: true, windows: [] };
+    const listed = await listWindows();
+    if (listed && listed.unsupported) return { unsupported: true, windows: [] };
+    return { unsupported: false, windows: Array.isArray(listed) ? listed : [] };
+  }
+
+  async function waitForWindow(spec, timeoutMs) {
+    const first = await readWindows();
+    if (first.unsupported) return { ok: true, skipped: true };
+    const deadline = now() + timeoutMs;
+    let windows = first.windows;
+    while (true) {
+      const hit = windows.find((win) => windowMatches(win, spec));
+      if (hit) return { ok: true, window: hit };
+      if (now() > deadline) return { ok: false, error: "Timed out waiting for the page to open." };
+      await sleep(200);
+      windows = (await readWindows()).windows;
+    }
+  }
+
+  async function verifyStep(step, result) {
+    if (result?.success === false) {
+      return { ok: false, message: result.message || result.error || "The step failed." };
+    }
+    if (step.postcheck && typeof deps.postcheck === "function") {
+      const checked = await deps.postcheck(step, result);
+      if (checked && checked.ok === false) return { ok: false, message: checked.message || "Verification failed." };
+    }
+    if (step.action === "open_url" && isCalendarPrefillStep(step) && typeof listWindows === "function") {
+      const waited = await waitForWindow(
+        { matchTitle: "Calendar", matchUrl: "eventedit" },
+        8000
+      );
+      if (!waited.ok && !waited.skipped) {
+        // Best-effort: the template may still have opened in a tab whose title is lagging.
+        return { ok: true, soft: true };
+      }
+    }
+    return { ok: true };
+  }
+
+  async function executeSubmitPage(step) {
+    const spec = step.args || {};
+    const timeoutMs = Number(spec.timeoutMs) || DEFAULT_SUBMIT_TIMEOUT_MS;
+    const waited = await waitForWindow(
+      { matchTitle: spec.matchTitle, matchUrl: spec.matchUrl || "eventedit" },
+      timeoutMs
+    );
+    if (!waited.ok && !waited.skipped) {
+      return { success: false, action: "submit_page", message: "Opened the event but could not find the Calendar editor." };
+    }
+    if (waited.window && typeof focusWindow === "function") {
+      await focusWindow(waited.window);
+    }
+    if (typeof sendKeys !== "function") {
+      return { success: false, action: "submit_page", message: "Opened the event but could not send the save shortcut." };
+    }
+    try {
+      await sendKeys(spec.keys || "control+s");
+    } catch (error) {
+      return {
+        success: false,
+        action: "submit_page",
+        message: "Opened the event but could not send the save shortcut.",
+      };
+    }
+    const listed = await readWindows();
+    if (!listed.unsupported) {
+      const deadline = now() + Math.min(timeoutMs, 6000);
+      while (now() <= deadline) {
+        const windows = (await readWindows()).windows;
+        const stillEditing = windows.some((win) => {
+          const url = String(win.url || "");
+          return url && url.toLowerCase().includes(String(spec.leaveUrl || "eventedit").toLowerCase());
+        });
+        const calendarOpen = windows.some((win) => windowMatches(win, { matchTitle: spec.matchTitle || "Calendar" }));
+        if (!stillEditing && (calendarOpen || !windows.some((win) => win.url))) {
+          return { success: true, action: "submit_page", message: "Saved." };
+        }
+        await sleep(200);
+      }
+      // Titles alone (no URL) cannot prove we left /eventedit; treat key-send as success.
+      if (!waited.window?.url) return { success: true, action: "submit_page", message: "Saved." };
+      return { success: false, action: "submit_page", message: "Opened the event but it did not leave the editor after save." };
+    }
+    return { success: true, action: "submit_page", message: "Saved." };
+  }
+
+  async function plan(text, options = {}) {
+    if (typeof parseIntent !== "function") {
+      return { steps: [], intent: null, source: "none" };
+    }
+    const intent = await parseIntent(text, options);
+    const rawSteps = intentSteps(intent);
+    const cleaned = sanitizePlan(text, rawSteps);
+    const autoSaveCreatedItems = options.autoSaveCreatedItems !== false;
+    const steps = attachFinishSteps(text, cleaned, { autoSaveCreatedItems });
+    return { steps, intent, source: intent?.source || "none" };
+  }
+
+  async function orchestrate(text, options = {}) {
+    const key = normalizeKey(text);
+    if (!key) return { handled: false, success: false, steps: [], message: "" };
+    if (inFlight.has(key) || wasRecent(key)) {
+      return {
+        handled: true,
+        success: true,
+        deduped: true,
+        steps: [],
+        message: "Already handling that command.",
+      };
+    }
+    inFlight.add(key);
+    try {
+      const planned = await plan(text, options);
+      if (!planned.steps.length) {
+        return { handled: false, success: false, steps: [], source: planned.source, message: "" };
+      }
+      const results = [];
+      for (const step of planned.steps) {
+        let result;
+        if (step.action === "submit_page") {
+          result = await executeSubmitPage(step);
+        } else if (typeof perform === "function") {
+          result = await perform(
+            { action: step.action, args: step.args, utterance: text },
+            { autoRunTrusted: options.autoRunTrusted !== false, confirmed: options.confirmed }
+          );
+        } else {
+          result = { success: false, error: "No executor is available", action: step.action };
+        }
+        result = { action: step.action, ...result };
+        const verified = await verifyStep(step, result);
+        if (!verified.ok) {
+          const message = verified.message || result.message || result.error || "The command failed.";
+          return {
+            handled: true,
+            success: false,
+            steps: planned.steps,
+            results: results.concat(result),
+            message,
+            source: planned.source,
+          };
+        }
+        results.push(result);
+      }
+      remember(key);
+      return {
+        handled: true,
+        success: results.every((row) => row.success !== false),
+        steps: planned.steps,
+        results,
+        message: formatOutcome(text, planned.steps, results),
+        source: planned.source,
+      };
+    } finally {
+      inFlight.delete(key);
+    }
+  }
+
+  function reset() {
+    recent.clear();
+    inFlight.clear();
+  }
+
+  return {
+    orchestrate,
+    plan,
+    reset,
+    sanitizePlan,
+    attachFinishSteps,
+    formatOutcome,
+    isRawUtteranceSearch,
+    isCalendarPrefillStep,
+  };
+}
+
+module.exports = {
+  createOrchestrator,
+  sanitizePlan,
+  attachFinishSteps,
+  formatOutcome,
+  formatCalendarOutcome,
+  isRawUtteranceSearch,
+  isCalendarPrefillStep,
+  isSearchUrl,
+  isMessagingStep,
+  normalizeKey,
+  NEVER_AUTOSUBMIT_APP_IDS,
+  DEDUPE_MS,
+};

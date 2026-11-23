@@ -3424,6 +3424,23 @@ declare global {
         localBaseUrl?: string;
         cloudProvider?: string;
       }) => Promise<{ success: boolean; message?: string; error?: string; code?: string }>;
+      overlayCommandOrchestrate?: (payload: {
+        text: string;
+        parser?: "local" | "cloud";
+        model?: string;
+        localBaseUrl?: string;
+        cloudProvider?: string;
+        autoRunTrusted?: boolean;
+        autoSaveCreatedItems?: boolean;
+        confirmed?: boolean;
+      }) => Promise<{
+        handled: boolean;
+        success: boolean;
+        deduped?: boolean;
+        message?: string;
+        source?: string;
+        steps?: Array<{ action: string; args: Record<string, string> }>;
+      }>;
       overlayCommandCancel?: () => Promise<{ ok: boolean }>;
       /** App skills: scan installed apps, enable/disable their commands, review learned commands. */
       overlayApps?: import("./overlayApps").OverlayAppsApi;
@@ -3433,6 +3450,7 @@ declare global {
       overlaySetCommandModePrefs?: (prefs: {
         enabled: boolean;
         autoRunTrusted: boolean;
+        autoSaveCreatedItems?: boolean;
       }) => void;
       overlayRequirementsCheck?: (opts: {
         includeHinglish?: boolean;

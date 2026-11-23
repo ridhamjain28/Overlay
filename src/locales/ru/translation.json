@@ -1876,6 +1876,8 @@
         "enabledDescription": "Если включено, Overlay по возможности воспринимает запросы к ассистенту как команды рабочего стола. По умолчанию выключено.",
         "autoRunTrusted": "Автоматически выполнять доверенные действия",
         "autoRunTrustedDescription": "Не спрашивать подтверждение при открытии приложений и ссылок, вводе текста и подсказках на экране. Команды оболочки всегда требуют подтверждения.",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "Разбор намерения",
         "parserDescription": "Как Overlay превращает ваши слова в команду. Локально используется модель на этом компьютере (Ollama или llama-server) без облачного API. Облако использует уже настроенного в параметрах провайдера.",
         "parserLocal": "Локально (Ollama / llama-server)",

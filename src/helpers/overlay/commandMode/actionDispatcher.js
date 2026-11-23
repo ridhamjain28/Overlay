@@ -261,7 +261,7 @@ function createCommandDispatcher(deps = {}) {
   }
 
   async function perform(request, options = {}) {
-    if (!isEnabled()) {
+    if (!isEnabled() && options.allowWhenDisabled !== true) {
       return { success: false, error: "Command mode is turned off", code: "DISABLED" };
     }
     if (request?.action === "plan" || Array.isArray(request?.steps)) {

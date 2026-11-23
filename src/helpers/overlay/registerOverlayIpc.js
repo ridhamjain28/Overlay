@@ -7,6 +7,7 @@
 //   overlay-system-action          -> run one allowlisted laptop action
 //   overlay-command-parse          -> turn speech/text into a Command-mode intent
 //   overlay-command-execute        -> run one Command-mode action (confirm-gated)
+//   overlay-command-orchestrate    -> plan and run one command (chat and voice)
 //   overlay-command-cancel         -> abort an in-flight compose/write
 //   overlay-set-command-mode-prefs -> enable flag and auto-run trusted actions
 //   overlay-requirements-check     -> first-run checklist (what this PC still needs)
@@ -37,6 +38,7 @@ const {
   parseIntentHeuristic,
   createIntentCompleter,
   createCommandDispatcher,
+  createOrchestrator,
 } = require("./commandMode");
 const { createComposeCompleter } = require("./commandMode/composeClient");
 const appSkills = require("./appSkillsService");
@@ -173,7 +175,7 @@ function registerOverlayIpc({
   databaseManager,
   clipboardManager,
 }) {
-  let commandModePrefs = { enabled: false, autoRunTrusted: false };
+  let commandModePrefs = { enabled: false, autoRunTrusted: false, autoSaveCreatedItems: true };
   const skillsDir = appSkills.skillsDirFor(app);
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
 
@@ -361,7 +363,7 @@ function registerOverlayIpc({
   const actions = createSystemActions({
     execFile: execFileAsync,
     openPath: (p) => shell.openPath(p),
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternalSoon(url),
     confirm,
     picturesDir: app.getPath("pictures"),
     findNircmd,
@@ -468,6 +470,10 @@ function registerOverlayIpc({
     commandModePrefs = {
       enabled: prefs?.enabled === true,
       autoRunTrusted: prefs?.autoRunTrusted === true,
+      autoSaveCreatedItems:
+        prefs?.autoSaveCreatedItems === undefined
+          ? commandModePrefs.autoSaveCreatedItems !== false
+          : prefs.autoSaveCreatedItems !== false,
     };
   });
 
@@ -492,6 +498,16 @@ function registerOverlayIpc({
   const composeRuntime = { opts: {}, onProgress: null };
   let commandAbort = null;
 
+
+  async function openExternalSoon(url) {
+    const opened = Promise.resolve(shell.openExternal(url));
+    opened.catch(() => {});
+    await Promise.race([
+      opened,
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  }
+
   async function focusNamedWindow(name) {
     const title = String(name || "").trim();
     if (!title || process.platform !== "win32") return;
@@ -515,10 +531,89 @@ function registerOverlayIpc({
     }
   }
 
+  async function listOpenWindows() {
+    if (process.platform !== "win32") return { unsupported: true, windows: [] };
+    try {
+      const stdout = await execFileAsync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
+          "-Command",
+          "Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object { $_.MainWindowTitle }",
+        ],
+        { windowsHide: true, timeout: 4000 }
+      );
+      return String(stdout || "")
+        .split(/\r?\n/)
+        .map((title) => title.trim())
+        .filter(Boolean)
+        .map((title) => ({ title }));
+    } catch {
+      return [];
+    }
+  }
+
+  function nircmdKeyCombo(combo) {
+    return String(combo || "")
+      .trim()
+      .toLowerCase()
+      .split("+")
+      .map((part) => (part === "control" || part === "ctrl" ? "ctrl" : part === "cmd" || part === "meta" ? "win" : part))
+      .filter(Boolean)
+      .join("+");
+  }
+
+  function sendKeysWaitCombo(combo) {
+    const parts = String(combo || "")
+      .trim()
+      .toLowerCase()
+      .split("+")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const mods = { control: "^", ctrl: "^", alt: "%", shift: "+", cmd: "^", meta: "^" };
+    let keys = "";
+    let last = "";
+    for (const part of parts) {
+      if (mods[part]) keys += mods[part];
+      else last = part.length === 1 ? part : `{${part.toUpperCase()}}`;
+    }
+    return keys + last;
+  }
+
+  async function sendKeyCombo(combo) {
+    const nircmd = findNircmd();
+    const mapped = nircmdKeyCombo(combo);
+    if (nircmd && mapped) {
+      await execFileAsync(nircmd, ["sendkeypress", mapped], { windowsHide: true, timeout: 4000 });
+      return;
+    }
+    if (process.platform !== "win32") {
+      throw new Error("Keyboard shortcuts are not available");
+    }
+    const send = sendKeysWaitCombo(combo).replace(/'/g, "''");
+    await execFileAsync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-WindowStyle",
+        "Hidden",
+        "-Command",
+        "[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms');[System.Windows.Forms.SendKeys]::SendWait('" +
+          send +
+          "')",
+      ],
+      { windowsHide: true, timeout: 4000 }
+    );
+  }
+
   const commandDispatcher = createCommandDispatcher({
     execFile: execFileAsync,
     openPath: (p) => shell.openPath(p),
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternalSoon(url),
     confirm: commandConfirm,
     pasteText: async (text, options) => {
       if (!clipboardManager?.pasteText) throw new Error("Typing into apps is not available");
@@ -536,6 +631,7 @@ function registerOverlayIpc({
       return completer(prompt, extra);
     },
     focusApp: focusNamedWindow,
+    sendKeys: sendKeyCombo,
     onProgress: (phase) => {
       try {
         composeRuntime.onProgress?.(phase);
@@ -544,8 +640,28 @@ function registerOverlayIpc({
       }
     },
     getAppSkill: (appId) => readSkill(skillsDir, appId),
-    openExternal: (url) => shell.openExternal(url),
+    openExternal: (url) => openExternalSoon(url),
   });
+
+  const commandOrchestrator = createOrchestrator({
+    parseIntent: async (text, options = {}) => {
+      const completer = createIntentCompleter({
+        parser: options?.parser === "cloud" ? "cloud" : "local",
+        model: MODEL_TAG.test(options?.model || "") ? options.model : undefined,
+        localBaseUrl: options?.localBaseUrl,
+        cloudProvider: options?.cloudProvider,
+      });
+      const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
+      const learned = searchExamples(skillsDir, text, { k: 3 });
+      return parseIntent(text, { llmComplete: completer, skills, learned });
+    },
+    perform: (request, options = {}) =>
+      commandDispatcher.perform(request, { ...options, allowWhenDisabled: true }),
+    listWindows: listOpenWindows,
+    focusWindow: (win) => focusNamedWindow(win?.title || win?.windowTitle || win),
+    sendKeys: sendKeyCombo,
+  });
+
 
   ipcMain.handle("overlay-command-parse", async (_event, payload = {}) => {
     const text = String(payload?.text || "");
@@ -573,6 +689,61 @@ function registerOverlayIpc({
         errorCode: error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR",
         errorMessage: String(error?.message || "parse failed"),
       };
+    }
+  });
+
+
+  ipcMain.handle("overlay-command-orchestrate", async (event, payload = {}) => {
+    const text = String(payload?.text || "");
+    if (commandAbort) {
+      try { commandAbort.abort(); } catch { /* ignore */ }
+    }
+    commandAbort = typeof AbortController === "function" ? new AbortController() : null;
+    composeRuntime.opts = {
+      parser: payload?.parser === "cloud" ? "cloud" : "local",
+      model: MODEL_TAG.test(payload?.model || "") ? payload.model : undefined,
+      localBaseUrl: payload?.localBaseUrl,
+      cloudProvider: payload?.cloudProvider,
+    };
+    composeRuntime.onProgress = (phase) => {
+      try {
+        event.sender.send("overlay-command-progress", { phase });
+      } catch {
+        // ignore
+      }
+    };
+    try {
+      const result = await commandOrchestrator.orchestrate(text, {
+        parser: composeRuntime.opts.parser,
+        model: composeRuntime.opts.model,
+        localBaseUrl: composeRuntime.opts.localBaseUrl,
+        cloudProvider: composeRuntime.opts.cloudProvider,
+        autoRunTrusted: payload?.autoRunTrusted === true || commandModePrefs.autoRunTrusted,
+        autoSaveCreatedItems:
+          payload?.autoSaveCreatedItems !== undefined
+            ? payload.autoSaveCreatedItems !== false
+            : commandModePrefs.autoSaveCreatedItems !== false,
+        confirmed: payload?.confirmed === true,
+        signal: commandAbort?.signal,
+      });
+      debugLogger?.info?.("Overlay command orchestrator", {
+        handled: result.handled,
+        success: result.success,
+        deduped: result.deduped === true,
+        steps: (result.steps || []).map((step) => step.action),
+      });
+      try {
+        event.sender.send("overlay-command-progress", {
+          phase: "done",
+          code: result.success ? "OK" : result.handled ? "FAILED" : "NONE",
+        });
+      } catch {
+        // ignore
+      }
+      return result;
+    } finally {
+      composeRuntime.onProgress = null;
+      commandAbort = null;
     }
   });
 

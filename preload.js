@@ -1216,6 +1216,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlaySystemAction: (request) => ipcRenderer.invoke("overlay-system-action", request),
   overlayCommandParse: (payload) => ipcRenderer.invoke("overlay-command-parse", payload),
   overlayCommandExecute: (payload) => ipcRenderer.invoke("overlay-command-execute", payload),
+  overlayCommandOrchestrate: (payload) => ipcRenderer.invoke("overlay-command-orchestrate", payload),
   overlayCommandCancel: () => ipcRenderer.invoke("overlay-command-cancel"),
   onOverlayCommandProgress: registerListener(
     "overlay-command-progress",

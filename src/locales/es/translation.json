@@ -1876,6 +1876,8 @@
         "enabledDescription": "Si está activado, Overlay trata las peticiones al asistente como comandos del escritorio cuando puede. Viene desactivado por defecto.",
         "autoRunTrusted": "Ejecutar automáticamente las acciones de confianza",
         "autoRunTrustedDescription": "Omitir la confirmación al abrir apps o enlaces, escribir texto y mostrar una guía en pantalla. Los comandos del intérprete de comandos siempre piden confirmación.",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "Intérprete de intenciones",
         "parserDescription": "Cómo Overlay convierte tus palabras en un comando. Local usa el modelo que ya corre en este PC (Ollama o llama-server) y no necesita ninguna API en la nube. Nube usa el proveedor que ya configuraste en Ajustes.",
         "parserLocal": "Local (Ollama / llama-server)",

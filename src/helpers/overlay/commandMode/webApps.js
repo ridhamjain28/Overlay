@@ -125,10 +125,16 @@ function parseEventDate(text, now = new Date()) {
   return null;
 }
 
+const MERIDIEM_SRC = "a\\.?m\\.?|p\\.?m\\.?";
+
+function merNorm(mer) {
+  return String(mer || "").toLowerCase().replace(/\./g, "");
+}
+
 function merToHour(hour, minute, mer) {
   let h = Number(hour);
   const m = Number(minute || 0);
-  const meridem = String(mer || "").toLowerCase();
+  const meridem = merNorm(mer);
   if (meridem === "pm" && h < 12) h += 12;
   if (meridem === "am" && h === 12) h = 0;
   return { hour: h, minute: m };
@@ -138,12 +144,16 @@ function parseEventTimeRange(text) {
   const raw = trimText(text);
   // Dates like 24-11-2026 must not be read as a time range.
   const masked = raw.replace(/\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b/g, " ");
+  const mer = `(${MERIDIEM_SRC})`;
   const m = masked.match(
-    /(?:from\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|—|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i
+    new RegExp(
+      `(?:from\\s+)?(\\d{1,2})(?::(\\d{2}))?\\s*${mer}?\\s*(?:-|–|—|to)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*${mer}?`,
+      "i"
+    )
   );
   if (!m) return null;
-  let startMer = m[3];
-  let endMer = m[6];
+  let startMer = merNorm(m[3]);
+  let endMer = merNorm(m[6]);
   if (!startMer && endMer) startMer = endMer;
   if (!endMer && startMer) endMer = startMer;
   const startNum = Number(m[1]);
@@ -156,15 +166,44 @@ function parseEventTimeRange(text) {
   return { start, end };
 }
 
+function parseEventSingleTime(text) {
+  const raw = trimText(text);
+  const masked = raw.replace(/\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b/g, " ");
+  const mer = `(${MERIDIEM_SRC})`;
+  const m = masked.match(new RegExp(`(?:at\\s+)?(\\d{1,2})(?::(\\d{2}))?\\s*${mer}\\b`, "i"));
+  if (!m) return null;
+  const start = merToHour(m[1], m[2], merNorm(m[3]));
+  if (start.hour > 23 || start.minute > 59) return null;
+  const endHour = start.hour + 1;
+  const end = endHour <= 23
+    ? { hour: endHour, minute: start.minute }
+    : { hour: 23, minute: 59 };
+  return { start, end };
+}
+
+function parseEventTimes(text) {
+  return parseEventTimeRange(text) || parseEventSingleTime(text);
+}
+
 function parseEventTitle(text) {
   const raw = trimText(text);
   const quoted = raw.match(/["“](.+?)["”]/);
   if (quoted && quoted[1].trim()) return quoted[1].trim();
-  const named = raw.match(
-    /\b(?:titled|called|named|about)\s+(.+?)(?=\s+(?:on|from|at|tomorrow|today)\b|$)/i
+  const labelRe = new RegExp(
+    `\\b(?:titled|called|named|about|for)\\s+(?:an?\\s+|the\\s+)?(?!\\d)(.+?)(?=\\s+(?:on|from|at|tomorrow|today|tonight)\\b|$)`,
+    "ig"
   );
-  if (named && named[1].trim()) {
-    return named[1].replace(/[.,;:–—-]+$/g, "").trim();
+  let match;
+  while ((match = labelRe.exec(raw))) {
+    const title = match[1].replace(/[.,;:–—-]+$/g, "").trim();
+    if (!title) continue;
+    if (parseEventDate(title, new Date(2000, 0, 1))) continue;
+    return title;
+  }
+  const noun = raw.match(/\b(meeting|appointment|reminder|party|event)\b/i);
+  if (noun) {
+    const word = noun[1];
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
   }
   return "";
 }
@@ -186,7 +225,7 @@ function parseCalendarEvent(text, { now = new Date() } = {}) {
   const date = parseEventDate(raw, now);
   const title = parseEventTitle(raw);
   if (!date || !title) return null;
-  const range = parseEventTimeRange(raw);
+  const range = parseEventTimes(raw);
   const startTime = range ? range.start : { hour: 9, minute: 0 };
   const endTime = range ? range.end : { hour: startTime.hour + 1, minute: startTime.minute };
   const start = { ...date, ...startTime, second: 0 };
@@ -245,6 +284,8 @@ module.exports = {
   formatLocalStamp,
   parseEventDate,
   parseEventTimeRange,
+  parseEventSingleTime,
+  parseEventTimes,
   parseEventTitle,
   parseCalendarEvent,
   parseWebAppOpen,

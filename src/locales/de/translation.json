@@ -1876,6 +1876,8 @@
         "enabledDescription": "Wenn aktiv, behandelt Overlay Anfragen an den Assistenten nach Möglichkeit als Desktop-Befehle. Standardmäßig ausgeschaltet.",
         "autoRunTrusted": "Vertrauenswürdige Aktionen automatisch ausführen",
         "autoRunTrustedDescription": "Bestätigung überspringen für das Öffnen von Apps und Links, das Tippen von Text und Hinweise auf dem Bildschirm. Shell-Befehle fragen immer zuerst nach.",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "Befehlsauswertung",
         "parserDescription": "So macht Overlay aus deinen Worten einen Befehl. Lokal nutzt das Modell auf diesem PC (Ollama oder llama-server) und braucht keine Cloud-API. Cloud nutzt den bereits in den Einstellungen hinterlegten Anbieter.",
         "parserLocal": "Lokal (Ollama / llama-server)",

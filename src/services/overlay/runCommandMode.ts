@@ -8,10 +8,21 @@ export type CommandModeParser = "local" | "cloud";
 export interface CommandModeSettings {
   enabled: boolean;
   autoRunTrusted: boolean;
+  autoSaveCreatedItems?: boolean;
   parser: CommandModeParser;
   model?: string;
   localBaseUrl?: string;
   cloudProvider?: string;
+}
+
+export interface CommandOrchestratorResult {
+  handled: boolean;
+  success?: boolean;
+  cancelled?: boolean;
+  deduped?: boolean;
+  message?: string;
+  source?: string;
+  steps?: Array<{ action: string; args: Record<string, string> }>;
 }
 
 export interface CommandIntent {
@@ -75,6 +86,51 @@ export async function executeCommandIntent(
   });
 }
 
+
+/** Plan and run a desktop command from chat or voice. Always available. */
+export async function runCommandOrchestrator(
+  text: string,
+  settings: Partial<CommandModeSettings> = {}
+): Promise<CommandModeOutcome> {
+  if (!String(text || "").trim()) return { handled: false };
+  const fn = api()?.overlayCommandOrchestrate;
+  if (!fn) return { handled: false };
+  const startedAt = Date.now();
+  try {
+    const result = await fn({
+      text,
+      parser: settings.parser === "cloud" ? "cloud" : "local",
+      model: settings.model || OVERLAY_DEFAULT_MODEL,
+      localBaseUrl: settings.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
+      cloudProvider: settings.cloudProvider,
+      autoRunTrusted: settings.autoRunTrusted,
+      autoSaveCreatedItems: settings.autoSaveCreatedItems,
+    });
+    logger.debug(
+      "STAGE_TIMING",
+      { stage: "command_orchestrated", ms: Date.now() - startedAt, handled: result?.handled },
+      "perf"
+    );
+    if (!result?.handled) return { handled: false };
+    return {
+      handled: true,
+      success: result.success !== false,
+      cancelled: false,
+      message: result.message || (result.success === false ? "The command failed." : "Done"),
+      intent: {
+        action: (result.steps && result.steps[0]?.action) || "plan",
+        args: (result.steps && result.steps[0]?.args) || {},
+        confidence: 1,
+        source: result.source,
+        steps: result.steps,
+      },
+    };
+  } catch (error) {
+    console.warn("Command orchestrator failed", error);
+    return { handled: false };
+  }
+}
+
 /**
  * If Command mode is on and the text is a desktop command, run it (with the
  * main-process confirmation gate). Otherwise report that the assistant should
@@ -85,6 +141,9 @@ export async function runCommandModeIfEnabled(
   settings: CommandModeSettings
 ): Promise<CommandModeOutcome> {
   if (!settings.enabled || !String(text || "").trim()) return { handled: false };
+  if (api()?.overlayCommandOrchestrate) {
+    return runCommandOrchestrator(text, settings);
+  }
   let intent: CommandIntent;
   // Debug-only stage timing (durations and the intent source; never the text).
   const startedAt = Date.now();

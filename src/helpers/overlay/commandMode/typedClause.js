@@ -31,9 +31,10 @@ function isBareContentNounPhrase(value) {
  *
  * @returns {{ kind: "literal", text: string } | { kind: "compose", prompt: string } | null}
  */
-function classifyTypedClause(clause) {
+function classifyTypedClause(clause, options = {}) {
   const t = trimText(clause);
   if (!t) return null;
+  const afterOpen = options.afterOpen === true;
 
   const quoted = t.match(/^(?:(?:type|write|enter|paste|likho|likh do)\s+)?["“](.+)["”]\s*$/i);
   if (quoted) {
@@ -96,7 +97,7 @@ function classifyTypedClause(clause) {
   if (writeNoun) {
     const rest = trimText(writeNoun[1]);
     // "write an email" alone is a chat request; "write an email to …" is compose.
-    if (!rest) return null;
+    if (!rest && !afterOpen) return null;
     return { kind: "compose", prompt: t };
   }
 
@@ -104,7 +105,7 @@ function classifyTypedClause(clause) {
   const nounLead = t.match(
     new RegExp(`^(?:an?\\s+|the\\s+|some\\s+|ek\\s+)?(?:${COMPOSE_NOUN_SRC})\\b([\\s\\S]*)$`, "i")
   );
-  if (nounLead && trimText(nounLead[1])) {
+  if (nounLead && (trimText(nounLead[1]) || afterOpen)) {
     return { kind: "compose", prompt: /^write\b/i.test(t) ? t : `write ${t}` };
   }
 
@@ -125,8 +126,8 @@ function classifyTypedClause(clause) {
   return null;
 }
 
-function intentFromTypedClause(clause) {
-  const classified = classifyTypedClause(clause);
+function intentFromTypedClause(clause, options = {}) {
+  const classified = classifyTypedClause(clause, options);
   if (!classified) return null;
   if (classified.kind === "compose") {
     const prompt = trimText(classified.prompt);

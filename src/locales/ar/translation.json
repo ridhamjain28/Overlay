@@ -3084,6 +3084,8 @@
         "enabledDescription": "عند التفعيل، يعامل Overlay طلبات المساعد كأوامر لسطح المكتب عندما يستطيع. يبقى متوقفًا حتى تشغّله.",
         "autoRunTrusted": "تشغيل الإجراءات الموثوقة تلقائيًا",
         "autoRunTrustedDescription": "تجاوز خطوة التأكيد عند فتح التطبيقات والروابط وكتابة النص والإرشاد على الشاشة. أوامر الصدفة تطلب التأكيد دائمًا.",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "تحليل النية",
         "parserDescription": "كيف يحوّل Overlay كلامك إلى أمر. الوضع المحلي يستخدم النموذج العامل على هذا الجهاز (Ollama أو llama-server) دون واجهة سحابية. السحابة تستخدم المزوّد الذي أعددته في الإعدادات.",
         "parserLocal": "محلي (Ollama / llama-server)",

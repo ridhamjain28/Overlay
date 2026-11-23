@@ -102,3 +102,21 @@ test("compose_email writes the body then opens a Gmail compose URL, and does not
   assert.match(built, /mail\.google\.com/);
   assert.equal(calls.some((c) => c.prompt), true);
 });
+
+test("named month dates, dotted meridians, for-titles, and a single 5pm default to one hour", () => {
+  const now = new Date(2026, 10, 23);
+  const party = parseCalendarEvent(
+    "calendar of cadu, can you add an event for 24 November 2026 for a birthday party from 5 p.m. to 7",
+    { now }
+  );
+  assert.ok(party);
+  const url = new URL(party.args.url);
+  assert.equal(url.searchParams.get("text"), "birthday party");
+  assert.equal(url.searchParams.get("dates"), "20261124T170000/20261124T190000");
+
+  const meeting = parseCalendarEvent("open google calendar and add a meeting tomorrow 5pm", { now });
+  assert.ok(meeting);
+  const meetingUrl = new URL(meeting.args.url);
+  assert.equal(meetingUrl.searchParams.get("text"), "Meeting");
+  assert.equal(meetingUrl.searchParams.get("dates"), "20261124T170000/20261124T180000");
+});

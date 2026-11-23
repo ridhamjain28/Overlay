@@ -1876,6 +1876,8 @@
         "enabledDescription": "Lorsqu’il est activé, Overlay traite les demandes à l’assistant comme des commandes du bureau quand c’est possible. Désactivé par défaut.",
         "autoRunTrusted": "Exécuter automatiquement les actions de confiance",
         "autoRunTrustedDescription": "Passer la confirmation pour ouvrir une appli ou un lien, taper du texte et afficher un guide à l’écran. Les commandes du terminal demandent toujours confirmation.",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "Analyse de l’intention",
         "parserDescription": "Comment Overlay transforme vos mots en commande. Local utilise le modèle déjà lancé sur ce PC (Ollama ou llama-server) et n’a besoin d’aucune API cloud. Cloud utilise le fournisseur déjà configuré dans les réglages.",
         "parserLocal": "Local (Ollama / llama-server)",

@@ -2,6 +2,8 @@ import { useCallback, useRef } from "react";
 import type { ChatPersistence } from "./useChatPersistence";
 import type { ChatStreaming, SendToAIOptions } from "./useChatStreaming";
 import type { Message } from "./types";
+import { runCommandOrchestrator } from "../../services/overlay/runCommandMode";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 interface PersistedMessageContext {
   conversationId: number;
@@ -79,6 +81,25 @@ export function useChatMessageSender({
             isFirstMessage: previousMessages.length === 0,
           });
           if (!isCurrent()) return;
+          const settings = useSettingsStore.getState();
+          const outcome = await runCommandOrchestrator(text, {
+            autoRunTrusted: settings.commandModeAutoRunTrusted,
+            autoSaveCreatedItems: settings.autoSaveCreatedItems,
+            parser: settings.commandModeParser,
+          });
+          if (!isCurrent()) return;
+          if (outcome.handled) {
+            const assistantMessage: Message = {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: outcome.message,
+              isStreaming: false,
+            };
+            persistence.setMessages((messages) => [...messages, assistantMessage]);
+            await persistence.saveAssistantMessage(outcome.message);
+            submitted = true;
+            return;
+          }
           submitted = true;
           await streaming.sendToAI(text, [...previousMessages, userMessage], options);
         } catch (error) {

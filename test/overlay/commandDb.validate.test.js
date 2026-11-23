@@ -104,6 +104,8 @@ test("bundled command DB has 3+ examples per action and every placeholder is dec
   const calendar = data.apps.find((app) => app.appId === "google-calendar");
   const create = calendar.actions.find((act) => act.id === "create-event");
   assert.equal(create.risk, "safe");
+  assert.equal(create.autoSubmit.enabledByDefault, true);
+  assert.equal(create.autoSubmit.keys, "control+s");
   const teams = data.apps.find((app) => app.appId === "microsoft-teams");
   const call = teams.actions.find((act) => act.id === "start-call");
   assert.equal(call.risk, "confirm");

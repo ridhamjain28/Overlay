@@ -1876,6 +1876,8 @@
         "enabledDescription": "Se attiva, Overlay tratta le richieste all'assistente come comandi del desktop quando può. Resta disattivata finché non la accendi.",
         "autoRunTrusted": "Esegui automaticamente le azioni attendibili",
         "autoRunTrustedDescription": "Salta la conferma per aprire app e link, digitare testo e mostrare una guida sullo schermo. I comandi della shell chiedono sempre conferma.",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "Analisi dell'intento",
         "parserDescription": "Come Overlay trasforma le tue parole in un comando. In locale usa il modello già in esecuzione su questo PC (Ollama o llama-server) senza API cloud. Cloud usa il provider già configurato nelle Impostazioni.",
         "parserLocal": "Locale (Ollama / llama-server)",

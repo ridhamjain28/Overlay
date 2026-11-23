@@ -200,7 +200,7 @@ const HINGLISH_COMPOUND_RE = new RegExp(
 
 function planFromOpenAndClause(app, clause) {
   const name = cleanAppName(app);
-  const typedIntent = intentFromTypedClause(clause);
+  const typedIntent = intentFromTypedClause(clause, { afterOpen: true });
   if (!name || !typedIntent || toHttpsUrl(name) || containsCommandConnector(name)) return null;
   if (name.length > 80) return null;
   return {
@@ -284,8 +284,8 @@ function parseIntentHeuristic(text, options = {}) {
   // Compound open+write and type/compose must win over chat patterns such as
   // "write an email …", so "open notepad and write an email to …" stays a plan.
   const commandHit =
-    parseCalendarEvent(t) ||
-    parseCalendarEvent(original) ||
+    parseCalendarEvent(t, options) ||
+    parseCalendarEvent(original, options) ||
     parseBrowserSearch(t) ||
     parseBrowserSearch(original) ||
     parseWebAppOpen(t) ||
@@ -498,8 +498,24 @@ function cleanIntentSearchUrls(text, intent) {
   return intent;
 }
 
+function planAlreadyHasNonBrowserWork(intent) {
+  return intentStepsOf(intent).some((step) => {
+    if (!step || !step.action || step.action === "none") return false;
+    if (step.action === "open_url" && isSearchUrl(step.args?.url)) return false;
+    // Opening a browser is not the work — a missing search may still be needed.
+    if (step.action === "open_app") {
+      const product =
+        resolveBrowserAlias(step.args?.app || "") || namedBrowserInUtterance(step.args?.app || "");
+      if (product) return false;
+    }
+    return true;
+  });
+}
+
 function repairMissingSearch(text, intent) {
   if (!utteranceWantsSearch(text) || hasSearchStep(intent)) return intent;
+  // Never bolt a fallback Google search onto a calendar, email, or app plan.
+  if (planAlreadyHasNonBrowserWork(intent)) return intent;
   let parsed = parseBrowserSearch(text);
   if (!parsed) {
     const query = extractSearchQuery(text);

@@ -188,6 +188,8 @@ export default function PreferencesSettings() {
   const setCommandModeEnabled = useSettingsStore((s) => s.setCommandModeEnabled);
   const commandModeAutoRunTrusted = useSettingsStore((s) => s.commandModeAutoRunTrusted);
   const setCommandModeAutoRunTrusted = useSettingsStore((s) => s.setCommandModeAutoRunTrusted);
+  const autoSaveCreatedItems = useSettingsStore((s) => s.autoSaveCreatedItems);
+  const setAutoSaveCreatedItems = useSettingsStore((s) => s.setAutoSaveCreatedItems);
 
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [autoStartNeedsApproval, setAutoStartNeedsApproval] = useState(false);
@@ -294,6 +296,14 @@ export default function PreferencesSettings() {
               description={t("settingsPage.general.commandMode.enabledDescription")}
             >
               <Toggle checked={commandModeEnabled} onChange={setCommandModeEnabled} />
+            </SettingsRow>
+          </SettingsPanelRow>
+          <SettingsPanelRow>
+            <SettingsRow
+              label={t("settingsPage.general.commandMode.autoSaveCreatedItems")}
+              description={t("settingsPage.general.commandMode.autoSaveCreatedItemsDescription")}
+            >
+              <Toggle checked={autoSaveCreatedItems} onChange={setAutoSaveCreatedItems} />
             </SettingsRow>
           </SettingsPanelRow>
           {commandModeEnabled && (

@@ -4069,7 +4069,7 @@
         },
         {
           "id": "create-event",
-          "description": "Open a pre-filled Google Calendar event template. Dates must be compact ISO instants such as 20261124T113000Z (UTC) or a local 20261124T170000 form; the event is not saved until the user clicks Save. Official template uses action=TEMPLATE on the event-edit URL.",
+          "description": "Open a pre-filled Google Calendar event template. Dates must be compact ISO instants such as 20261124T113000Z (UTC) or a local 20261124T170000 form; Overlay auto-saves the event when Auto-save created items is on (Ctrl+S). Official template uses action=TEMPLATE on the event-edit URL.",
           "params": [
             {
               "name": "title",
@@ -4133,7 +4133,14 @@
               }
             }
           ],
-          "risk": "safe"
+          "risk": "safe",
+          "autoSubmit": {
+            "enabledByDefault": true,
+            "keys": "control+s",
+            "matchUrl": "eventedit",
+            "matchTitle": "Calendar",
+            "leaveUrl": "eventedit"
+          }
         }
       ]
     },

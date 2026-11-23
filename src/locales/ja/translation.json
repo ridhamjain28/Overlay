@@ -1876,6 +1876,8 @@
         "enabledDescription": "オンにすると、可能な場合はアシスタントへの依頼をデスクトップコマンドとして扱います。初期状態ではオフです。",
         "autoRunTrusted": "信頼できる操作を自動実行する",
         "autoRunTrustedDescription": "アプリやリンクを開く、文字入力、画面上の案内では確認を省略します。シェルコマンドは必ず確認します。",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "意図の解析",
         "parserDescription": "言葉をコマンドに変換する方法です。ローカルは、この PC で動いているモデル（Ollama または llama-server）を使い、クラウド API は不要です。クラウドは、設定済みのプロバイダーを使います。",
         "parserLocal": "ローカル（Ollama / llama-server）",

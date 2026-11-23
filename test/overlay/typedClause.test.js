@@ -75,3 +75,10 @@ test("longer write clauses without a content noun go to the model (compose_text)
   assert.equal(intentFromTypedClause("write hello").action, "type_text");
   assert.equal(intentFromTypedClause("type good morning team").action, "type_text");
 });
+
+test("open notepad and write a letter (no extra rest) is still compose", () => {
+  const r = parseIntentHeuristic("open notepad and write a letter");
+  assert.equal(r.action, "plan");
+  assert.equal(r.steps[0].args.app, "notepad");
+  assert.equal(r.steps[1].action, "compose_text");
+});

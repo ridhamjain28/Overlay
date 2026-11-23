@@ -1876,6 +1876,8 @@
         "enabledDescription": "开启后，Overlay 会在可以识别时把对助手的请求当作桌面命令。默认关闭。",
         "autoRunTrusted": "自动执行受信任的操作",
         "autoRunTrustedDescription": "打开应用或链接、输入文字以及屏幕指引时跳过确认。Shell 命令始终会先询问你。",
+        "autoSaveCreatedItems": "Auto-save created items",
+        "autoSaveCreatedItemsDescription": "After Overlay opens a new calendar event, save it automatically (Ctrl+S). Messages to other people are never sent without your confirmation.",
         "parser": "意图解析",
         "parserDescription": "Overlay 如何把你的话变成命令。本地使用这台电脑上已在运行的模型（Ollama 或 llama-server），无需云端 API。云端则使用你已在设置中配置的服务商。",
         "parserLocal": "本地（Ollama / llama-server）",
