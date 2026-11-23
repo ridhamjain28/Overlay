@@ -64,7 +64,7 @@ test("local completer uses native /api/chat with think false, ctx 8192, skill pr
   assert.ok(seen[1].body.format.properties.action);
   assert.equal(seen[1].body.messages[0].role, "system");
   assert.match(seen[1].body.messages[0].content, /Overlay Command Skill/);
-  assert.match(seen[1].body.messages[0].content, /version:\s*3/);
+  assert.match(seen[1].body.messages[0].content, /version:\s*4/);
   assert.equal(seen[1].body.messages[1].role, "user");
   assert.equal(seen[1].body.messages[1].content, "hello");
 });

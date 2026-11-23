@@ -4,6 +4,8 @@
 // utterance unless the plan already contains a search step.
 
 const { URL } = require("url");
+const { isMetaIntent, formatMetaExplanation } = require("./metaIntent");
+const { formatFindOutcome, isExecutablePath } = require("./findPath");
 
 const DEDUPE_MS = 2500;
 const DEFAULT_SUBMIT_TIMEOUT_MS = 12000;
@@ -125,7 +127,23 @@ function looksLikeCreateOrSave(text) {
  * Drop a search of the raw utterance when the plan already does real work,
  * or when the only "search" is the command text itself.
  */
+function parsePickNumber(text, last) {
+  const m = String(text || "").trim().match(/^(?:open\s+)?(?:number\s+|option\s+|#)?([1-5])(?:st|nd|rd|th)?$/i);
+  if (!m) return null;
+  const find = (last?.results || []).find((row) => row && row.action === "find_path" && Array.isArray(row.matches));
+  if (!find || !find.matches.length) return null;
+  return find.matches[Number(m[1]) - 1] || null;
+}
+
+function isExplorerStep(step) {
+  if (!step) return false;
+  if (step.action === "open_path") return true;
+  const app = String(step.args?.app || step.args?.appId || "");
+  return /explorer|^files$/i.test(app);
+}
+
 function sanitizePlan(text, steps) {
+  if (isMetaIntent(text)) return [];
   const list = cloneSteps(steps);
   const hasWork = list.some((step) => {
     if (!step.action || step.action === "none") return false;
@@ -274,6 +292,13 @@ function formatOutcome(text, steps, results) {
     if (typed) return `Opened ${app} and started writing.`;
     return `Opened ${app}.`;
   }
+  const findResult = results.find((row) => row && row.action === "find_path");
+  if (findResult) {
+    return findResult.message || formatFindOutcome(findResult);
+  }
+  if (first.action === "open_path") {
+    return results[results.length - 1]?.message || (ok ? `Opened ${first.args?.path || "the path"}.` : "The path could not be opened.");
+  }
   if (first.action === "app_action") {
     return ok ? `Ran ${first.args?.actionId || "the action"} in ${first.args?.appId || "the app"}.` : "The action failed.";
   }
@@ -346,6 +371,16 @@ function createOrchestrator(deps = {}) {
       const checked = await deps.postcheck(step, result);
       if (checked && checked.ok === false) return { ok: false, message: checked.message || "Verification failed." };
     }
+    if (isExplorerStep(step) && typeof listWindows === "function") {
+      const title = step.args?.path
+        ? String(step.args.path).split(/[\\/]/).filter(Boolean).pop()
+        : "File Explorer";
+      const waited = await waitForWindow({ matchTitle: title }, 4000);
+      if (!waited.ok && !waited.skipped) {
+        const fallback = await waitForWindow({ matchTitle: "File Explorer" }, 1500);
+        if (!fallback.ok && !fallback.skipped) return { ok: true, soft: true };
+      }
+    }
     if (step.action === "open_url" && isCalendarPrefillStep(step) && typeof listWindows === "function") {
       const waited = await waitForWindow(
         { matchTitle: "Calendar", matchUrl: "eventedit" },
@@ -406,11 +441,19 @@ function createOrchestrator(deps = {}) {
     return { success: true, action: "submit_page", message: "Saved." };
   }
 
+  let lastOutcome = null;
+
   async function plan(text, options = {}) {
+    if (isMetaIntent(text)) {
+      return { steps: [], intent: { action: "none", metaIntent: true }, source: "meta", metaIntent: true };
+    }
     if (typeof parseIntent !== "function") {
       return { steps: [], intent: null, source: "none" };
     }
     const intent = await parseIntent(text, options);
+    if (intent?.metaIntent || isMetaIntent(text)) {
+      return { steps: [], intent, source: "meta", metaIntent: true };
+    }
     const rawSteps = intentSteps(intent);
     const cleaned = sanitizePlan(text, rawSteps);
     const autoSaveCreatedItems = options.autoSaveCreatedItems !== false;
@@ -418,9 +461,40 @@ function createOrchestrator(deps = {}) {
     return { steps, intent, source: intent?.source || "none" };
   }
 
+  function storeLast(outcome) {
+    lastOutcome = outcome;
+    return outcome;
+  }
+
   async function orchestrate(text, options = {}) {
     const key = normalizeKey(text);
     if (!key) return { handled: false, success: false, steps: [], message: "" };
+    const picked = parsePickNumber(text, lastOutcome);
+    if (picked) {
+      inFlight.add(key);
+      try {
+        const step = { action: "open_path", args: { path: picked.path }, source: "pick" };
+        if (typeof perform !== "function") {
+          return storeLast({ handled: true, success: false, steps: [step], results: [], message: "No executor is available" });
+        }
+        const result = { action: "open_path", ...(await perform({ action: "open_path", args: step.args, utterance: text }, { autoRunTrusted: options.autoRunTrusted !== false, confirmed: options.confirmed })) };
+        remember(key);
+        return storeLast({
+          handled: true,
+          success: result.success !== false,
+          steps: [step],
+          results: [result],
+          message: result.message || `Opened ${picked.path} in File Explorer`,
+          source: "pick",
+        });
+      } finally {
+        inFlight.delete(key);
+      }
+    }
+    if (isMetaIntent(text)) {
+      const message = formatMetaExplanation(text, lastOutcome);
+      return { handled: true, success: true, explanation: true, steps: [], message, source: "meta" };
+    }
     if (inFlight.has(key) || wasRecent(key)) {
       return {
         handled: true,
@@ -433,6 +507,10 @@ function createOrchestrator(deps = {}) {
     inFlight.add(key);
     try {
       const planned = await plan(text, options);
+      if (planned.metaIntent) {
+        const message = formatMetaExplanation(text, lastOutcome);
+        return { handled: true, success: true, explanation: true, steps: [], message, source: "meta" };
+      }
       if (!planned.steps.length) {
         return { handled: false, success: false, steps: [], source: planned.source, message: "" };
       }
@@ -453,26 +531,50 @@ function createOrchestrator(deps = {}) {
         const verified = await verifyStep(step, result);
         if (!verified.ok) {
           const message = verified.message || result.message || result.error || "The command failed.";
-          return {
+          return storeLast({
             handled: true,
             success: false,
             steps: planned.steps,
             results: results.concat(result),
             message,
             source: planned.source,
-          };
+          });
         }
         results.push(result);
+        if (step.action === "find_path") {
+          const matches = result.matches || [];
+          if (result.missingWithin || matches.length !== 1) {
+            remember(key);
+            return storeLast({
+              handled: true,
+              success: true,
+              steps: planned.steps.slice(0, results.length),
+              results,
+              message: result.message || formatFindOutcome(result),
+              source: planned.source,
+            });
+          }
+          const next = planned.steps[planned.steps.indexOf(step) + 1];
+          if (!next || next.action !== "open_path") {
+            planned.steps.splice(planned.steps.indexOf(step) + 1, 0, {
+              action: "open_path",
+              args: { path: matches[0].path },
+              source: "find_path",
+            });
+          } else if (!next.args.path) {
+            next.args.path = matches[0].path;
+          }
+        }
       }
       remember(key);
-      return {
+      return storeLast({
         handled: true,
         success: results.every((row) => row.success !== false),
         steps: planned.steps,
         results,
         message: formatOutcome(text, planned.steps, results),
         source: planned.source,
-      };
+      });
     } finally {
       inFlight.delete(key);
     }
@@ -481,12 +583,18 @@ function createOrchestrator(deps = {}) {
   function reset() {
     recent.clear();
     inFlight.clear();
+    lastOutcome = null;
+  }
+
+  function getLastOutcome() {
+    return lastOutcome;
   }
 
   return {
     orchestrate,
     plan,
     reset,
+    getLastOutcome,
     sanitizePlan,
     attachFinishSteps,
     formatOutcome,

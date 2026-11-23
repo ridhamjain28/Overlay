@@ -14,6 +14,8 @@ const {
 } = require("./browserSearch");
 const { parseCalendarEvent, parseWebAppOpen, parseGmailCompose } = require("./webApps");
 const { parseAppSkillIntent, buildDynamicIntentContext } = require("./appSkillMatcher");
+const { parseFindPath } = require("./findPath");
+const { isMetaIntent } = require("./metaIntent");
 
 const COMMAND_ACTIONS = [
   "open_app",
@@ -24,6 +26,8 @@ const COMMAND_ACTIONS = [
   "compose_email",
   "guide",
   "app_action",
+  "find_path",
+  "open_path",
 ];
 
 const URL_PROTOCOL = /^(https?:\/\/)/i;
@@ -283,9 +287,14 @@ function parseIntentHeuristic(text, options = {}) {
   const t = stripCommandWrappers(original) || original;
   // Compound open+write and type/compose must win over chat patterns such as
   // "write an email …", so "open notepad and write an email to …" stays a plan.
+  if (isMetaIntent(original) || isMetaIntent(t)) {
+    return { action: "none", args: {}, confidence: 1, source: "heuristic", metaIntent: true };
+  }
   const commandHit =
     parseCalendarEvent(t, options) ||
     parseCalendarEvent(original, options) ||
+    parseFindPath(t) ||
+    parseFindPath(original) ||
     parseBrowserSearch(t) ||
     parseBrowserSearch(original) ||
     parseWebAppOpen(t) ||
@@ -408,6 +417,20 @@ function normalizeSingleIntent(parsed, source) {
   if (action === "guide" && !args.target) return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "app_action" && (!args.appId || !args.actionId))
     return { action: "none", args: {}, confidence: 0.2, source };
+  if (action === "find_path") {
+    args.name = trimText(parsed.name || parsed.query || parsed.text || args.name || "");
+    args.kind = trimText(parsed.kind || args.kind || "any") || "any";
+    if (parsed.within || args.within) args.within = trimText(parsed.within || args.within);
+    if (!args.name) return { action: "none", args: {}, confidence: 0.2, source };
+  }
+  if (action === "open_path") {
+    args.path = trimText(parsed.path || parsed.target || args.path || "");
+    if (parsed.searchQuery || args.searchQuery) args.searchQuery = trimText(parsed.searchQuery || args.searchQuery);
+    if (parsed.searchMs || args.searchMs) args.searchMs = true;
+    if (parsed.location || args.location) args.location = trimText(parsed.location || args.location);
+    if (parsed.run || args.run) args.run = true;
+    if (!args.path && !args.searchMs) return { action: "none", args: {}, confidence: 0.2, source };
+  }
   return { action, args, confidence, source };
 }
 
@@ -513,19 +536,14 @@ function planAlreadyHasNonBrowserWork(intent) {
 }
 
 function repairMissingSearch(text, intent) {
+  if (isMetaIntent(text)) return intent;
   if (!utteranceWantsSearch(text) || hasSearchStep(intent)) return intent;
   // Never bolt a fallback Google search onto a calendar, email, or app plan.
   if (planAlreadyHasNonBrowserWork(intent)) return intent;
-  let parsed = parseBrowserSearch(text);
-  if (!parsed) {
-    const query = extractSearchQuery(text);
-    if (!query) return intent;
-    const product = namedBrowserInUtterance(text);
-    const args = { url: googleSearchUrl(query) };
-    if (product === "default") args.browser = "browser";
-    else if (product) args.browser = product;
-    parsed = { action: "open_url", args, confidence: 0.85 };
-  }
+  // Only a real browser-search parse may invent a search. Never extract a
+  // query from a complaint or other utterance that merely contains "search".
+  const parsed = parseBrowserSearch(text);
+  if (!parsed) return intent;
   const steps = intentStepsOf(intent);
   const browser = parsed.args.browser;
   const matchesBrowserOpen = (step) => {
@@ -657,6 +675,7 @@ function formatIntentForConfirm(intent) {
 
 module.exports = {
   COMMAND_ACTIONS,
+  parseFindPath,
   parseIntentHeuristic,
   parseIntentFromLlmResponse,
   parseIntent,

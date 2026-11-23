@@ -187,6 +187,27 @@ function fillActionTemplate(action, params = {}, context = {}) {
     }
     return { ok: true, type: "keys", value: combo };
   }
+  if (typ === "find_path") {
+    const name = String(merged.name || merged.query || "").trim();
+    if (!name) return { ok: false, error: "find_path needs a name" };
+    const args = { name, kind: merged.kind || "any" };
+    if (merged.within) args.within = String(merged.within).trim();
+    return { ok: true, type: "find_path", args };
+  }
+  if (typ === "open_path") {
+    const searchQuery = String(merged.searchQuery || merged.query || "").trim();
+    if (/search-ms:/i.test(String(template)) || merged.searchMs || searchQuery) {
+      if (!searchQuery) return { ok: false, error: "Explorer search needs a query" };
+      const args = { searchMs: true, searchQuery };
+      if (merged.location || merged.path) args.location = String(merged.location || merged.path).trim();
+      return { ok: true, type: "open_path", args };
+    }
+    const filePath = String(merged.path || "").trim();
+    if (!filePath) return { ok: false, error: "open_path needs a file or folder path" };
+    const args = { path: filePath };
+    if (merged.run) args.run = true;
+    return { ok: true, type: "open_path", args };
+  }
   return { ok: false, error: `Unknown action type "${typ}"` };
 }
 
