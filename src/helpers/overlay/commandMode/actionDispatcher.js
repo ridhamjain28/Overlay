@@ -11,8 +11,9 @@ const {
   resolveBrowserLaunch,
 } = require("../chromiumProfile");
 const { buildGmailComposeUrl } = require("./webApps");
+const { fillActionTemplate } = require("../appSkillTemplates");
 
-const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide"]);
+const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide", "app_action"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
 const PLAN_STEP_DELAY_MS = 1500;
 const APP_LAUNCH_GRACE_MS = 300;
@@ -135,6 +136,17 @@ function validateCommandRequest(request) {
     }
     args.target = target;
   }
+  if (action === "app_action") {
+    const appId = String(args.appId || request.appId || request.app || "").trim();
+    const actionId = String(args.actionId || request.actionId || "").trim();
+    if (!appId || !actionId) {
+      return { ok: false, error: "app_action needs an appId and actionId", code: "NOT_ALLOWED" };
+    }
+    args.appId = appId;
+    args.actionId = actionId;
+    const params = args.params || request.params;
+    args.params = params && typeof params === "object" && !Array.isArray(params) ? params : {};
+  }
   return { ok: true, action, args };
 }
 
@@ -161,6 +173,8 @@ function createCommandDispatcher(deps = {}) {
     composeText, // (prompt, { signal, onToken }) => Promise<string>
     focusApp, // (name) => Promise
     onProgress, // (phase) => void
+    getAppSkill, // (appId) => skill
+    sendKeys, // (combo) => Promise
   } = deps;
 
   async function launchDetached(file, args = []) {
@@ -259,9 +273,14 @@ function createCommandDispatcher(deps = {}) {
     const autoRunTrusted = options.autoRunTrusted === true || getAutoRunTrusted() === true;
     const alreadyConfirmed = options.confirmed === true;
     const mustConfirm = needsConfirmation(action, { autoRunTrusted }) && !alreadyConfirmed;
-    // Shell commands always confirm unless the caller already got a user Yes
-    // *and* we still re-check here for unconfirmed IPC.
-    if (action === "run_command" && !alreadyConfirmed) {
+    const skillForAction =
+      action === "app_action" && typeof getAppSkill === "function" ? getAppSkill(args.appId) : null;
+    const skillAction =
+      skillForAction && (skillForAction.actions || []).find((item) => item.id === args.actionId);
+    if (action === "app_action" && skillAction?.risk === "confirm" && !alreadyConfirmed) {
+      const allowed = typeof confirm === "function" ? await confirm(confirmMessage(action, args)) : false;
+      if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+    } else if (action === "run_command" && !alreadyConfirmed) {
       const allowed = typeof confirm === "function" ? await confirm(confirmMessage(action, args)) : false;
       if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
     } else if (mustConfirm) {
@@ -519,6 +538,34 @@ function createCommandDispatcher(deps = {}) {
             bounds: found?.bounds || null,
             windowTitle: found?.windowTitle,
           };
+        }
+        case "app_action": {
+          const skill = typeof getAppSkill === "function" ? getAppSkill(args.appId) : skillForAction;
+          if (!skill || skill.enabled === false) {
+            return { success: false, error: `No skill is enabled for "${args.appId}"`, code: "NOT_FOUND" };
+          }
+          const item = (skill.actions || []).find((row) => row.id === args.actionId);
+          if (!item || item.enabled === false) {
+            return { success: false, error: `Unknown action "${args.actionId}"`, code: "NOT_FOUND" };
+          }
+          const filled = fillActionTemplate(item, args.params || {}, { target: skill.target });
+          if (!filled.ok) return { success: false, error: filled.error, code: "NOT_ALLOWED" };
+          if (filled.type === "url" || filled.type === "uri") {
+            await openExternal(filled.value);
+            return { success: true, message: `Opened ${filled.value}`, action, args };
+          }
+          if (filled.type === "cli") {
+            await launchDetached(filled.exe, filled.args);
+            return { success: true, message: `Opened ${filled.exe}`, action, args };
+          }
+          if (filled.type === "keys") {
+            if (typeof sendKeys !== "function") {
+              return { success: false, error: "Keyboard actions are not available", code: "FAILED" };
+            }
+            await sendKeys(filled.value);
+            return { success: true, message: `Sent ${filled.value}`, action, args };
+          }
+          return { success: false, error: "Not allowed", code: "NOT_ALLOWED" };
         }
         default:
           return { success: false, error: "Not allowed", code: "NOT_ALLOWED" };

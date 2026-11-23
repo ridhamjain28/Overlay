@@ -586,6 +586,18 @@
       "check": "Check again",
       "restart": "Restart Overlay",
       "restartRequired": "Restart Overlay to apply screen access."
+    },
+    "findApps": {
+      "titleScanning": "Finding your apps…",
+      "descriptionScanning": "Overlay is looking at the apps installed on this PC and matching them to ready commands.",
+      "progress": "Scanning {{stage}}…",
+      "titleDone": "Found {{count}} apps, {{ready}} have ready commands",
+      "descriptionDone": "These commands are copied to your computer. You can turn any of them off, and rescan later in Settings.",
+      "readyBadge": "Ready commands",
+      "genericBadge": "Open only",
+      "webBadge": "Web",
+      "error": "Couldn't finish scanning apps. You can try again from Settings.",
+      "retry": "Try again"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "Copy your text below, then press {{shortcut}} to paste it.",
         "openSettings": "Open Settings",
         "copyToClipboard": "Copy to clipboard",
-      "writing": "Writing…",
-      "cancelWriting": "Cancel",
+        "writing": "Writing…",
+        "cancelWriting": "Cancel",
         "copyFailed": "Copy failed"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "Forget assistant memory",
       "forgetChatsDescription": "The assistant stops recalling things from past chats. The chats stay in Home.",
       "forgetButton": "Forget"
+    },
+    "appsSkills": {
+      "title": "Apps & Skills",
+      "description": "Commands Overlay can run in the apps on this PC.",
+      "rescan": "Rescan apps",
+      "scanning": "Scanning…",
+      "summary": "{{count}} apps, {{ready}} with ready commands",
+      "enabled": "Enabled",
+      "test": "Test",
+      "testOk": "Ran {{action}}",
+      "testFailed": "Couldn't run that action",
+      "learnedTitle": "Learned examples",
+      "learnedEmpty": "No learned examples yet.",
+      "learnedDelete": "Delete",
+      "search": "Filter apps",
+      "noApps": "No apps found yet. Rescan to search this PC."
     }
   }
 }

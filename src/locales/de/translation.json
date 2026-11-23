@@ -586,6 +586,18 @@
       "check": "Erneut prüfen",
       "restart": "App neu starten",
       "restartRequired": "Starte Overlay für den Bildschirmzugriff neu."
+    },
+    "findApps": {
+      "titleScanning": "Deine Apps werden gesucht…",
+      "descriptionScanning": "Overlay prüft die auf diesem PC installierten Apps und vergleicht sie mit fertigen Befehlen.",
+      "progress": "Scan: {{stage}}…",
+      "titleDone": "{{count}} Apps gefunden, {{ready}} haben fertige Befehle",
+      "descriptionDone": "Diese Befehle werden auf deinem Computer gespeichert. Du kannst sie jederzeit deaktivieren und später in den Einstellungen erneut scannen.",
+      "readyBadge": "Fertige Befehle",
+      "genericBadge": "Nur öffnen",
+      "webBadge": "Web",
+      "error": "Der App-Scan konnte nicht abgeschlossen werden. Du kannst es in den Einstellungen erneut versuchen.",
+      "retry": "Erneut versuchen"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "Kopiere deinen Text unten und drücke dann {{shortcut}}, um ihn einzufügen.",
         "openSettings": "Einstellungen öffnen",
         "copyToClipboard": "Text kopieren",
-      "writing": "Schreiben…",
-      "cancelWriting": "Abbrechen",
+        "writing": "Schreiben…",
+        "cancelWriting": "Abbrechen",
         "copyFailed": "Kopieren fehlgeschlagen"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "Gedächtnis des Assistenten löschen",
       "forgetChatsDescription": "Der Assistent erinnert sich nicht mehr an frühere Chats. Die Chats bleiben auf der Startseite.",
       "forgetButton": "Vergessen"
+    },
+    "appsSkills": {
+      "title": "Apps & Skills",
+      "description": "Befehle, die Overlay in den Apps auf diesem PC ausführen kann.",
+      "rescan": "Apps erneut scannen",
+      "scanning": "Wird gescannt…",
+      "summary": "{{count}} Apps, {{ready}} mit fertigen Befehlen",
+      "enabled": "Aktiviert",
+      "test": "Testen",
+      "testOk": "{{action}} ausgeführt",
+      "testFailed": "Diese Aktion konnte nicht ausgeführt werden",
+      "learnedTitle": "Gelernte Beispiele",
+      "learnedEmpty": "Noch keine gelernten Beispiele.",
+      "learnedDelete": "Löschen",
+      "search": "Apps filtern",
+      "noApps": "Noch keine Apps gefunden. Scanne diesen PC erneut."
     }
   }
 }

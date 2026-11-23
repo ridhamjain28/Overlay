@@ -39,6 +39,9 @@ const {
   createCommandDispatcher,
 } = require("./commandMode");
 const { createComposeCompleter } = require("./commandMode/composeClient");
+const appSkills = require("./appSkillsService");
+const { listLocalSkills, readSkill } = require("./appSkillStore");
+const { searchExamples, readAll, deleteExample, recordExample } = require("./learnedStore");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
 const { createRequirements } = require("./requirements");
 const { createHinglishServer } = require("./hinglishServer");
@@ -171,6 +174,7 @@ function registerOverlayIpc({
   clipboardManager,
 }) {
   let commandModePrefs = { enabled: false, autoRunTrusted: false };
+  const skillsDir = appSkills.skillsDirFor(app);
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
 
   ipcMain.on("overlay-set-keep-assistant-on-top", (_event, enabled) => {
@@ -539,6 +543,8 @@ function registerOverlayIpc({
         // ignore
       }
     },
+    getAppSkill: (appId) => readSkill(skillsDir, appId),
+    openExternal: (url) => shell.openExternal(url),
   });
 
   ipcMain.handle("overlay-command-parse", async (_event, payload = {}) => {
@@ -550,7 +556,9 @@ function registerOverlayIpc({
       cloudProvider: payload?.cloudProvider,
     });
     try {
-      const parsed = await parseIntent(text, { llmComplete: completer });
+      const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
+      const learned = searchExamples(skillsDir, text, { k: 3 });
+      const parsed = await parseIntent(text, { llmComplete: completer, skills, learned });
       if (parsed?.errorCode) {
         debugLogger?.warn?.("Command mode parse did not finish", {
           errorCode: parsed.errorCode,
@@ -561,7 +569,7 @@ function registerOverlayIpc({
     } catch (error) {
       debugLogger?.warn?.("Command mode parse failed", { error: error?.message });
       return {
-        ...parseIntentHeuristic(text),
+        ...parseIntentHeuristic(text, { skills: listLocalSkills(skillsDir) }),
         errorCode: error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR",
         errorMessage: String(error?.message || "parse failed"),
       };
@@ -762,6 +770,61 @@ function registerOverlayIpc({
       return { success: false, error: error.message };
     }
   });
+
+
+  function sendSkillProgress(event, payload) {
+    try {
+      event.sender.send("overlay-app-inventory-progress", payload);
+    } catch {
+      // The window may have gone away.
+    }
+  }
+
+  ipcMain.handle("overlay-app-inventory-get", async () => {
+    return appSkills.listSkillsState(skillsDir);
+  });
+
+  ipcMain.handle("overlay-app-inventory-scan", async (event, _opts = {}) => {
+    const result = await appSkills.rescanAndBuildPack({
+      baseDir: skillsDir,
+      scanOpts: {
+        readShortcutLink: typeof shell.readShortcutLink === "function"
+          ? (file) => shell.readShortcutLink(file)
+          : undefined,
+      },
+      onProgress: (progress) => sendSkillProgress(event, progress),
+    });
+    return { catalog: result.catalog, skills: result.skills, summary: result.summary };
+  });
+
+  ipcMain.handle("overlay-app-skills-set-enabled", async (_event, payload = {}) => {
+    const skill = appSkills.setSkillEnabled(skillsDir, String(payload.appId || ""), payload.enabled === true);
+    return { ok: Boolean(skill), skill };
+  });
+
+  ipcMain.handle("overlay-app-skills-test", async (_event, payload = {}) => {
+    const skill = readSkill(skillsDir, String(payload.appId || ""));
+    if (!skill) return { success: false, error: "Unknown app" };
+    const actionId = String(payload.actionId || (skill.actions || []).find((a) => a.id === "launch" || a.id === "open")?.id || "");
+    return commandDispatcher.perform(
+      { action: "app_action", args: { appId: skill.appId, actionId, params: payload.params || {} } },
+      { confirmed: true, autoRunTrusted: true }
+    );
+  });
+
+  ipcMain.handle("overlay-learned-examples-list", async () => {
+    return { examples: readAll(skillsDir) };
+  });
+
+  ipcMain.handle("overlay-learned-examples-delete", async (_event, id) => {
+    return deleteExample(skillsDir, String(id || ""));
+  });
+
+  ipcMain.handle("overlay-learned-examples-record", async (_event, entry = {}) => {
+    return recordExample(skillsDir, entry);
+  });
+
+
 }
 
 module.exports = { registerOverlayIpc };

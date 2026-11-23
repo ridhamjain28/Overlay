@@ -33,6 +33,8 @@ export type OnboardingStepId =
   | "byok-assistant"
   | "local-dictation"
   | "local-assistant"
+  /** Overlay: scan installed apps and copy ready commands. */
+  | "find-apps"
   /** Overlay: final checklist of what this PC still needs. */
   | "requirements";
 
@@ -148,6 +150,7 @@ const STEP_ORDER: OnboardingStepId[] = [
   "byok-assistant",
   "local-dictation",
   "local-assistant",
+  "find-apps",
   "requirements",
 ];
 
@@ -245,6 +248,7 @@ export function getOnboardingRoute(context: OnboardingRouteContext): OnboardingS
       "dictation-hotkey",
       ...(context.agentAllowed ? (["assistant-hotkey"] as OnboardingStepId[]) : []),
       "local-dictation",
+      "find-apps",
       "requirements",
     ];
   }
@@ -267,6 +271,7 @@ export function getOnboardingRoute(context: OnboardingRouteContext): OnboardingS
     );
   }
 
+  if (!route.includes("find-apps")) route.push("find-apps");
   return route;
 }
 
@@ -296,7 +301,8 @@ export function getNotesFooterAction({
  */
 export function isSetupDecisionStep(stepId: OnboardingStepId, route: OnboardingStepId[]): boolean {
   const setupChoiceIndex = route.indexOf("setup-choice");
-  const decisionStep = setupChoiceIndex === -1 ? route.at(-1) : route[setupChoiceIndex - 1];
+  const withoutTrailing = route.filter((item) => item !== "find-apps" && item !== "requirements");
+  const decisionStep = setupChoiceIndex === -1 ? withoutTrailing.at(-1) : route[setupChoiceIndex - 1];
   return stepId === decisionStep;
 }
 
