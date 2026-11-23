@@ -338,6 +338,16 @@ class WindowPositionUtil {
     };
   }
 
+  static clampWindowToDisplayWorkArea(window, targetDisplay = null, options = {}) {
+    const { clampWindowToDisplayWorkArea } = require("./onboardingWindowBounds");
+    return clampWindowToDisplayWorkArea(window, targetDisplay, options);
+  }
+
+  static convertDpiCoordinates(bounds, fromDisplayOrScale, toDisplayOrScale, options = {}) {
+    const { convertDpiCoordinates } = require("./onboardingWindowBounds");
+    return convertDpiCoordinates(bounds, fromDisplayOrScale, toDisplayOrScale, options);
+  }
+
   static getNotificationPosition(display) {
     return fitMeetingNotificationWindow(
       NOTIFICATION_WINDOW_CONFIG.height,
@@ -396,4 +406,6 @@ module.exports = {
   WINDOW_SIZES,
   WindowPositionUtil,
   resolveOverlayWindowType,
+  clampWindowToDisplayWorkArea: (win, target, opts) => WindowPositionUtil.clampWindowToDisplayWorkArea(win, target, opts),
+  convertDpiCoordinates: (bounds, from, to, opts) => WindowPositionUtil.convertDpiCoordinates(bounds, from, to, opts),
 };
