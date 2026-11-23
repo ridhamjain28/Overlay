@@ -60,12 +60,17 @@ test("levels are clamped to 0-100", () => {
 
 test("risky actions need confirmation; cancel means nothing runs", async () => {
   const { actions, calls } = make({ confirm: async () => false });
-  for (const action of ["lock_screen", "screenshot"]) {
-    const r = await actions.perform({ action });
-    assert.equal(r.code, "CANCELLED");
-  }
-  assert.equal((await actions.perform({ action: "brightness_set", level: 50 })).code, "CANCELLED");
+  const r = await actions.perform({ action: "lock_screen" });
+  assert.equal(r.code, "CANCELLED");
   assert.equal(calls.length, 0);
+});
+
+test("harmless actions like brightness and screenshot are auto tier and do not prompt", async () => {
+  const { actions } = make({ confirm: async () => false });
+  const r1 = await actions.perform({ action: "brightness_set", level: 50 });
+  assert.equal(r1.success, true);
+  const r2 = await actions.perform({ action: "screenshot" });
+  assert.equal(r2.success, true);
 });
 
 test("allowed lock runs only the fixed command after confirmation", async () => {

@@ -43,6 +43,7 @@ const {
 const { createComposeCompleter } = require("./commandMode/composeClient");
 const { queryWindowsSearch } = require("./commandMode/findPath");
 const appSkills = require("./appSkillsService");
+const customSkillsService = require("./customSkillsService");
 const { listLocalSkills, readSkill } = require("./appSkillStore");
 const { searchExamples, readAll, deleteExample, recordExample } = require("./learnedStore");
 const { createDailyCounter, setDefaultSearchCounter } = require("./webSearch");
@@ -343,22 +344,54 @@ function registerOverlayIpc({
     activeStreams.delete(key);
   });
 
-  const confirm = async (message) => {
+  const riskPolicy = require("./commandMode/riskPolicy");
+
+  let pendingVoiceConfirmation = null;
+
+  const confirm = async (message, extra = {}) => {
     const parent = BrowserWindow?.getFocusedWindow?.() || undefined;
+    const blocked = riskPolicy.isBlocked(extra?.step);
     const options = {
       type: "question",
       buttons: ["Cancel", "Allow"],
-      defaultId: 0,
+      defaultId: 1, // Gets focus, Enter activates Allow
       cancelId: 0,
       noLink: true,
       title: "Overlay",
       message: "Overlay wants to do this on your laptop",
-      detail: message,
+      detail: String(message || ""),
+      ...(blocked
+        ? {}
+        : {
+            checkboxLabel: "Always allow",
+            checkboxChecked: false,
+          }),
     };
-    const result = parent
-      ? await dialog.showMessageBox(parent, options)
-      : await dialog.showMessageBox(options);
-    return result.response === 1;
+
+    const boxPromise = parent
+      ? dialog.showMessageBox(parent, options)
+      : dialog.showMessageBox(options);
+
+    const voicePromise = new Promise((resolve) => {
+      pendingVoiceConfirmation = resolve;
+    });
+
+    const result = await Promise.race([
+      boxPromise,
+      voicePromise.then((allow) => ({ response: allow ? 1 : 0, checkboxChecked: false })),
+    ]);
+
+    pendingVoiceConfirmation = null;
+
+    const allowed = result.response === 1;
+    if (allowed && result.checkboxChecked && extra?.step && !blocked) {
+      try {
+        riskPolicy.allowAction(app.getPath("userData"), extra.step);
+      } catch (err) {
+        debugLogger?.warn?.("Failed to persist always allow", { error: err?.message });
+      }
+    }
+    return allowed;
   };
 
   const actions = createSystemActions({
@@ -478,22 +511,8 @@ function registerOverlayIpc({
     };
   });
 
-  const commandConfirm = async (message) => {
-    const parent = BrowserWindow?.getFocusedWindow?.() || undefined;
-    const options = {
-      type: "question",
-      buttons: ["Cancel", "Allow"],
-      defaultId: 0,
-      cancelId: 0,
-      noLink: true,
-      title: "Overlay Command mode",
-      message: "Overlay wants to run this command on your laptop",
-      detail: String(message || ""),
-    };
-    const result = parent
-      ? await dialog.showMessageBox(parent, options)
-      : await dialog.showMessageBox(options);
-    return result.response === 1;
+  const commandConfirm = async (message, extra = {}) => {
+    return confirm(message, extra);
   };
 
   const composeRuntime = { opts: {}, onProgress: null };
@@ -648,6 +667,32 @@ function registerOverlayIpc({
         : undefined,
   });
 
+  const { McpManager } = require("./mcp/mcpManager");
+  const { discoverExternalConfigs, importSelectedServers } = require("./mcp/mcpImporter");
+  const galleryServers = require("./mcp/gallery.json");
+  const { performOAuthFlow } = require("./mcp/mcpAuth");
+
+  const mcpManager = new McpManager({
+    appDataDir: app.getPath("appData"),
+    userDataDir: app.getPath("userData"),
+    openBrowser: (url) => openExternalSoon(url),
+    safeStorage: electron.safeStorage,
+  });
+  mcpManager.init().catch((err) => {
+    debugLogger?.warn?.("MCP manager init failed", { error: err?.message });
+  });
+
+  mcpManager.onStatus((statusObj) => {
+    try {
+      const windows = BrowserWindow.getAllWindows();
+      for (const w of windows) {
+        if (!w.isDestroyed()) {
+          w.webContents.send("overlay-mcp-status", statusObj);
+        }
+      }
+    } catch {}
+  });
+
   const commandOrchestrator = createOrchestrator({
     parseIntent: async (text, options = {}) => {
       const completer = createIntentCompleter({
@@ -658,10 +703,14 @@ function registerOverlayIpc({
       });
       const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
       const learned = searchExamples(skillsDir, text, { k: 3 });
-      return parseIntent(text, { llmComplete: completer, skills, learned });
+      const mcpTools = mcpManager.pickTopKTools(text, 8);
+      return parseIntent(text, { llmComplete: completer, skills, learned, mcpTools });
     },
     perform: (request, options = {}) =>
       commandDispatcher.perform(request, { ...options, allowWhenDisabled: true }),
+    callMcpTool: (server, tool, args) => mcpManager.callTool(server, tool, args),
+    confirm,
+    riskPolicy,
     listWindows: listOpenWindows,
     focusWindow: (win) => focusNamedWindow(win?.title || win?.windowTitle || win),
     sendKeys: sendKeyCombo,
@@ -700,6 +749,17 @@ function registerOverlayIpc({
 
   ipcMain.handle("overlay-command-orchestrate", async (event, payload = {}) => {
     const text = String(payload?.text || "");
+    if (pendingVoiceConfirmation) {
+      const lower = text.trim().toLowerCase();
+      if (/^(yes|yeah|yep|allow|proceed|sure|ok|okay|haan|ha)\b/i.test(lower)) {
+        pendingVoiceConfirmation(true);
+        return { handled: true, success: true, message: "Allowed" };
+      }
+      if (/^(no|cancel|stop|don't|dont|nahi)\b/i.test(lower)) {
+        pendingVoiceConfirmation(false);
+        return { handled: true, success: false, message: "Cancelled" };
+      }
+    }
     if (commandAbort) {
       try { commandAbort.abort(); } catch { /* ignore */ }
     }
@@ -710,9 +770,10 @@ function registerOverlayIpc({
       localBaseUrl: payload?.localBaseUrl,
       cloudProvider: payload?.cloudProvider,
     };
-    composeRuntime.onProgress = (phase) => {
+    composeRuntime.onProgress = (progressData) => {
       try {
-        event.sender.send("overlay-command-progress", { phase });
+        const p = typeof progressData === "string" ? { phase: progressData } : progressData;
+        event.sender.send("overlay-command-progress", p);
       } catch {
         // ignore
       }
@@ -729,6 +790,7 @@ function registerOverlayIpc({
             ? payload.autoSaveCreatedItems !== false
             : commandModePrefs.autoSaveCreatedItems !== false,
         confirmed: payload?.confirmed === true,
+        onProgress: composeRuntime.onProgress,
         signal: commandAbort?.signal,
       });
       debugLogger?.info?.("Overlay command orchestrator", {
@@ -1004,6 +1066,129 @@ function registerOverlayIpc({
 
   ipcMain.handle("overlay-apps-learned-record", async (_event, entry = {}) => {
     return recordExample(skillsDir, entry);
+  });
+
+  ipcMain.handle("overlay-apps-custom-get", async () => {
+    return customSkillsService.getCustomSkills(skillsDir);
+  });
+
+  ipcMain.handle("overlay-apps-custom-save", async (_event, text) => {
+    return customSkillsService.saveCustomSkills(skillsDir, text);
+  });
+
+  ipcMain.handle("overlay-apps-custom-validate", async (_event, text) => {
+    return customSkillsService.validateCustomSkillsText(text);
+  });
+
+  ipcMain.handle("overlay-apps-custom-open-file", async () => {
+    return customSkillsService.openCustomFile(skillsDir, shell);
+  });
+
+  // MCP Connectors IPC
+  ipcMain.handle("overlay-mcp-list", async () => {
+    return mcpManager.listServers();
+  });
+
+  ipcMain.handle("overlay-mcp-add", async (_event, { name, cfg }) => {
+    return mcpManager.configStore.addServer(name, cfg);
+  });
+
+  ipcMain.handle("overlay-mcp-remove", async (_event, { name }) => {
+    await mcpManager.disconnect(name).catch(() => {});
+    return mcpManager.configStore.removeServer(name);
+  });
+
+  ipcMain.handle("overlay-mcp-connect", async (_event, { name }) => {
+    try {
+      await mcpManager.connect(name);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle("overlay-mcp-disconnect", async (_event, { name }) => {
+    await mcpManager.disconnect(name);
+    return { ok: true };
+  });
+
+  ipcMain.handle("overlay-mcp-auth", async (_event, { name }) => {
+    const config = mcpManager.configStore.read();
+    const serverCfg = config.servers?.[name];
+    if (!serverCfg || !serverCfg.url) {
+      return { ok: false, error: "Server URL not found" };
+    }
+    try {
+      await performOAuthFlow(name, serverCfg.url, {
+        authStore: mcpManager.authStore,
+        openBrowser: (url) => openExternalSoon(url),
+      });
+      await mcpManager.connect(name).catch(() => {});
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle("overlay-mcp-tools", async (_event, { name }) => {
+    const tools = await mcpManager.listToolsForServer(name);
+    return tools.map((t) => ({
+      ...t,
+      enabled: mcpManager.isToolEnabled(name, t.name),
+    }));
+  });
+
+  ipcMain.handle("overlay-mcp-set-tool-enabled", async (_event, { name, tool, on }) => {
+    mcpManager.setToolEnabled(name, tool, on === true);
+    return { ok: true };
+  });
+
+  ipcMain.handle("overlay-mcp-config-get", async () => {
+    return mcpManager.configStore.read();
+  });
+
+  ipcMain.handle("overlay-mcp-config-save", async (_event, { text }) => {
+    return mcpManager.configStore.save(text);
+  });
+
+  ipcMain.handle("overlay-mcp-test", async (_event, { name }) => {
+    try {
+      await mcpManager.connect(name);
+      const tools = await mcpManager.listToolsForServer(name);
+      return {
+        ok: true,
+        tools: tools.map((t) => ({
+          ...t,
+          enabled: mcpManager.isToolEnabled(name, t.name),
+        })),
+      };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle("overlay-mcp-gallery", async () => {
+    return galleryServers;
+  });
+
+  ipcMain.handle("overlay-mcp-import-discover", async () => {
+    return discoverExternalConfigs();
+  });
+
+  ipcMain.handle("overlay-mcp-import-servers", async (_event, { selected, envImportChoices, importEnvValues }) => {
+    return importSelectedServers(selected, {
+      mcpConfigStore: mcpManager.configStore,
+      envImportChoices: envImportChoices || {},
+      importEnvValues: importEnvValues === true,
+    });
+  });
+
+  ipcMain.handle("overlay-mcp-permissions-list", async () => {
+    return mcpManager.listPermissions();
+  });
+
+  ipcMain.handle("overlay-mcp-permissions-revoke", async (_event, { key }) => {
+    return { ok: mcpManager.revokePermission(key) };
   });
 
 

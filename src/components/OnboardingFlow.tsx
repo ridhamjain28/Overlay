@@ -80,6 +80,8 @@ import LinuxPttSetupInfo from "./ui/LinuxPttSetupInfo";
 
 interface OnboardingFlowProps {
   onComplete: (options?: { openSettings?: boolean }) => void;
+  initialStep?: OnboardingStepId;
+  singleStepMode?: boolean;
 }
 
 type OnboardingCompletionMode = Exclude<OnboardingSetupMode, null> | "managed";
@@ -99,7 +101,11 @@ function DemoHotkeyDescription({ text, hotkey }: { text: string; hotkey: string 
   );
 }
 
-export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+export default function OnboardingFlow({
+  onComplete,
+  initialStep,
+  singleStepMode,
+}: OnboardingFlowProps) {
   const { t } = useTranslation();
   const platform = getPlatform();
   const { isSignedIn } = useAuth();
@@ -317,23 +323,28 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const requiredModelsPending = requiredModelsLatchRef.current || requiredModels.missing.length > 0;
 
   const route = useMemo(
-    () =>
-      getOnboardingRoute({
+    () => {
+      if (singleStepMode && initialStep) return [initialStep];
+      return getOnboardingRoute({
         authPath: session.authPath,
         setupMode: session.setupMode,
         agentAllowed,
         requiredModelsPending,
         skipSetupChoice: skipSetupChoiceForEnterprise,
-      }),
+      });
+    },
     [
       agentAllowed,
+      initialStep,
       requiredModelsPending,
       session.authPath,
       session.setupMode,
+      singleStepMode,
       skipSetupChoiceForEnterprise,
     ]
   );
-  const currentStepId = reconcileStepWithRoute(session.currentStepId, route);
+  const currentStepId =
+    singleStepMode && initialStep ? initialStep : reconcileStepWithRoute(session.currentStepId, route);
   const compact = COMPACT_STEPS.has(currentStepId);
   const setupDecisionPending =
     workspaceResolutionPending && isSetupDecisionStep(currentStepId, route);
@@ -671,6 +682,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         localStorage.setItem("skipAuth", String(skippedAuth));
         clearSession();
         localStorage.setItem("onboardingCompleted", "true");
+        localStorage.setItem("appPackVersion", "1");
         onComplete();
       } catch (error) {
         logger.error("Failed to finish onboarding", { error }, "onboarding");
@@ -781,6 +793,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     // A banner from an earlier failed attempt must not outlive the retry.
     setFatalError(null);
     if (setupDecisionPending) return;
+
+    if (singleStepMode) {
+      localStorage.setItem("appPackVersion", "1");
+      onComplete();
+      return;
+    }
     if (currentStepId === "permissions") {
       if (platform === "darwin" && !permissions.accessibilityPermissionGranted) {
         setAccessibilitySkipped(true);
@@ -869,6 +887,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     withExtraDictationHotkeys,
     setupDecisionPending,
     skipSetupChoiceForEnterprise,
+    singleStepMode,
   ]);
 
   const skipLocalSetup = useCallback(async () => {

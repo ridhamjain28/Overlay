@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-23T00:00:00.000Z",
+  "apps": [
+    {
+      "appId": "my-custom-app",
+      "name": "My Custom App",
+      "aliases": [
+        "custom app",
+        "my tool"
+      ],
+      "enabled": true,
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open My Custom App",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "mycustomapp.exe"
+          },
+          "examples": [
+            {
+              "utterance": "open my custom app",
+              "params": {}
+            }
+          ],
+          "risk": "safe",
+          "enabled": true
+        },
+        {
+          "id": "open-dashboard",
+          "description": "Open project dashboard in web browser",
+          "params": [
+            {
+              "name": "project",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "how": {
+            "type": "uri",
+            "template": "https://dashboard.example.com/{project}"
+          },
+          "examples": [
+            {
+              "utterance": "open custom dashboard for project alpha",
+              "params": {
+                "project": "alpha"
+              }
+            }
+          ],
+          "risk": "safe",
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

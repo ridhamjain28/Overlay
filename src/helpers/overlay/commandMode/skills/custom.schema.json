@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OverlayCustomSkills",
+  "description": "User-defined custom apps and command skills for Overlay",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "default": 1
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "apps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AppSkill"
+      }
+    }
+  },
+  "required": ["apps"],
+  "definitions": {
+    "AppSkill": {
+      "type": "object",
+      "required": ["appId", "name"],
+      "properties": {
+        "appId": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$",
+          "description": "Unique identifier for the app skill"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the application"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names or spoken aliases for the application"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "match": {
+          "type": "object",
+          "properties": {
+            "exe": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "aumidPrefix": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "protocols": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "nameRegex": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AppSkillAction"
+          }
+        }
+      }
+    },
+    "AppSkillAction": {
+      "type": "object",
+      "required": ["id", "description", "how"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique action identifier within this app"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable summary of what the action does"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string", "enum": ["string", "number", "boolean"] },
+              "required": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "how": {
+          "type": "object",
+          "required": ["type", "template"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["cli", "uri", "shell", "shortcut"]
+            },
+            "template": {
+              "type": "string",
+              "description": "Command template, URL or URI with optional {paramName} placeholders"
+            }
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["utterance"],
+            "properties": {
+              "utterance": { "type": "string" },
+              "params": { "type": "object" }
+            }
+          }
+        },
+        "risk": {
+          "type": "string",
+          "enum": ["safe", "confirm"],
+          "default": "safe"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}

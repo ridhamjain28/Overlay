@@ -3444,12 +3444,14 @@ declare global {
       overlayCommandCancel?: () => Promise<{ ok: boolean }>;
       /** App skills: scan installed apps, enable/disable their commands, review learned commands. */
       overlayApps?: import("./overlayApps").OverlayAppsApi;
+      overlayMcp?: import("./overlayMcp").OverlayMcpApi;
       onOverlayCommandProgress?: (
-        callback: (payload: { phase?: string; code?: string }) => void
+        callback: (payload: { phase?: string; code?: string; current?: number; total?: number; text?: string }) => void
       ) => () => void;
       overlaySetCommandModePrefs?: (prefs: {
         enabled: boolean;
         autoRunTrusted: boolean;
+        askBeforeEveryAction?: boolean;
         autoSaveCreatedItems?: boolean;
       }) => void;
       overlayRequirementsCheck?: (opts: {

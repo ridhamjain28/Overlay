@@ -2,7 +2,7 @@ import {
   SILENCE_RMS_THRESHOLD,
   SPEECH_WINDOW_PEAK_THRESHOLD,
   SPEECH_WINDOW_RMS_THRESHOLD,
-} from "./localSpeechGate";
+} from "./localSpeechGate.js";
 
 // End-of-speech detection for dictation and assistant voice. Pure decision logic fed one mic
 // level window at a time (RMS 0..~1, optional peak); the caller performs the

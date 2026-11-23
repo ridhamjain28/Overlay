@@ -60,7 +60,7 @@ function clearAssistantChatActivity(storage) {
   }
 }
 
-module.exports = {
+export {
   DEFAULT_ASSISTANT_CHAT_IDLE_MINUTES,
   MIN_ASSISTANT_CHAT_IDLE_MINUTES,
   MAX_ASSISTANT_CHAT_IDLE_MINUTES,

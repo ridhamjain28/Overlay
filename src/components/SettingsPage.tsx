@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Skeleton } from "./ui/skeleton";
 import PreferencesSettings from "./settings/PreferencesSettings";
 import HotkeysSettings from "./settings/HotkeysSettings";
+import ConnectorsSettings from "./settings/ConnectorsSettings";
 
 // Heavier panels load on first visit so opening Settings stays instant.
 const ToneStyleSection = lazy(() => import("./settings/ToneStyleSection"));
@@ -9,10 +10,9 @@ const SpeechToTextSettings = lazy(() => import("./settings/SpeechToTextSettings"
 const LanguageModelsSettings = lazy(() => import("./settings/LanguageModelsSettings"));
 
 /**
- * Preferences, Hotkeys, Tone & Style, and AI Models (Speech-to-Text and
- * Language Models). There are no accounts, plans or per-feature AI tabs.
+ * Preferences, Hotkeys, Tone & Style, AI Models, and Connectors.
  */
-export type SettingsSectionType = "general" | "hotkeys" | "toneStyle" | "speechToText" | "llms";
+export type SettingsSectionType = "general" | "hotkeys" | "toneStyle" | "speechToText" | "llms" | "connectors";
 
 interface SettingsPageProps {
   activeSection?: SettingsSectionType;
@@ -54,6 +54,8 @@ export default function SettingsPage({
           <LanguageModelsSettings />
         </Suspense>
       );
+    case "connectors":
+      return <ConnectorsSettings />;
     case "general":
     default:
       return <PreferencesSettings />;

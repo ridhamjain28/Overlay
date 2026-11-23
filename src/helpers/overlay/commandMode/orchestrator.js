@@ -34,9 +34,14 @@ function normalizeKey(text) {
 function cloneSteps(steps) {
   return (Array.isArray(steps) ? steps : []).map((step) => ({
     action: String(step?.action || "").trim(),
+    type: step?.type,
+    server: step?.server,
+    tool: step?.tool,
     args: { ...(step?.args || {}) },
     source: step?.source,
     postcheck: step?.postcheck,
+    annotations: step?.annotations,
+    inputSchema: step?.inputSchema,
   }));
 }
 
@@ -44,7 +49,18 @@ function intentSteps(intent) {
   if (!intent) return [];
   if (Array.isArray(intent.steps) && intent.steps.length) return cloneSteps(intent.steps);
   if (intent.action && intent.action !== "none") {
-    return [{ action: intent.action, args: { ...(intent.args || {}) }, source: intent.source }];
+    return [
+      {
+        action: intent.action,
+        type: intent.type,
+        server: intent.server,
+        tool: intent.tool,
+        args: { ...(intent.args || {}) },
+        source: intent.source,
+        annotations: intent.annotations,
+        inputSchema: intent.inputSchema,
+      },
+    ];
   }
   return [];
 }
@@ -277,8 +293,43 @@ function formatSearchOutcome(step) {
     : `Opened a search for ${query}.`;
 }
 
+function validateSchemaArgs(args = {}, schema = {}) {
+  if (!schema || typeof schema !== "object") return null;
+  const required = Array.isArray(schema.required) ? schema.required : [];
+  for (const field of required) {
+    if (args[field] === undefined || args[field] === null || args[field] === "") {
+      return `Missing required parameter "${field}"`;
+    }
+  }
+  const properties = schema.properties || {};
+  for (const [key, val] of Object.entries(args)) {
+    const propSpec = properties[key];
+    if (!propSpec || !propSpec.type) continue;
+    const expectedType = propSpec.type;
+    const actualType = typeof val;
+    if (expectedType === "string" && actualType !== "string") {
+      return `Parameter "${key}" must be a string`;
+    }
+    if (expectedType === "number" && actualType !== "number") {
+      return `Parameter "${key}" must be a number`;
+    }
+    if (expectedType === "boolean" && actualType !== "boolean") {
+      return `Parameter "${key}" must be a boolean`;
+    }
+    if (expectedType === "array" && !Array.isArray(val)) {
+      return `Parameter "${key}" must be an array`;
+    }
+    if (expectedType === "object" && (actualType !== "object" || Array.isArray(val) || val === null)) {
+      return `Parameter "${key}" must be an object`;
+    }
+  }
+  return null;
+}
+
 function formatOutcome(text, steps, results) {
   const ok = !results.some((row) => row && row.success === false);
+  const mcpRow = results.find((row) => row && (row.action === "mcp" || row.type === "mcp") && row.message);
+  if (mcpRow) return mcpRow.rawMessage || mcpRow.message;
   const calendar = formatCalendarOutcome(steps, ok, results.some((row) => row && row.action === "submit_page")
     ? results.find((row) => row.action === "submit_page")?.success
     : undefined);
@@ -443,6 +494,66 @@ function createOrchestrator(deps = {}) {
 
   let lastOutcome = null;
 
+  async function executeMcpStep(step, callOptions = {}) {
+    const riskPolicy = deps.riskPolicy || require("./riskPolicy");
+    const risk = riskPolicy.classify(step, { askBeforeEveryAction: callOptions.askBeforeEveryAction });
+    if (risk === "block") {
+      return { success: false, action: "mcp", error: "That MCP action is blocked for security", code: "BLOCKED" };
+    }
+    if (risk === "confirm" && !callOptions.confirmed) {
+      const detail = riskPolicy.formatRiskConfirmDetail(step);
+      const allowed = typeof deps.confirm === "function" ? await deps.confirm(detail, { step }) : false;
+      if (!allowed) {
+        return { success: false, action: "mcp", error: "You cancelled this command", code: "CANCELLED" };
+      }
+    }
+    const schema =
+      step.inputSchema ||
+      (typeof deps.getToolSchema === "function" ? deps.getToolSchema(step.server, step.tool) : null);
+    if (schema && typeof schema === "object") {
+      const valError = validateSchemaArgs(step.args || {}, schema);
+      if (valError) {
+        return { success: false, action: "mcp", error: valError, code: "INVALID_ARGS" };
+      }
+    }
+
+    if (typeof deps.callMcpTool !== "function") {
+      return { success: false, action: "mcp", error: "No MCP tool executor is available", code: "UNAVAILABLE" };
+    }
+
+    try {
+      const toolRes = await deps.callMcpTool(step.server, step.tool, step.args || {});
+      let summaryText = "";
+      if (toolRes && Array.isArray(toolRes.content)) {
+        summaryText = toolRes.content
+          .filter((c) => c && c.type === "text")
+          .map((c) => c.text)
+          .join("\n");
+      } else if (typeof toolRes === "string") {
+        summaryText = toolRes;
+      } else if (toolRes && typeof toolRes === "object") {
+        summaryText = toolRes.text || JSON.stringify(toolRes);
+      }
+      let rawSummary = summaryText || `Called ${step.tool} on ${step.server}`;
+      const MAX_MCP_RESULT_LENGTH = 16384;
+      if (rawSummary.length > MAX_MCP_RESULT_LENGTH) {
+        rawSummary = rawSummary.slice(0, MAX_MCP_RESULT_LENGTH) + "\n...[TRUNCATED]";
+      }
+      const wrappedMessage = `=== UNTRUSTED MCP TOOL RESULT (${step.server}.${step.tool}) ===\n${rawSummary}\n=== END UNTRUSTED MCP TOOL RESULT ===`;
+      return {
+        success: !toolRes?.isError,
+        action: "mcp",
+        server: step.server,
+        tool: step.tool,
+        message: wrappedMessage,
+        rawMessage: rawSummary,
+        content: toolRes?.content,
+      };
+    } catch (err) {
+      return { success: false, action: "mcp", error: err?.message || "MCP call failed", code: "MCP_ERROR" };
+    }
+  }
+
   async function plan(text, options = {}) {
     if (isMetaIntent(text)) {
       return { steps: [], intent: { action: "none", metaIntent: true }, source: "meta", metaIntent: true };
@@ -515,10 +626,21 @@ function createOrchestrator(deps = {}) {
         return { handled: false, success: false, steps: [], source: planned.source, message: "" };
       }
       const results = [];
-      for (const step of planned.steps) {
+      for (let i = 0; i < planned.steps.length; i++) {
+        const step = planned.steps[i];
+        if (typeof options.onProgress === "function") {
+          options.onProgress({
+            phase: "step",
+            current: i + 1,
+            total: planned.steps.length,
+            text: `Working... step ${i + 1}/${planned.steps.length}`,
+          });
+        }
         let result;
         if (step.action === "submit_page") {
           result = await executeSubmitPage(step);
+        } else if (step.type === "mcp" || step.action === "mcp") {
+          result = await executeMcpStep(step, options);
         } else if (typeof perform === "function") {
           result = await perform(
             { action: step.action, args: step.args, utterance: text },
