@@ -548,7 +548,7 @@ function createCommandDispatcher(deps = {}) {
           if (!item || item.enabled === false) {
             return { success: false, error: `Unknown action "${args.actionId}"`, code: "NOT_FOUND" };
           }
-          const filled = fillActionTemplate(item, args.params || {}, { target: skill.target });
+          const filled = fillActionTemplate(item, args.params || {}, { target: skill.target, utterance: request.utterance || args.utterance || options.utterance });
           if (!filled.ok) return { success: false, error: filled.error, code: "NOT_ALLOWED" };
           if (filled.type === "url" || filled.type === "uri") {
             await openExternal(filled.value);
