@@ -7,8 +7,8 @@ const { locateGuideTarget } = require("./guideLocator");
 const { resolveApp, listShortcuts, startMenuDirs, isBlockedApp, normalizeName, BUILTIN_APPS } =
   require("../systemActions");
 const {
-  chromiumProductFromAppName,
-  resolveChromiumLaunch,
+  browserProductFromName,
+  resolveBrowserLaunch,
 } = require("../chromiumProfile");
 
 const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "guide"]);
@@ -89,6 +89,10 @@ function validateCommandRequest(request) {
       return { ok: false, error: "Only http and https links can be opened", code: "NOT_ALLOWED" };
     }
     args.url = url.toString();
+    const browser = String(args.browser || args.app || request.browser || "").trim();
+    if (browser && browser.length <= 40 && !/[/\\:]/.test(browser)) {
+      args.browser = browser;
+    }
   }
   if (action === "run_command") {
     const command = clampString(args.command || request.command, MAX_COMMAND_LENGTH).trim();
@@ -160,9 +164,9 @@ function createCommandDispatcher(deps = {}) {
     ]);
   }
 
-  async function launchChromium(product, { url, executablePath } = {}) {
-    if (platform !== "win32" || !product) return false;
-    const launched = resolveChromiumLaunch({
+  async function launchBrowser(product, { url, executablePath } = {}) {
+    if (platform !== "win32" || !product || product === "default") return false;
+    const launched = resolveBrowserLaunch({
       product,
       url,
       env,
@@ -256,10 +260,20 @@ function createCommandDispatcher(deps = {}) {
     try {
       switch (action) {
         case "open_url": {
-          const opened =
-            (await launchChromium("chrome", { url: args.url })) ||
-            (await launchChromium("edge", { url: args.url })) ||
-            (await launchChromium("brave", { url: args.url }));
+          const preferred = browserProductFromName(args.browser || args.app);
+          let opened = false;
+          if (preferred === "default") {
+            await openExternal(args.url);
+            opened = true;
+          } else if (preferred) {
+            opened = await launchBrowser(preferred, { url: args.url });
+          }
+          if (!opened) {
+            opened =
+              (await launchBrowser("chrome", { url: args.url })) ||
+              (await launchBrowser("edge", { url: args.url })) ||
+              (await launchBrowser("brave", { url: args.url }));
+          }
           if (!opened) await openExternal(args.url);
           return { success: true, message: `Opened ${args.url}`, action, args };
         }
@@ -271,8 +285,8 @@ function createCommandDispatcher(deps = {}) {
               code: "UNSUPPORTED",
             };
           }
-          const product = chromiumProductFromAppName(args.app);
-          if (product && (await launchChromium(product))) {
+          const product = browserProductFromName(args.app);
+          if (product && product !== "default" && (await launchBrowser(product))) {
             return { success: true, message: `Opened ${args.app}`, action, args, label: args.app };
           }
           const app = resolveApp(args.app, {

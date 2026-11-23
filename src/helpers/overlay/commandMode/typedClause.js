@@ -141,7 +141,12 @@ function intentFromTypedClause(clause) {
   return { action: "type_text", args: { text }, confidence: 0.9 };
 }
 
+function commandReferencesSelection(text) {
+  return /\b(this|selected|selection)\b/i.test(String(text || ""));
+}
+
 module.exports = {
+  commandReferencesSelection,
   COMPOSE_NOUN_RE,
   classifyTypedClause,
   intentFromTypedClause,

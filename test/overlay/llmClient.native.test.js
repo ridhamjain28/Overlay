@@ -28,7 +28,7 @@ test("pickLocalParseModel prefers installed instruct when the chat model is thin
   assert.equal(PREFERRED_LOCAL_PARSE_MODEL, "qwen3:4b-instruct");
 });
 
-test("local completer uses native /api/chat with think false, ctx 4096, and instruct when installed", async () => {
+test("local completer uses native /api/chat with think false, ctx 8192, skill prompt, and JSON schema", async () => {
   const seen = [];
   const complete = createIntentCompleter({
     parser: "local",
@@ -56,10 +56,17 @@ test("local completer uses native /api/chat with think false, ctx 4096, and inst
   assert.equal(seen[1].url, "http://localhost:11434/api/chat");
   assert.equal(seen[1].body.model, "qwen3:4b-instruct");
   assert.equal(seen[1].body.think, false);
-  assert.equal(seen[1].body.keep_alive, "30m");
-  assert.equal(seen[1].body.options.num_ctx, 4096);
-  assert.equal(seen[1].body.options.num_predict, 150);
+  assert.equal(seen[1].body.keep_alive, -1);
+  assert.equal(seen[1].body.options.num_ctx, 8192);
+  assert.equal(seen[1].body.options.num_predict, 400);
   assert.equal(seen[1].body.stream, false);
+  assert.equal(seen[1].body.format.type, "object");
+  assert.ok(seen[1].body.format.properties.action);
+  assert.equal(seen[1].body.messages[0].role, "system");
+  assert.match(seen[1].body.messages[0].content, /Overlay Command Skill/);
+  assert.match(seen[1].body.messages[0].content, /version:\s*1/);
+  assert.equal(seen[1].body.messages[1].role, "user");
+  assert.equal(seen[1].body.messages[1].content, "hello");
 });
 
 test("local completer refuses a non-loopback base URL", async () => {

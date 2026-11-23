@@ -195,12 +195,16 @@ function describeCapabilities(tools: ReadonlyArray<PromptTool>): string {
   return [...groups].map(([group, names]) => `- ${group}: ${names.join(", ")}`).join("\n");
 }
 
+const CHAT_STYLE_GUIDE =
+  "Style: be concise; do not start with a preamble such as \"Sure\" or \"Here is the answer\"; write plain text that can be pasted as-is unless the user asks for markdown.";
+
 export function getAgentSystemPrompt(
   availableTools?: ReadonlyArray<string | PromptTool>,
   noteContext?: string,
   options: AgentSystemPromptOptions = {}
 ): string {
   let prompt = resolvePrompt("chatAgent", { agentName: null });
+  prompt += "\n\n" + CHAT_STYLE_GUIDE;
 
   const tools = (availableTools ?? []).map((tool): PromptTool =>
     typeof tool === "string" ? { name: tool } : tool

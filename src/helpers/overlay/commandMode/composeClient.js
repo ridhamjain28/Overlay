@@ -29,6 +29,9 @@ function wrapAbort(error) {
   return error;
 }
 
+const COMPOSE_STYLE_GUIDE =
+  "Write only the finished document as plain text for pasting. Be concise. Do not add a preamble such as \"Here is your letter\" or \"Sure\". Do not wrap the document in markdown fences or a title.";
+
 function buildComposePrompt(userPrompt) {
   return [
     "You write the finished document the user asked for.",
@@ -149,7 +152,7 @@ async function completeOpenAiCompose({ url, key, model, prompt, fetchImpl, signa
       messages: [
         {
           role: "system",
-          content: "Write only the finished document. No preamble, no markdown fences.",
+          content: COMPOSE_STYLE_GUIDE,
         },
         { role: "user", content: prompt },
       ],
@@ -225,7 +228,7 @@ function createComposeCompleter(opts = {}) {
           messages: [
             {
               role: "system",
-              content: "Write only the finished document. No preamble, no markdown fences.",
+              content: COMPOSE_STYLE_GUIDE,
             },
             { role: "user", content: prompt },
           ],
@@ -263,6 +266,7 @@ module.exports = {
   COMPOSE_LOCAL_TIMEOUT_MS,
   COMPOSE_MAX_TOKENS,
   COMPOSE_NUM_CTX,
+  COMPOSE_STYLE_GUIDE,
   buildComposePrompt,
   stripComposeOutput,
   createComposeCompleter,

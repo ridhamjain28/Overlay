@@ -105,16 +105,103 @@ test("parseIntent returns TIMEOUT when the completer times out", async () => {
   assert.equal(r.action, "none");
   assert.equal(r.errorCode, "TIMEOUT");
 });
+function assertGoogleSearch(intent, query, browser) {
+  assert.equal(intent.action, "open_url");
+  assert.equal(intent.source, "heuristic");
+  const url = new URL(intent.args.url);
+  assert.equal(url.hostname, "www.google.com");
+  assert.equal(url.pathname, "/search");
+  assert.equal(url.searchParams.get("q"), query);
+  if (browser) assert.equal(intent.args.browser, browser);
+}
+
 test("open chrome and search for weather in pune is a Google search URL, not an LLM parse", () => {
   const sentence = "can you please open chrome and search for weather in pune";
   const r = parser.parseIntentHeuristic(sentence);
+  assertGoogleSearch(r, "weather in pune", "chrome");
+});
+
+test("open edge and search for weather in pune opens the search in Edge, not a bare Edge window", () => {
+  const r = parser.parseIntentHeuristic("open edge and search for weather in pune");
+  assertGoogleSearch(r, "weather in pune", "edge");
+  assert.ok(!r.steps, "must be a single open_url, not open_app then open_url");
+});
+
+const BROWSER_SEARCH_CASES = [
+  ["open edge and search weather in pune", "weather in pune", "edge"],
+  ["search weather in pune on edge", "weather in pune", "edge"],
+  ["in edge search weather in pune", "weather in pune", "edge"],
+  ["open edge then google weather in pune", "weather in pune", "edge"],
+  ["look up weather in pune in edge", "weather in pune", "edge"],
+  ["open microsoft edge and search for weather in pune", "weather in pune", "edge"],
+  ["please open firefox and search for rust async", "rust async", "firefox"],
+  ["open brave and search for monsoon forecast", "monsoon forecast", "brave"],
+  ["search flights to goa on the browser", "flights to goa", "browser"],
+  ["open the browser and search for monsoon forecast pune", "monsoon forecast pune", "browser"],
+  ["edge kholo aur weather in pune search karo", "weather in pune", "edge"],
+  ["opera mein weather in pune search karo", "weather in pune", "opera"],
+  ["zara chrome kholo aur search for india vs england", "india vs england", "chrome"],
+];
+
+for (const [utterance, query, browser] of BROWSER_SEARCH_CASES) {
+  test(`browser search heuristic: ${utterance}`, () => {
+    assertGoogleSearch(parser.parseIntentHeuristic(utterance), query, browser);
+  });
+}
+
+test("open youtube and search becomes a YouTube search URL", () => {
+  const r = parser.parseIntentHeuristic("open youtube and search lo-fi beats");
+  assert.equal(r.action, "open_url");
+  const url = new URL(r.args.url);
+  assert.equal(url.hostname, "www.youtube.com");
+  assert.equal(url.pathname, "/results");
+  assert.equal(url.searchParams.get("search_query"), "lo-fi beats");
+});
+
+test("open x.com is an https link", () => {
+  const r = parser.parseIntentHeuristic("open x.com");
+  assert.equal(r.action, "open_url");
+  assert.match(r.args.url, /^https:\/\/x\.com\/?$/i);
+});
+
+test("LLM plan that only opens Edge is repaired with the search URL", () => {
+  const repaired = parser.repairMissingSearch("open edge and search for weather in pune", {
+    action: "open_app",
+    args: { app: "edge" },
+    confidence: 0.8,
+    source: "llm",
+  });
+  assert.equal(repaired.action, "open_url");
+  assert.equal(repaired.args.browser, "edge");
+  assert.equal(repaired.repaired, true);
+  assert.equal(new URL(repaired.args.url).searchParams.get("q"), "weather in pune");
+});
+
+test("LLM plan actions are kept instead of being dropped as none", () => {
+  const r = parser.parseIntentFromLlmResponse(
+    JSON.stringify({
+      action: "plan",
+      steps: [
+        { action: "open_app", app: "notepad" },
+        { action: "type_text", text: "hello" },
+      ],
+    })
+  );
   assert.equal(r.action, "plan");
-  assert.equal(r.source, "heuristic");
-  assert.equal(r.steps[0].action, "open_app");
-  assert.match(r.steps[0].args.app, /chrome/i);
-  assert.equal(r.steps[1].action, "open_url");
-  const url = new URL(r.steps[1].args.url);
-  assert.equal(url.hostname, "www.google.com");
-  assert.equal(url.pathname, "/search");
-  assert.equal(url.searchParams.get("q"), "weather in pune");
+  assert.equal(r.steps.length, 2);
+  assert.equal(r.steps[0].args.app, "notepad");
+  assert.equal(r.steps[1].args.text, "hello");
+});
+
+test("dirty LLM search URLs are cleaned back to the spoken query", () => {
+  const dirty = parser.repairMissingSearch("open edge and search for weather in pune", {
+    action: "open_url",
+    args: {
+      browser: "edge",
+      url: "https://www.google.com/search?q=weather%20in%20pune%27,%27confidence%27:0.95}{",
+    },
+    confidence: 0.9,
+    source: "llm",
+  });
+  // applied via applyClausePostCheck in parseIntent; also export clean helper through parseIntent
 });

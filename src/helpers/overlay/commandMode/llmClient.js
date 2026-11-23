@@ -2,13 +2,15 @@
 // Local by default (loopback Ollama / llama-server). Cloud is optional and
 // uses keys already in the main-process environment — never logged.
 
+const { INTENT_JSON_SCHEMA, commandSkillSystemPrompt } = require("./skillLoader");
+
 const DEFAULT_LOCAL_BASE = "http://127.0.0.1:11434/v1";
 const DEFAULT_LOCAL_NATIVE_BASE = "http://127.0.0.1:11434";
 const DEFAULT_LOCAL_MODEL = "qwen3.5:4b-q4_K_M";
 const PREFERRED_LOCAL_PARSE_MODEL = "qwen3:4b-instruct";
 const TIMEOUT_MS = 20000;
 const LOCAL_TIMEOUT_MS = 45000;
-const PARSE_MAX_TOKENS = 150;
+const PARSE_MAX_TOKENS = 400;
 const PARSE_NUM_CTX = 8192;
 const PARSE_KEEP_ALIVE = -1;
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
@@ -155,7 +157,19 @@ function contentFromOpenAiMessage(content) {
   return "";
 }
 
+
+function messagesFromPrompt(prompt) {
+  if (prompt && typeof prompt === "object") {
+    return {
+      system: prompt.system || commandSkillSystemPrompt(),
+      user: String(prompt.user || prompt.prompt || ""),
+    };
+  }
+  return { system: commandSkillSystemPrompt(), user: String(prompt || "") };
+}
+
 async function completeChat({ url, key, model, prompt, fetchImpl, signal, headers = {} }) {
+  const { system, user } = messagesFromPrompt(prompt);
   const response = await fetchImpl(url, {
     method: "POST",
     headers: {
@@ -169,11 +183,8 @@ async function completeChat({ url, key, model, prompt, fetchImpl, signal, header
       max_tokens: PARSE_MAX_TOKENS,
       reasoning_effort: "none",
       messages: [
-        {
-          role: "system",
-          content: "Return only valid JSON for the user's request. No markdown.",
-        },
-        { role: "user", content: prompt },
+        { role: "system", content: system },
+        { role: "user", content: user },
       ],
     }),
     signal,
@@ -200,6 +211,7 @@ async function listInstalledModels(fetchImpl, nativeBase, signal) {
 }
 
 async function completeNativeChat({ url, model, prompt, fetchImpl, signal }) {
+  const { system, user } = messagesFromPrompt(prompt);
   const response = await fetchImpl(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -208,17 +220,15 @@ async function completeNativeChat({ url, model, prompt, fetchImpl, signal }) {
       stream: false,
       think: false,
       keep_alive: PARSE_KEEP_ALIVE,
+      format: INTENT_JSON_SCHEMA,
       options: {
         temperature: 0,
         num_ctx: PARSE_NUM_CTX,
         num_predict: PARSE_MAX_TOKENS,
       },
       messages: [
-        {
-          role: "system",
-          content: "Return only valid JSON for the user's request. No markdown.",
-        },
-        { role: "user", content: prompt },
+        { role: "system", content: system },
+        { role: "user", content: user },
       ],
     }),
     signal,
@@ -326,4 +336,5 @@ module.exports = {
   pickLocalParseModel,
   cloudConfig,
   createIntentCompleter,
+  INTENT_JSON_SCHEMA,
 };

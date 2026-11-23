@@ -27,6 +27,14 @@ const PRODUCTS = Object.freeze({
       ["LOCALAPPDATA", "BraveSoftware", "Brave-Browser", "Application", "brave.exe"],
     ],
   },
+  opera: {
+    userData: ["Opera Software", "Opera Stable"],
+    exe: [
+      ["PROGRAMFILES", "Opera", "opera.exe"],
+      ["PROGRAMFILES(X86)", "Opera", "opera.exe"],
+      ["LOCALAPPDATA", "Programs", "Opera", "opera.exe"],
+    ],
+  },
 });
 
 function chromiumProductFromAppName(name) {
@@ -35,7 +43,33 @@ function chromiumProductFromAppName(name) {
   if (/\bbrave\b/.test(n)) return "brave";
   if (/\bedge\b/.test(n) || n.includes("msedge") || n.includes("microsoft edge")) return "edge";
   if (/\bchrome\b/.test(n) || n.includes("chromium")) return "chrome";
+  if (/\bopera\b/.test(n)) return "opera";
   return null;
+}
+
+function browserProductFromName(name) {
+  const n = String(name || "").trim().toLowerCase();
+  if (!n) return null;
+  const chromium = chromiumProductFromAppName(n);
+  if (chromium) return chromium;
+  if (/\bfirefox\b/.test(n) || /\bmozilla\b/.test(n)) return "firefox";
+  if (/^(the\s+)?(default\s+)?browsers?$/.test(n) || n === "my browser") return "default";
+  return null;
+}
+
+function firefoxExecutable(env = process.env, fsImpl = fs) {
+  const candidates = [
+    env.PROGRAMFILES && path.join(env.PROGRAMFILES, "Mozilla Firefox", "firefox.exe"),
+    env["PROGRAMFILES(X86)"] && path.join(env["PROGRAMFILES(X86)"], "Mozilla Firefox", "firefox.exe"),
+    env.LOCALAPPDATA && path.join(env.LOCALAPPDATA, "Mozilla Firefox", "firefox.exe"),
+  ].filter(Boolean);
+  return firstExistingPath(candidates, fsImpl);
+}
+
+function resolveFirefoxLaunch({ url, env = process.env, fsImpl = fs, executablePath } = {}) {
+  const exe = executablePath || firefoxExecutable(env, fsImpl);
+  if (!exe) return null;
+  return { exe, args: url ? [String(url)] : [], product: "firefox" };
 }
 
 function parseChromiumLastProfileDirectory(localStateJson) {
@@ -114,13 +148,25 @@ function resolveChromiumLaunch({ product, url, env = process.env, fsImpl = fs, e
   return { exe, args: chromiumLaunchArgs(profileDirectory, url), product };
 }
 
+function resolveBrowserLaunch({ product, url, env = process.env, fsImpl = fs, executablePath } = {}) {
+  if (!product || product === "default") return null;
+  if (product === "firefox") {
+    return resolveFirefoxLaunch({ url, env, fsImpl, executablePath });
+  }
+  return resolveChromiumLaunch({ product, url, env, fsImpl, executablePath });
+}
+
 module.exports = {
   PRODUCTS,
   chromiumProductFromAppName,
+  browserProductFromName,
   parseChromiumLastProfileDirectory,
   chromiumUserDataDir,
   readLastProfileDirectory,
   defaultChromiumExecutable,
+  firefoxExecutable,
   chromiumLaunchArgs,
   resolveChromiumLaunch,
+  resolveFirefoxLaunch,
+  resolveBrowserLaunch,
 };

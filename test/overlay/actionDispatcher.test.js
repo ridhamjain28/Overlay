@@ -265,3 +265,52 @@ test("cloud completer uses the env key and never puts it in the thrown error", a
   const cfg = cloudConfig("openai", { OPENAI_API_KEY: secret });
   assert.equal(cfg.key, secret);
 });
+
+test("open_url with browser edge launches Edge with the URL and profile, not Chrome", async () => {
+  const exe = "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe";
+  const { dispatcher, calls } = make({
+    autoRunTrusted: true,
+    env: {
+      USERPROFILE: "C:\\Users\\test",
+      ProgramData: "",
+      APPDATA: "",
+      PROGRAMFILES: "C:\\Program Files",
+      "PROGRAMFILES(X86)": "C:\\Program Files (x86)",
+      LOCALAPPDATA: "C:\\Users\\test\\AppData\\Local",
+    },
+    fsImpl: {
+      readdirSync: () => [],
+      existsSync: (p) => String(p).toLowerCase().includes("msedge.exe"),
+      readFileSync: (p) => {
+        if (String(p).endsWith("Local State")) {
+          return JSON.stringify({ profile: { last_used: "Default" } });
+        }
+        throw new Error("enoent");
+      },
+    },
+  });
+  const url = "https://www.google.com/search?q=weather%20in%20pune";
+  const r = await dispatcher.perform({ action: "open_url", args: { url, browser: "edge" } });
+  assert.equal(r.success, true);
+  const run = calls.find((c) => String(c.file || "").toLowerCase().includes("msedge.exe"));
+  assert.ok(run, "Edge should be launched");
+  assert.match(String(run.file).replace(/\\/g, "/"), /Microsoft\/Edge\/Application\/msedge\.exe$/i);
+  assert.ok(run.args.some((a) => String(a).includes("google.com/search")));
+  assert.ok(run.args.some((a) => String(a).startsWith("--profile-directory=")));
+  assert.equal(
+    calls.some((c) => String(c.file || "").toLowerCase().includes("chrome")),
+    false
+  );
+  assert.equal(calls.some((c) => c.open), false);
+});
+
+test("open_url with browser set to the default browser uses openExternal", async () => {
+  const { dispatcher, calls } = make({ autoRunTrusted: true });
+  const r = await dispatcher.perform({
+    action: "open_url",
+    args: { url: "https://www.google.com/search?q=flights", browser: "browser" },
+  });
+  assert.equal(r.success, true);
+  assert.deepEqual(calls.find((c) => c.open), { open: "https://www.google.com/search?q=flights" });
+  assert.equal(calls.some((c) => c.file), false);
+});

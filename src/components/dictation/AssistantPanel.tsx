@@ -50,7 +50,7 @@ import {
 import { buildAssistantCommandSendOptions } from "./assistantCommandOptions";
 import { runCommandModeIfEnabled } from "../../services/overlay/runCommandMode";
 import { resolveCommandParsing, useAiProvider } from "../../stores/aiProvider";
-import { commandReferencesSelection } from "../../helpers/overlay/commandMode/intentParser";
+import { commandReferencesSelection } from "../../helpers/overlay/commandMode/typedClause";
 import { touchAssistantChatActivity } from "../../helpers/overlay/assistantChatContinuity";
 import { ApprovalCard } from "../chat/ApprovalCard";
 import { approvalKey, useConnectorApprovalStore } from "../../stores/connectorApprovalStore";

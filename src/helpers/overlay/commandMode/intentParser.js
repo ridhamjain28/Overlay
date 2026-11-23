@@ -1,7 +1,17 @@
 // Overlay Command mode: turn spoken or typed text into one structured intent.
 // Pure functions — no Electron, no network. The LLM step is injected.
 
-const { classifyTypedClause, intentFromTypedClause } = require("./typedClause");
+const { classifyTypedClause, intentFromTypedClause, commandReferencesSelection } = require("./typedClause");
+const { commandSkillSystemPrompt } = require("./skillLoader");
+const {
+  parseBrowserSearch,
+  utteranceWantsSearch,
+  isSearchUrl,
+  extractSearchQuery,
+  namedBrowserInUtterance,
+  googleSearchUrl,
+  resolveBrowserAlias,
+} = require("./browserSearch");
 
 const COMMAND_ACTIONS = ["open_app", "open_url", "run_command", "type_text", "compose_text", "guide"];
 
@@ -55,7 +65,7 @@ const COMPOUND_SPLIT_RE = new RegExp(
 );
 const HINGLISH_OPEN_RE = /^(.+?)\s+(kholo|khol do|khol dena|chalao|chala do)\s*$/i;
 const LEADING_WRAPPER_RE =
-  /^(?:(?:please|pls|plz|hey overlay|ok overlay|okay overlay|overlay,|overlay\s*[,:]?|can you|could you|would you|will you|can u|could u|would u)\s+)+/i;
+  /^(?:(?:please|pls|plz|zara|yaar|bhai|kripaya|kripya|krupa|hey overlay|ok overlay|okay overlay|overlay,|overlay\s*[,:]?|can you|could you|would you|will you|can u|could u|would u)\s+)+/i;
 const TRAILING_WRAPPER_RE = /(?:\s+(?:for me|please|pls|plz|now))+$/i;
 
 function trimText(value) {
@@ -83,10 +93,6 @@ function stripCommandWrappers(text) {
 
 function containsCommandConnector(value) {
   return new RegExp("\\b" + COMPOUND_CONNECTOR_RE.source + "\\b", "i").test(trimText(value));
-}
-
-function commandReferencesSelection(text) {
-  return /\b(this|selected|selection)\b/i.test(String(text || ""));
 }
 
 function cleanAppName(raw) {
@@ -198,41 +204,6 @@ function planFromOpenAndClause(app, clause) {
 }
 
 
-const BROWSER_NAME_RE = "(?:google\\s+)?chrome|firefox|edge|msedge|brave|safari|browser";
-const SEARCH_WITH_BROWSER_RE = new RegExp(
-  "^(?:open|launch|start|go to)\\s+(" + BROWSER_NAME_RE + ")\\s+(?:and\\s+)?(?:then\\s+)?(?:search|google|look up)\\s+(?:for\\s+)?(.+)$",
-  "i"
-);
-
-function googleSearchUrl(query) {
-  const q = String(query || "")
-    .trim()
-    .replace(/[.?!]+$/g, "")
-    .trim();
-  return "https://www.google.com/search?q=" + encodeURIComponent(q);
-}
-
-function parseOpenAndSearch(text) {
-  const raw = trimText(text);
-  const m = raw.match(SEARCH_WITH_BROWSER_RE);
-  if (!m) return null;
-  const app = cleanAppName(m[1]);
-  const query = String(m[2] || "")
-    .trim()
-    .replace(/[.?!]+$/g, "")
-    .trim();
-  if (!app || !query || toHttpsUrl(app)) return null;
-  return {
-    action: "plan",
-    args: {},
-    steps: [
-      { action: "open_app", args: { app } },
-      { action: "open_url", args: { url: googleSearchUrl(query) } },
-    ],
-    confidence: 0.9,
-  };
-}
-
 function parseCompoundOpenAndType(text) {
   const t = trimText(text);
   const split = t.match(COMPOUND_SPLIT_RE);
@@ -302,8 +273,8 @@ function parseIntentHeuristic(text) {
   // Compound open+write and type/compose must win over chat patterns such as
   // "write an email …", so "open notepad and write an email to …" stays a plan.
   const commandHit =
-    parseOpenAndSearch(t) ||
-    parseOpenAndSearch(original) ||
+    parseBrowserSearch(t) ||
+    parseBrowserSearch(original) ||
     parseCompoundOpenAndType(t) ||
     parseCompoundOpenAndType(original) ||
     parseTypeText(t) ||
@@ -328,27 +299,17 @@ function shouldUseLlm(heuristic) {
   return heuristic.confidence < 0.7;
 }
 
+function buildIntentUserMessage(text) {
+  return "User request:\n" + String(text || "").trim();
+}
+
+function buildIntentParseMessages(text) {
+  return { system: commandSkillSystemPrompt(), user: buildIntentUserMessage(text) };
+}
+
 function buildIntentParsePrompt(text) {
-  const allowed = COMMAND_ACTIONS.join(", ");
-  return [
-    "You convert one user request into a single desktop command for the Overlay app.",
-    "Return ONLY a JSON object, no markdown, no commentary, with this shape:",
-    `{"action":"${allowed.replace(/, /g, "|")}|none","app":"","url":"","command":"","text":"","prompt":"","target":"","confidence":0.0}`,
-    "Rules:",
-    `- action must be one of: ${allowed}, or none.`,
-    "- none if this is a question, conversation, or anything that is not a desktop command. Asking to write a letter or email into an app is compose_text, not none.",
-    "- open_url: only http(s) websites. Add https:// if the user named a site like youtube.com.",
-    "- open_app: launch a program by name (Chrome, Notepad, VS Code, Settings, …). The app field must be only the app name, never 'and type …'.",
-    "- run_command: only when the user clearly wants a shell/terminal command. Put the exact command in `command`.",
-    "- type_text: type or paste the user's exact short words into the already-focused field. Put those words in `text`.",
-    "- compose_text: the user wants a real letter, email, note, essay, message, or poem written. Put the writing request in `prompt`. Do not put the finished document in `text`.",
-    "- guide: the user wants to find, be shown, or click a button/control on screen. Put the control name in `target`. Do not click it yourself.",
-    "- Do not invent destructive commands (delete, format, shutdown, registry edits).",
-    "- confidence is a number from 0 to 1.",
-    "",
-    "User request:",
-    text,
-  ].join("\n");
+  const messages = buildIntentParseMessages(text);
+  return messages.system + "\n\n" + messages.user;
 }
 
 function extractJsonObject(raw) {
@@ -366,14 +327,15 @@ function extractJsonObject(raw) {
   }
 }
 
-function normalizeParsedIntent(parsed, source) {
-  if (!parsed || typeof parsed !== "object") {
-    return { action: "none", args: {}, confidence: 0, source };
-  }
+function clampConfidence(value, fallback) {
+  let confidence = Number(value);
+  if (!Number.isFinite(confidence)) confidence = fallback;
+  return Math.min(1, Math.max(0, confidence));
+}
+
+function normalizeSingleIntent(parsed, source) {
   const action = COMMAND_ACTIONS.includes(parsed.action) ? parsed.action : "none";
-  let confidence = Number(parsed.confidence);
-  if (!Number.isFinite(confidence)) confidence = action === "none" ? 0.5 : 0.7;
-  confidence = Math.min(1, Math.max(0, confidence));
+  const confidence = clampConfidence(parsed.confidence, action === "none" ? 0.5 : 0.7);
   const args = {};
   if (action === "open_app") args.app = trimText(parsed.app || parsed.name || parsed.target);
   if (action === "open_app" && containsCommandConnector(args.app)) {
@@ -383,6 +345,11 @@ function normalizeParsedIntent(parsed, source) {
     const url = toHttpsUrl(parsed.url || parsed.link || parsed.target || "");
     if (url) args.url = url;
     else return { action: "none", args: {}, confidence: 0.2, source };
+    const browser = trimText(parsed.browser || (!toHttpsUrl(parsed.app || "") ? parsed.app : "") || "");
+    if (browser) {
+      const product = resolveBrowserAlias(browser);
+      args.browser = product === "default" ? "browser" : product || browser;
+    }
   }
   if (action === "run_command") args.command = trimText(parsed.command || parsed.cmd || parsed.text);
   if (action === "type_text") args.text = String(parsed.text || parsed.content || "");
@@ -399,6 +366,159 @@ function normalizeParsedIntent(parsed, source) {
   return { action, args, confidence, source };
 }
 
+function normalizeParsedIntent(parsed, source) {
+  if (!parsed || typeof parsed !== "object") {
+    return { action: "none", args: {}, confidence: 0, source };
+  }
+  const rawSteps = Array.isArray(parsed.steps) ? parsed.steps : null;
+  if (parsed.action === "plan" || (rawSteps && rawSteps.length && parsed.action !== "open_url")) {
+    const steps = rawSteps
+      ? rawSteps
+          .map((step) => normalizeSingleIntent({ ...step, confidence: step?.confidence ?? 1 }, source))
+          .filter((step) => step.action !== "none")
+      : [];
+    if (!steps.length) return { action: "none", args: {}, confidence: 0.2, source };
+    if (steps.length === 1) {
+      return { ...steps[0], confidence: clampConfidence(parsed.confidence, steps[0].confidence), source };
+    }
+    return {
+      action: "plan",
+      args: {},
+      steps,
+      confidence: clampConfidence(parsed.confidence, 0.8),
+      source,
+    };
+  }
+  return normalizeSingleIntent(parsed, source);
+}
+
+function intentStepsOf(intent) {
+  if (!intent || intent.action === "none") return [];
+  if (intent.action === "plan" && Array.isArray(intent.steps)) return intent.steps;
+  return [intent];
+}
+
+function hasSearchStep(intent) {
+  return intentStepsOf(intent).some((step) => step.action === "open_url" && isSearchUrl(step.args?.url));
+}
+
+function expectedStepCount(text) {
+  const t = stripCommandWrappers(text) || trimText(text);
+  const search = utteranceWantsSearch(t);
+  const browserOrTube = Boolean(namedBrowserInUtterance(t) || /\byoutube\b|\byt\b/i.test(t));
+  const open = /\b(open|launch|start|go to|goto|visit|kholo|chalao)\b/i.test(t);
+  const typeOrCompose = /\b(type|write|enter|paste|likho)\b/i.test(t);
+  const run = /\b(run|execute)\b/i.test(t);
+  let n = 0;
+  if (search && (browserOrTube || open)) n += 1;
+  else {
+    if (open) n += 1;
+    if (search) n += 1;
+  }
+  if (typeOrCompose) n += 1;
+  if (run) n += 1;
+  return n;
+}
+
+function sanitizeSearchUrl(url, utterance) {
+  try {
+    const parsed = new URL(url);
+    const key = /youtube\.com$/i.test(parsed.hostname) ? "search_query" : "q";
+    const raw = parsed.searchParams.get(key) || "";
+    const dirty = /[{}']|confidence\s*:/i.test(raw);
+    if (!dirty) return url;
+    const fallback = extractSearchQuery(utterance) || raw.split(/['"{,]/)[0].trim();
+    if (!fallback) return url;
+    parsed.searchParams.set(key, fallback);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function cleanIntentSearchUrls(text, intent) {
+  if (!intent) return intent;
+  const steps = intentStepsOf(intent);
+  let changed = false;
+  for (const step of steps) {
+    if (step.action === "open_url" && isSearchUrl(step.args?.url)) {
+      const cleaned = sanitizeSearchUrl(step.args.url, text);
+      if (cleaned !== step.args.url) {
+        step.args.url = cleaned;
+        changed = true;
+      }
+    }
+  }
+  if (changed) intent.repaired = true;
+  return intent;
+}
+
+function repairMissingSearch(text, intent) {
+  if (!utteranceWantsSearch(text) || hasSearchStep(intent)) return intent;
+  let parsed = parseBrowserSearch(text);
+  if (!parsed) {
+    const query = extractSearchQuery(text);
+    if (!query) return intent;
+    const product = namedBrowserInUtterance(text);
+    const args = { url: googleSearchUrl(query) };
+    if (product === "default") args.browser = "browser";
+    else if (product) args.browser = product;
+    parsed = { action: "open_url", args, confidence: 0.85 };
+  }
+  const steps = intentStepsOf(intent);
+  const browser = parsed.args.browser;
+  const matchesBrowserOpen = (step) => {
+    if (step.action !== "open_app") return false;
+    const product = resolveBrowserAlias(step.args?.app || "") || namedBrowserInUtterance(step.args?.app || "");
+    if (!browser) return Boolean(product);
+    const wanted = resolveBrowserAlias(browser) || browser;
+    return product === wanted || (wanted === "default" && product);
+  };
+  const onlyBrowserOpen = steps.length === 1 && matchesBrowserOpen(steps[0]);
+  if (onlyBrowserOpen || intent.action === "none" || steps.length === 0) {
+    return { ...parsed, source: intent.source || "heuristic", repaired: true };
+  }
+  const next = steps.slice();
+  const idx = next.findIndex(matchesBrowserOpen);
+  const searchStep = { action: "open_url", args: parsed.args };
+  if (idx >= 0) next.splice(idx, 1, searchStep);
+  else next.push(searchStep);
+  if (next.length === 1) {
+    return { ...next[0], confidence: Math.max(intent.confidence || 0, 0.85), source: intent.source, repaired: true };
+  }
+  return {
+    action: "plan",
+    args: {},
+    steps: next,
+    confidence: Math.max(intent.confidence || 0, 0.85),
+    source: intent.source,
+    repaired: true,
+  };
+}
+
+async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false } = {}) {
+  let current = cleanIntentSearchUrls(text, repairMissingSearch(text, intent));
+  const expected = expectedStepCount(text);
+  const actual = intentStepsOf(current).length;
+  if (expected <= actual || alreadyReasked || typeof llmComplete !== "function") return current;
+  try {
+    const raw = await llmComplete({
+      system: commandSkillSystemPrompt(),
+      user:
+        "The previous plan dropped one or more clauses. Output a complete JSON plan that covers every clause. Do not drop search, type, or compose clauses.\n\n" +
+        buildIntentUserMessage(text),
+    });
+    const retry = parseIntentFromLlmResponse(raw);
+    const repaired = repairMissingSearch(text, retry);
+    if (intentStepsOf(repaired).length >= actual) {
+      return { ...repaired, source: "llm", reasked: true };
+    }
+  } catch {
+    // Keep the best intent we already have.
+  }
+  return current;
+}
+
 function parseIntentFromLlmResponse(raw) {
   return normalizeParsedIntent(extractJsonObject(raw), "llm");
 }
@@ -409,20 +529,24 @@ function parseIntentFromLlmResponse(raw) {
  */
 async function parseIntent(text, { llmComplete, forceLlm = false } = {}) {
   const heuristic = parseIntentHeuristic(text);
-  if (!forceLlm && !shouldUseLlm(heuristic)) return heuristic;
-  if (typeof llmComplete !== "function") return heuristic;
+  if (!forceLlm && !shouldUseLlm(heuristic)) {
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true });
+  }
+  if (typeof llmComplete !== "function") {
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true });
+  }
   try {
-    const raw = await llmComplete(buildIntentParsePrompt(text));
+    const raw = await llmComplete(buildIntentParseMessages(text));
     const llm = parseIntentFromLlmResponse(raw);
     // Prefer a confident heuristic over a weak LLM "none".
     if (llm.action === "none" && heuristic.action !== "none" && heuristic.confidence >= 0.6) {
-      return heuristic;
+      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true });
     }
-    return llm;
+    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false });
   } catch (error) {
     const errorCode =
       error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR";
-    return {
+    const failed = {
       action: "none",
       args: {},
       confidence: 0,
@@ -430,6 +554,8 @@ async function parseIntent(text, { llmComplete, forceLlm = false } = {}) {
       errorCode,
       errorMessage: String(error?.message || "parse failed"),
     };
+    if (heuristic.action !== "none" && heuristic.confidence >= 0.6) return heuristic;
+    return applyClausePostCheck(text, failed, { alreadyReasked: true });
   }
 }
 
@@ -442,7 +568,9 @@ function formatIntentForConfirm(intent) {
     case "open_app":
       return `Open app: ${intent.args.app}`;
     case "open_url":
-      return `Open link: ${intent.args.url}`;
+      return intent.args?.browser
+        ? `Open link in ${intent.args.browser}: ${intent.args.url}`
+        : `Open link: ${intent.args.url}`;
     case "run_command":
       return `Run command: ${intent.args.command}`;
     case "type_text": {
@@ -469,8 +597,14 @@ module.exports = {
   parseIntent,
   shouldUseLlm,
   buildIntentParsePrompt,
+  buildIntentParseMessages,
+  buildIntentUserMessage,
   extractJsonObject,
   formatIntentForConfirm,
+  repairMissingSearch,
+  cleanIntentSearchUrls,
+  expectedStepCount,
+  intentStepsOf,
   toHttpsUrl,
   looksLikeChat,
   looksImperative,

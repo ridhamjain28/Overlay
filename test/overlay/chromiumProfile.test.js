@@ -4,6 +4,8 @@ const path = require("path");
 const {
   parseChromiumLastProfileDirectory,
   chromiumProductFromAppName,
+  browserProductFromName,
+  resolveBrowserLaunch,
   chromiumUserDataDir,
   readLastProfileDirectory,
   chromiumLaunchArgs,
@@ -79,4 +81,25 @@ test("chromiumLaunchArgs always include --profile-directory", () => {
     "--profile-directory=Default",
     "https://a.test",
   ]);
+});
+
+
+test("browserProductFromName maps firefox, opera, and the default browser", () => {
+  assert.equal(browserProductFromName("Microsoft Edge"), "edge");
+  assert.equal(browserProductFromName("Opera"), "opera");
+  assert.equal(browserProductFromName("Mozilla Firefox"), "firefox");
+  assert.equal(browserProductFromName("the browser"), "default");
+  assert.equal(browserProductFromName("brave browser"), "brave");
+});
+
+test("resolveBrowserLaunch uses Firefox with only the URL, no Chrome profile flag", () => {
+  const launched = resolveBrowserLaunch({
+    product: "firefox",
+    url: "https://www.google.com/search?q=rust",
+    env: { PROGRAMFILES: "C:\\Program Files" },
+    fsImpl: { existsSync: (p) => /firefox\.exe$/i.test(String(p)) },
+  });
+  assert.match(String(launched.exe), /firefox\.exe$/i);
+  assert.deepEqual(launched.args, ["https://www.google.com/search?q=rust"]);
+  assert.equal(launched.args.some((a) => String(a).startsWith("--profile-directory=")), false);
 });
