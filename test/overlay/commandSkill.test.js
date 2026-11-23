@@ -11,7 +11,7 @@ const { buildIntentParseMessages } = require("../../src/helpers/overlay/commandM
 test("bundled command skill is versioned and contains the required rules and few-shots", () => {
   const skill = loadCommandSkill();
   assert.equal(skill.filename, SKILL_FILENAME);
-  assert.equal(skill.version, "3");
+  assert.equal(skill.version, "4");
   assert.match(skill.text, /Never drop a clause/i);
   assert.match(skill.text, /Output JSON only/i);
   assert.match(skill.text, /open edge and search for weather in pune/i);
@@ -19,6 +19,8 @@ test("bundled command skill is versioned and contains the required rules and few
   assert.match(skill.text, /calendar\/render/i);
   assert.match(skill.text, /compose_email/);
   assert.match(skill.text, /Do not say the system cannot manage calendars/i);
+  assert.match(skill.text, /find_path/);
+  assert.match(skill.text, /open the mcb folder in philix folder/i);
   // About 25 few-shots: count "User:" blocks
   const shots = skill.text.match(/^User:/gm) || [];
   assert.ok(shots.length >= 24, `expected ~25 few-shots, got ${shots.length}`);

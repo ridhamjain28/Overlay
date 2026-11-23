@@ -13,8 +13,15 @@ const {
 const { buildGmailComposeUrl } = require("./webApps");
 const { fillActionTemplate } = require("../appSkillTemplates");
 const riskPolicy = require("./riskPolicy");
+const {
+  findPaths,
+  formatFindOutcome,
+  isExecutablePath,
+  explorerSearchMsUrl,
+  defaultKnownRoots,
+} = require("./findPath");
 
-const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide", "app_action"]);
+const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide", "app_action", "find_path", "open_path"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
 const PLAN_STEP_DELAY_MS = 1500;
 const APP_LAUNCH_GRACE_MS = 300;
@@ -43,8 +50,9 @@ const BLOCKED_COMMAND_PATTERNS = [
   /\b(sc\s+(delete|create|config)|stop-service)\b/i,
 ];
 
-function needsConfirmation(action, { autoRunTrusted = false } = {}) {
+function needsConfirmation(action, { autoRunTrusted = false, args } = {}) {
   if (ALWAYS_CONFIRM_ACTIONS.has(action)) return true;
+  if (action === "open_path" && args && args.run && isExecutablePath(args.path)) return true;
   if (TRUSTED_ACTIONS.has(action) && autoRunTrusted) return false;
   return COMMAND_ACTIONS.includes(action);
 }
@@ -52,6 +60,17 @@ function needsConfirmation(action, { autoRunTrusted = false } = {}) {
 function isBlockedCommand(command) {
   const c = String(command || "");
   return BLOCKED_COMMAND_PATTERNS.some((re) => re.test(c));
+}
+
+function isExplorerExecutable(file) {
+  const base = String(file || "").replace(/^.*[\\/]/, "").toLowerCase();
+  return base === "explorer.exe" || base === "explorer";
+}
+
+function isSpawnFailure(error) {
+  if (!error) return false;
+  const code = error.code;
+  return typeof code === "string" && /^(ENOENT|EACCES|EPERM|ENOTDIR)$/i.test(code);
 }
 
 function clampString(value, max) {
@@ -96,6 +115,26 @@ function validateCommandRequest(request) {
     if (browser && browser.length <= 40 && !/[/\\:]/.test(browser)) {
       args.browser = browser;
     }
+  }
+  if (action === "find_path") {
+    const name = String(args.name || request.name || "").trim();
+    if (!name || name.length > 200) return { ok: false, error: "find_path needs a name", code: "NOT_ALLOWED" };
+    args.name = name;
+    args.kind = /^(folder|file|any)$/i.test(String(args.kind || "")) ? String(args.kind).toLowerCase() : "any";
+    if (args.within) args.within = String(args.within).trim();
+  }
+  if (action === "open_path") {
+    const filePath = String(args.path || request.path || "").trim();
+    if (args.searchMs || args.searchQuery) {
+      args.searchMs = true;
+      args.searchQuery = String(args.searchQuery || "").trim();
+      if (!args.searchQuery) return { ok: false, error: "Explorer search needs a query", code: "NOT_ALLOWED" };
+    } else if (!filePath || filePath.length > 500) {
+      return { ok: false, error: "open_path needs a file or folder path", code: "NOT_ALLOWED" };
+    } else {
+      args.path = filePath;
+    }
+    if (args.run) args.run = true;
   }
   if (action === "run_command") {
     const command = clampString(args.command || request.command, MAX_COMMAND_LENGTH).trim();
@@ -176,19 +215,34 @@ function createCommandDispatcher(deps = {}) {
     onProgress, // (phase) => void
     getAppSkill, // (appId) => skill
     sendKeys, // (combo) => Promise
+    searchIndex, // ({ name, kind, roots }) => Promise<matches>
   } = deps;
 
   async function launchDetached(file, args = []) {
+    let spawnError = null;
     const launched = Promise.resolve(
       execFile(file, args, { windowsHide: false, detached: true })
+    ).then(
+      () => {},
+      (error) => {
+        // explorer.exe (and other GUI apps) often exit 1 after opening a window.
+        // Only a failed spawn (not found / not allowed) is a real error.
+        if (isSpawnFailure(error)) spawnError = error;
+      }
     );
-    launched.catch(() => {});
     await Promise.race([
       launched,
       new Promise((resolve) => {
         setTimeout(resolve, APP_LAUNCH_GRACE_MS);
       }),
     ]);
+    if (spawnError) throw spawnError;
+  }
+
+  async function launchExplorer(explorerArgs = []) {
+    const exe = "explorer.exe";
+    await launchDetached(exe, explorerArgs);
+    return { success: true, exe, args: explorerArgs };
   }
 
   async function launchBrowser(product, { url, executablePath } = {}) {
@@ -575,7 +629,69 @@ function createCommandDispatcher(deps = {}) {
             await sendKeys(filled.value);
             return { success: true, message: `Sent ${filled.value}`, action, args };
           }
+          if (filled.type === "find_path" || filled.type === "open_path") {
+            return perform({ action: filled.type, args: filled.args || {}, utterance: request.utterance }, options);
+          }
           return { success: false, error: "Not allowed", code: "NOT_ALLOWED" };
+        }
+        case "find_path": {
+          const finder = typeof options.findPaths === "function" ? options.findPaths : findPaths;
+          const found = await finder(args.name, {
+            kind: args.kind || "any",
+            within: args.within,
+            fsImpl,
+            env,
+            platform,
+            timeoutMs: options.findTimeoutMs,
+            roots: options.findRoots,
+            drives: options.findDrives,
+            searchIndex: options.searchIndex || (typeof deps.searchIndex === "function" ? deps.searchIndex : undefined),
+          });
+          const message = formatFindOutcome(found);
+          return {
+            success: true,
+            message,
+            action,
+            args,
+            matches: found.matches || [],
+            query: found.query || args.name,
+            kind: found.kind || args.kind,
+            missingWithin: found.missingWithin,
+          };
+        }
+        case "open_path": {
+          if (args.searchMs) {
+            if (platform !== "win32") {
+              return { success: false, error: "Explorer search is only available on Windows", code: "UNSUPPORTED" };
+            }
+            const target = explorerSearchMsUrl(args.searchQuery, args.location || args.path);
+            await launchExplorer([target]);
+            return { success: true, message: `Searched in File Explorer for ${args.searchQuery}`, action, args, opened: target };
+          }
+          const filePath = args.path;
+          if (args.run && isExecutablePath(filePath)) {
+            const alreadyConfirmed = options.confirmed === true;
+            if (!alreadyConfirmed) {
+              const allowed = typeof confirm === "function" ? await confirm(`Run ${filePath}?`) : false;
+              if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+            }
+            await launchDetached(filePath, []);
+            return { success: true, message: `Ran ${filePath}`, action, args, opened: filePath };
+          }
+          if (platform === "win32") {
+            const isDir = typeof fsImpl?.statSync === "function"
+              ? (() => { try { return fsImpl.statSync(filePath).isDirectory(); } catch { return !isExecutablePath(filePath); } })()
+              : !isExecutablePath(filePath);
+            if (isDir) await launchExplorer([filePath]);
+            else await launchExplorer(["/select," + filePath]);
+            return { success: true, message: `Opened ${filePath} in File Explorer`, action, args, opened: filePath };
+          }
+          if (typeof openPath === "function") {
+            const error = await openPath(filePath);
+            if (error) throw new Error(error);
+            return { success: true, message: `Opened ${filePath}`, action, args, opened: filePath };
+          }
+          return { success: false, error: "Opening paths is not available", code: "UNSUPPORTED" };
         }
         default:
           return { success: false, error: "Not allowed", code: "NOT_ALLOWED" };
@@ -597,6 +713,8 @@ module.exports = {
   PLAN_STEP_DELAY_MS,
   needsConfirmation,
   isBlockedCommand,
+  isExplorerExecutable,
+  isSpawnFailure,
   validateCommandRequest,
   confirmMessage,
   createCommandDispatcher,

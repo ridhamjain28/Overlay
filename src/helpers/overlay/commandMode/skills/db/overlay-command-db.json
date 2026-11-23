@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-23T06:18:32Z",
+  "updatedAt": "2026-11-23T09:45:00Z",
   "apps": [
     {
       "appId": "google-chrome",
@@ -2048,6 +2048,98 @@
               "utterance": "reveal this file in file explorer",
               "params": {
                 "path": "C:\\Projects\\Overlay\\README.md"
+              }
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "find",
+          "description": "Find a file or folder by name (known folders first, then fixed drives) and open a single match in File Explorer. If several matches are found, list the top 5 so the user can pick by number.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "within",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "how": {
+            "type": "find_path",
+            "template": "find_path {name} {kind} {within}"
+          },
+          "examples": [
+            {
+              "utterance": "open file explorer and search for mcp folder",
+              "params": {
+                "name": "mcp",
+                "kind": "folder"
+              }
+            },
+            {
+              "utterance": "open the mcb folder in philix folder",
+              "params": {
+                "name": "mcb",
+                "kind": "folder",
+                "within": "philix"
+              }
+            },
+            {
+              "utterance": "find the notes.txt file",
+              "params": {
+                "name": "notes.txt",
+                "kind": "file"
+              }
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "search-in-explorer",
+          "description": "Open File Explorer's own search (search-ms) for a query, only when the user clearly wants Explorer search rather than finding a named file or folder.",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "location",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "how": {
+            "type": "open_path",
+            "template": "search-ms:query={query}&crumb=location:{location}"
+          },
+          "examples": [
+            {
+              "utterance": "search for invoices in file explorer",
+              "params": {
+                "query": "invoices"
+              }
+            },
+            {
+              "utterance": "use explorer to search for last week's photos",
+              "params": {
+                "query": "last week's photos"
+              }
+            },
+            {
+              "utterance": "search in file explorer for mcp under Downloads",
+              "params": {
+                "query": "mcp",
+                "location": "Downloads"
               }
             }
           ],

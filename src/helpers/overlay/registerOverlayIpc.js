@@ -41,6 +41,7 @@ const {
   createOrchestrator,
 } = require("./commandMode");
 const { createComposeCompleter } = require("./commandMode/composeClient");
+const { queryWindowsSearch } = require("./commandMode/findPath");
 const appSkills = require("./appSkillsService");
 const customSkillsService = require("./customSkillsService");
 const { listLocalSkills, readSkill } = require("./appSkillStore");
@@ -640,6 +641,10 @@ function registerOverlayIpc({
     },
     getAppSkill: (appId) => readSkill(skillsDir, appId),
     openExternal: (url) => openExternalSoon(url),
+    searchIndex:
+      process.platform === "win32"
+        ? (opts) => queryWindowsSearch(execFileAsync, opts)
+        : undefined,
   });
 
   const { McpManager } = require("./mcp/mcpManager");

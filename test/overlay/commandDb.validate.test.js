@@ -4,7 +4,7 @@ const { loadBundledCommandDb } = require("../../src/helpers/overlay/commandMode/
 
 const REQUIRED_APP = ["appId", "name", "aliases", "match", "actions"];
 const REQUIRED_ACTION = ["id", "description", "params", "how", "examples", "risk"];
-const HOW_TYPES = new Set(["uri", "url", "cli", "keys"]);
+const HOW_TYPES = new Set(["uri", "url", "cli", "keys", "find_path", "open_path"]);
 const RISKS = new Set(["safe", "confirm"]);
 const MATCH_KEYS = new Set(["exe", "aumidPrefix", "protocols", "nameRegex"]);
 const PLACEHOLDER_RE = /\{([A-Za-z_][A-Za-z0-9_]*)(?::[a-zA-Z0-9_]+)?\}/g;
