@@ -1285,8 +1285,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     test: (name) => ipcRenderer.invoke("overlay-mcp-test", { name }),
     gallery: () => ipcRenderer.invoke("overlay-mcp-gallery"),
     importDiscover: () => ipcRenderer.invoke("overlay-mcp-import-discover"),
-    importServers: (selected, importEnvValues) =>
-      ipcRenderer.invoke("overlay-mcp-import-servers", { selected, importEnvValues }),
+    importServers: (selected, envImportChoices, importEnvValues) =>
+      ipcRenderer.invoke("overlay-mcp-import-servers", { selected, envImportChoices, importEnvValues }),
+    permissionsList: () => ipcRenderer.invoke("overlay-mcp-permissions-list"),
+    permissionsRevoke: (key) => ipcRenderer.invoke("overlay-mcp-permissions-revoke", { key }),
     onStatus: registerListener(
       "overlay-mcp-status",
       (callback) => (_event, payload) => callback(payload)

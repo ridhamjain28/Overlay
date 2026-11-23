@@ -4,6 +4,7 @@ export interface McpServerInfo {
   name: string;
   type: "stdio" | "remote";
   command?: string;
+  args?: string[];
   url?: string;
   status: McpServerStatus;
   error?: string | null;
@@ -45,7 +46,17 @@ export interface McpGalleryServer {
   };
   needsAuth: boolean;
   authType?: string;
+  notice?: string;
   hasEnvSecrets?: boolean;
+  verifiedOn?: string;
+  verifiedUrl?: string;
+}
+
+export interface McpDiscoveredEnvDetail {
+  key: string;
+  maskedValue: string;
+  isSecret: boolean;
+  hasValue: boolean;
 }
 
 export interface McpDiscoveredServer {
@@ -56,6 +67,16 @@ export interface McpDiscoveredServer {
   config: Record<string, unknown>;
   hasEnvSecrets: boolean;
   envKeys: string[];
+  envDetails?: McpDiscoveredEnvDetail[];
+}
+
+export interface McpSavedPermission {
+  key: string;
+  type: string;
+  server?: string;
+  tool?: string;
+  action?: string;
+  allowedAt: number;
 }
 
 export interface McpConfigGetResult {
@@ -94,7 +115,10 @@ export interface OverlayMcpApi {
   importDiscover: () => Promise<McpDiscoveredServer[]>;
   importServers: (
     selected: Array<{ serverName: string; config: Record<string, unknown> }>,
-    importEnvValues: boolean
+    envImportChoices?: Record<string, Record<string, boolean>>,
+    importEnvValues?: boolean
   ) => Promise<{ ok: boolean; imported: number; errors: string[] }>;
+  permissionsList: () => Promise<McpSavedPermission[]>;
+  permissionsRevoke: (key: string) => Promise<{ ok: boolean }>;
   onStatus: (callback: (payload: McpStatusEvent) => void) => () => void;
 }

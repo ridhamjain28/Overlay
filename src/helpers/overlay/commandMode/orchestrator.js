@@ -329,7 +329,7 @@ function validateSchemaArgs(args = {}, schema = {}) {
 function formatOutcome(text, steps, results) {
   const ok = !results.some((row) => row && row.success === false);
   const mcpRow = results.find((row) => row && (row.action === "mcp" || row.type === "mcp") && row.message);
-  if (mcpRow) return mcpRow.message;
+  if (mcpRow) return mcpRow.rawMessage || mcpRow.message;
   const calendar = formatCalendarOutcome(steps, ok, results.some((row) => row && row.action === "submit_page")
     ? results.find((row) => row.action === "submit_page")?.success
     : undefined);
@@ -534,12 +534,19 @@ function createOrchestrator(deps = {}) {
       } else if (toolRes && typeof toolRes === "object") {
         summaryText = toolRes.text || JSON.stringify(toolRes);
       }
+      let rawSummary = summaryText || `Called ${step.tool} on ${step.server}`;
+      const MAX_MCP_RESULT_LENGTH = 16384;
+      if (rawSummary.length > MAX_MCP_RESULT_LENGTH) {
+        rawSummary = rawSummary.slice(0, MAX_MCP_RESULT_LENGTH) + "\n...[TRUNCATED]";
+      }
+      const wrappedMessage = `=== UNTRUSTED MCP TOOL RESULT (${step.server}.${step.tool}) ===\n${rawSummary}\n=== END UNTRUSTED MCP TOOL RESULT ===`;
       return {
         success: !toolRes?.isError,
         action: "mcp",
         server: step.server,
         tool: step.tool,
-        message: summaryText || `Called ${step.tool} on ${step.server}`,
+        message: wrappedMessage,
+        rawMessage: rawSummary,
         content: toolRes?.content,
       };
     } catch (err) {
@@ -619,7 +626,16 @@ function createOrchestrator(deps = {}) {
         return { handled: false, success: false, steps: [], source: planned.source, message: "" };
       }
       const results = [];
-      for (const step of planned.steps) {
+      for (let i = 0; i < planned.steps.length; i++) {
+        const step = planned.steps[i];
+        if (typeof options.onProgress === "function") {
+          options.onProgress({
+            phase: "step",
+            current: i + 1,
+            total: planned.steps.length,
+            text: `Working... step ${i + 1}/${planned.steps.length}`,
+          });
+        }
         let result;
         if (step.action === "submit_page") {
           result = await executeSubmitPage(step);

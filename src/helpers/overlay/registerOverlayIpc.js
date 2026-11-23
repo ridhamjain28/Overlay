@@ -346,25 +346,45 @@ function registerOverlayIpc({
 
   const riskPolicy = require("./commandMode/riskPolicy");
 
+  let pendingVoiceConfirmation = null;
+
   const confirm = async (message, extra = {}) => {
     const parent = BrowserWindow?.getFocusedWindow?.() || undefined;
+    const blocked = riskPolicy.isBlocked(extra?.step);
     const options = {
       type: "question",
       buttons: ["Cancel", "Allow"],
-      defaultId: 1,
+      defaultId: 1, // Gets focus, Enter activates Allow
       cancelId: 0,
       noLink: true,
       title: "Overlay",
       message: "Overlay wants to do this on your laptop",
       detail: String(message || ""),
-      checkboxLabel: "Always allow",
-      checkboxChecked: false,
+      ...(blocked
+        ? {}
+        : {
+            checkboxLabel: "Always allow",
+            checkboxChecked: false,
+          }),
     };
-    const result = parent
-      ? await dialog.showMessageBox(parent, options)
-      : await dialog.showMessageBox(options);
+
+    const boxPromise = parent
+      ? dialog.showMessageBox(parent, options)
+      : dialog.showMessageBox(options);
+
+    const voicePromise = new Promise((resolve) => {
+      pendingVoiceConfirmation = resolve;
+    });
+
+    const result = await Promise.race([
+      boxPromise,
+      voicePromise.then((allow) => ({ response: allow ? 1 : 0, checkboxChecked: false })),
+    ]);
+
+    pendingVoiceConfirmation = null;
+
     const allowed = result.response === 1;
-    if (allowed && result.checkboxChecked && extra?.step) {
+    if (allowed && result.checkboxChecked && extra?.step && !blocked) {
       try {
         riskPolicy.allowAction(app.getPath("userData"), extra.step);
       } catch (err) {
@@ -729,6 +749,17 @@ function registerOverlayIpc({
 
   ipcMain.handle("overlay-command-orchestrate", async (event, payload = {}) => {
     const text = String(payload?.text || "");
+    if (pendingVoiceConfirmation) {
+      const lower = text.trim().toLowerCase();
+      if (/^(yes|yeah|yep|allow|proceed|sure|ok|okay|haan|ha)\b/i.test(lower)) {
+        pendingVoiceConfirmation(true);
+        return { handled: true, success: true, message: "Allowed" };
+      }
+      if (/^(no|cancel|stop|don't|dont|nahi)\b/i.test(lower)) {
+        pendingVoiceConfirmation(false);
+        return { handled: true, success: false, message: "Cancelled" };
+      }
+    }
     if (commandAbort) {
       try { commandAbort.abort(); } catch { /* ignore */ }
     }
@@ -739,9 +770,10 @@ function registerOverlayIpc({
       localBaseUrl: payload?.localBaseUrl,
       cloudProvider: payload?.cloudProvider,
     };
-    composeRuntime.onProgress = (phase) => {
+    composeRuntime.onProgress = (progressData) => {
       try {
-        event.sender.send("overlay-command-progress", { phase });
+        const p = typeof progressData === "string" ? { phase: progressData } : progressData;
+        event.sender.send("overlay-command-progress", p);
       } catch {
         // ignore
       }
@@ -758,6 +790,7 @@ function registerOverlayIpc({
             ? payload.autoSaveCreatedItems !== false
             : commandModePrefs.autoSaveCreatedItems !== false,
         confirmed: payload?.confirmed === true,
+        onProgress: composeRuntime.onProgress,
         signal: commandAbort?.signal,
       });
       debugLogger?.info?.("Overlay command orchestrator", {
@@ -1142,11 +1175,20 @@ function registerOverlayIpc({
     return discoverExternalConfigs();
   });
 
-  ipcMain.handle("overlay-mcp-import-servers", async (_event, { selected, importEnvValues }) => {
+  ipcMain.handle("overlay-mcp-import-servers", async (_event, { selected, envImportChoices, importEnvValues }) => {
     return importSelectedServers(selected, {
       mcpConfigStore: mcpManager.configStore,
+      envImportChoices: envImportChoices || {},
       importEnvValues: importEnvValues === true,
     });
+  });
+
+  ipcMain.handle("overlay-mcp-permissions-list", async () => {
+    return mcpManager.listPermissions();
+  });
+
+  ipcMain.handle("overlay-mcp-permissions-revoke", async (_event, { key }) => {
+    return { ok: mcpManager.revokePermission(key) };
   });
 
 

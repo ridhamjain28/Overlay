@@ -27,6 +27,7 @@ import {
   McpToolInfo,
   McpGalleryServer,
   McpDiscoveredServer,
+  McpSavedPermission,
 } from "../../types/overlayMcp";
 
 export default function ConnectorsSettings() {
@@ -39,6 +40,7 @@ export default function ConnectorsSettings() {
   const [toolsByServer, setToolsByServer] = useState<Record<string, McpToolInfo[]>>({});
   const [testResults, setTestResults] = useState<Record<string, string>>({});
   const [busyServer, setBusyServer] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<McpSavedPermission[]>([]);
 
   // Add Server Form State
   const [addName, setAddName] = useState("");
@@ -54,6 +56,7 @@ export default function ConnectorsSettings() {
   const [showImport, setShowImport] = useState(false);
   const [discoveredServers, setDiscoveredServers] = useState<McpDiscoveredServer[]>([]);
   const [selectedImports, setSelectedImports] = useState<Record<string, boolean>>({});
+  const [envKeyChoices, setEnvKeyChoices] = useState<Record<string, Record<string, boolean>>>({});
   const [importEnvValues, setImportEnvValues] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
 
@@ -71,8 +74,18 @@ export default function ConnectorsSettings() {
       setServers(list || []);
       const cfg = await api.configGet();
       setRawText(cfg.text || "");
+      if (typeof api.permissionsList === "function") {
+        const perms = await api.permissionsList();
+        setPermissions(perms || []);
+      }
     } catch {}
     setLoading(false);
+  };
+
+  const handleRevokePermission = async (key: string) => {
+    if (!api || typeof api.permissionsRevoke !== "function") return;
+    await api.permissionsRevoke(key);
+    await loadData();
   };
 
   useEffect(() => {
@@ -262,6 +275,7 @@ export default function ConnectorsSettings() {
     }
     const res = await api.importServers(
       selected.map((s) => ({ serverName: s.serverName, config: s.config })),
+      envKeyChoices,
       importEnvValues
     );
     if (res.ok) {
@@ -400,7 +414,7 @@ export default function ConnectorsSettings() {
                             </div>
                             <p className="mt-0.5 text-xs text-muted-foreground/80 font-mono">
                               {server.command
-                                ? `${server.command}`
+                                ? [server.command, ...(server.args || [])].join(" ")
                                 : server.url}
                             </p>
                           </div>
@@ -630,6 +644,57 @@ export default function ConnectorsSettings() {
         </SettingsPanel>
       </div>
 
+      {/* Saved Permissions Panel */}
+      <div>
+        <SectionHeader
+          title={t("mcp.permissionsTitle", { defaultValue: "Saved Permissions" })}
+          description={t("mcp.permissionsDescription", {
+            defaultValue: "Actions and MCP tools previously authorized to 'Always allow'. You can revoke permissions at any time.",
+          })}
+        />
+        <SettingsPanel className="mt-4">
+          {permissions.length === 0 ? (
+            <SettingsPanelRow>
+              <p className="py-2 text-xs text-muted-foreground">
+                {t("mcp.noPermissions", { defaultValue: "No actions are currently marked as 'Always allow'." })}
+              </p>
+            </SettingsPanelRow>
+          ) : (
+            permissions.map((perm) => (
+              <SettingsPanelRow key={perm.key}>
+                <div className="flex items-center justify-between py-1 w-full">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="size-4 text-emerald-500" />
+                      <span className="text-xs font-semibold text-foreground font-mono">
+                        {perm.tool ? `${perm.server} / ${perm.tool}` : perm.action}
+                      </span>
+                      <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted-foreground uppercase">
+                        {perm.type}
+                      </span>
+                    </div>
+                    {perm.allowedAt ? (
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        Allowed on {new Date(perm.allowedAt).toLocaleDateString()}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleRevokePermission(perm.key)}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="size-3.5" />
+                    {t("mcp.revoke", { defaultValue: "Revoke" })}
+                  </Button>
+                </div>
+              </SettingsPanelRow>
+            ))
+          )}
+        </SettingsPanel>
+      </div>
+
       {/* Raw mcp.json editor */}
       <div>
         <SectionHeader
@@ -702,6 +767,57 @@ export default function ConnectorsSettings() {
         </SettingsPanel>
       </div>
 
+      {/* Saved Permissions Panel */}
+      <div>
+        <SectionHeader
+          title={t("mcp.permissionsTitle", { defaultValue: "Saved Permissions" })}
+          description={t("mcp.permissionsDescription", {
+            defaultValue: "Actions and MCP tools previously authorized to 'Always allow'. You can revoke permissions at any time.",
+          })}
+        />
+        <SettingsPanel className="mt-4">
+          {permissions.length === 0 ? (
+            <SettingsPanelRow>
+              <p className="py-2 text-xs text-muted-foreground">
+                {t("mcp.noPermissions", { defaultValue: "No actions are currently marked as 'Always allow'." })}
+              </p>
+            </SettingsPanelRow>
+          ) : (
+            permissions.map((perm) => (
+              <SettingsPanelRow key={perm.key}>
+                <div className="flex items-center justify-between py-1 w-full">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="size-4 text-emerald-500" />
+                      <span className="text-xs font-semibold text-foreground font-mono">
+                        {perm.tool ? `${perm.server} / ${perm.tool}` : perm.action}
+                      </span>
+                      <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted-foreground uppercase">
+                        {perm.type}
+                      </span>
+                    </div>
+                    {perm.allowedAt ? (
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        Allowed on {new Date(perm.allowedAt).toLocaleDateString()}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleRevokePermission(perm.key)}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="size-3.5" />
+                    {t("mcp.revoke", { defaultValue: "Revoke" })}
+                  </Button>
+                </div>
+              </SettingsPanelRow>
+            ))
+          )}
+        </SettingsPanel>
+      </div>
+
       {/* Gallery Modal */}
       {showGallery && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -729,6 +845,29 @@ export default function ConnectorsSettings() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                    {item.notice && (
+                      <p className="mt-1 text-[11px] font-medium text-amber-500">
+                        {item.notice}
+                      </p>
+                    )}
+                    {item.type === "stdio" && item.config.command && (
+                      <p className="mt-1 font-mono text-[11px] text-muted-foreground/80 break-all">
+                        {[item.config.command, ...(item.config.args || [])].join(" ")}
+                      </p>
+                    )}
+                    {item.verifiedOn && (
+                      <p className="mt-1.5 text-[10px] text-muted-foreground/70">
+                        Verified {item.verifiedOn} ·{" "}
+                        <a
+                          href={item.verifiedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Docs
+                        </a>
+                      </p>
+                    )}
                   </div>
                   <Button
                     size="sm"
@@ -786,6 +925,44 @@ export default function ConnectorsSettings() {
                             <AlertCircle className="size-3" />
                             {t("mcp.containsEnvSecrets", { keys: s.envKeys.join(", ") })}
                           </p>
+                        )}
+                        {s.envDetails && s.envDetails.length > 0 && (
+                          <div className="mt-2 space-y-1 rounded bg-surface-2/60 p-2 text-xs">
+                            <p className="text-[11px] font-medium text-muted-foreground">
+                              {t("mcp.envVariables", { defaultValue: "Environment variables (select keys to import values)" })}:
+                            </p>
+                            {s.envDetails.map((envItem) => {
+                              const isKeyChecked = envKeyChoices[s.serverName]?.[envItem.key] === true;
+                              return (
+                                <label
+                                  key={envItem.key}
+                                  className="flex items-center justify-between gap-2 py-0.5 text-[11px] cursor-pointer"
+                                >
+                                  <span className="font-mono text-foreground flex items-center gap-1.5">
+                                    {envItem.key}
+                                    <span className="text-muted-foreground font-sans">
+                                      ({envItem.maskedValue || "empty"})
+                                    </span>
+                                  </span>
+                                  <input
+                                    type="checkbox"
+                                    checked={isKeyChecked}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setEnvKeyChoices((prev) => ({
+                                        ...prev,
+                                        [s.serverName]: {
+                                          ...(prev[s.serverName] || {}),
+                                          [envItem.key]: checked,
+                                        },
+                                      }));
+                                    }}
+                                    className="size-3.5 rounded border-border"
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                       <input

@@ -600,6 +600,40 @@ function CustomJsonEditor({
     setStatus("idle");
   };
 
+  const jumpToLine = (errText: string) => {
+    let targetLine = 1;
+    const lineMatch = errText.match(/(?:line|Line)\s+(\d+)/);
+    if (lineMatch) {
+      targetLine = parseInt(lineMatch[1], 10);
+    } else {
+      const appMatch = errText.match(/App\s+#(\d+)/i);
+      if (appMatch) {
+        const appIdx = parseInt(appMatch[1], 10);
+        let count = 0;
+        const allLines = text.split("\n");
+        for (let l = 0; l < allLines.length; l++) {
+          if (allLines[l].includes('"appId"')) {
+            count++;
+            if (count === appIdx) {
+              targetLine = l + 1;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (!textareaRef.current) return;
+    const lines = text.split("\n");
+    let charPos = 0;
+    for (let i = 0; i < Math.min(targetLine - 1, lines.length); i++) {
+      charPos += lines[i].length + 1;
+    }
+    textareaRef.current.focus();
+    const endPos = charPos + (lines[targetLine - 1]?.length || 0);
+    textareaRef.current.setSelectionRange(charPos, endPos);
+    textareaRef.current.scrollTop = Math.max(0, (targetLine - 3) * 20);
+  };
+
   const lines = text.split("\n");
   const lineCount = Math.max(1, lines.length);
 
@@ -615,10 +649,12 @@ function CustomJsonEditor({
         <div
           ref={gutterRef}
           aria-hidden="true"
-          className="w-10 select-none overflow-hidden border-e border-border/60 bg-muted/30 py-2 pe-2 text-end font-mono text-[11px] leading-relaxed text-muted-foreground/40"
+          className="w-10 select-none overflow-hidden border-e border-border/60 bg-muted/30 py-2 pe-2 text-end font-mono text-xs leading-5 text-muted-foreground/40"
         >
           {Array.from({ length: lineCount }, (_, i) => (
-            <div key={i + 1}>{i + 1}</div>
+            <div key={i + 1} className="h-5 leading-5">
+              {i + 1}
+            </div>
           ))}
         </div>
         <textarea
@@ -633,7 +669,7 @@ function CustomJsonEditor({
           autoCapitalize="off"
           autoCorrect="off"
           rows={16}
-          className="flex-1 resize-y bg-transparent p-2 font-mono text-xs leading-relaxed text-foreground outline-none whitespace-pre min-h-[16rem]"
+          className="flex-1 resize-y bg-transparent p-2 font-mono text-xs leading-5 text-foreground outline-none whitespace-pre min-h-[16rem]"
         />
       </div>
 
@@ -698,7 +734,13 @@ function CustomJsonEditor({
           <ul className="list-disc ps-4 space-y-0.5">
             {errors.map((err, i) => (
               <li key={i} className="break-words">
-                {err}
+                <button
+                  type="button"
+                  onClick={() => jumpToLine(err)}
+                  className="text-start hover:underline focus:outline-none"
+                >
+                  {err}
+                </button>
               </li>
             ))}
           </ul>

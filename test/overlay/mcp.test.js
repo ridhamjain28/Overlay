@@ -28,25 +28,32 @@ test("McpConfig validation detects syntax and structure errors", () => {
   assert.equal(r4.ok, false);
   assert.ok(r4.errors[0].includes("command") || r4.errors[0].includes("url"));
 
-  // Valid stdio & remote configs
-  const valid = {
-    mcpServers: {
-      "local-tool": {
-        command: "node",
-        args: ["script.js"],
-        env: { FOO: "BAR" },
+  // Unpinned npx package rejected
+  const rUnpinned = validateConfig(
+    JSON.stringify({
+      mcpServers: {
+        "unpinned-pkg": {
+          command: "npx",
+          args: ["-y", "@modelcontextprotocol/server-filesystem"],
+        },
       },
-      "remote-serv": {
-        url: "https://mcp.example.com/sse",
-        headers: { "X-Test": "123" },
+    })
+  );
+  assert.equal(rUnpinned.ok, false);
+  assert.ok(rUnpinned.errors[0].includes("unpinned npx package"));
+
+  // Pinned npx package accepted
+  const rPinned = validateConfig(
+    JSON.stringify({
+      mcpServers: {
+        "pinned-pkg": {
+          command: "npx",
+          args: ["-y", "@modelcontextprotocol/server-filesystem@2.4.0"],
+        },
       },
-    },
-  };
-  const r5 = validateConfig(JSON.stringify(valid));
-  assert.equal(r5.ok, true);
-  assert.equal(Object.keys(r5.servers).length, 2);
-  assert.equal(r5.servers["local-tool"].command, "node");
-  assert.equal(r5.servers["remote-serv"].url, "https://mcp.example.com/sse");
+    })
+  );
+  assert.equal(rPinned.ok, true);
 });
 
 test("McpManager connects to fake stdio MCP server fixture, lists tools, caches on disk, and calls tool", async () => {
@@ -205,14 +212,14 @@ test("BM25 top-k tool selection picks relevant tools up to k <= 8", () => {
 });
 
 test("Risk mapping from MCP tool annotations", () => {
-  // readOnlyHint => auto
+  // First use of ANY MCP tool asks (confirm), even if readOnlyHint is true (hints are untrusted)
   const readOnlyStep = {
     type: "mcp",
     server: "fs",
     tool: "list_directory",
     annotations: { readOnlyHint: true },
   };
-  assert.equal(riskPolicy.classify(readOnlyStep), "auto");
+  assert.equal(riskPolicy.classify(readOnlyStep), "confirm");
 
   // destructiveHint => confirm
   const destructiveStep = {
@@ -241,10 +248,27 @@ test("Risk mapping from MCP tool annotations", () => {
   assert.equal(riskPolicy.classify(blockedStep), "block");
 });
 
-test("Token storage is encrypted and never written to mcp.json or renderer", () => {
+test("Token storage is encrypted with safeStorage and never written to mcp.json or renderer", () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "overlay-mcp-auth-"));
+  const mockSafeStorage = {
+    isEncryptionAvailable: () => true,
+    encryptString: (str) => Buffer.from("MOCK_ENC:" + Buffer.from(str, "utf8").toString("base64"), "utf8"),
+    decryptString: (buf) => {
+      const str = buf.toString("utf8");
+      if (str.startsWith("MOCK_ENC:")) return Buffer.from(str.slice("MOCK_ENC:".length), "base64").toString("utf8");
+      throw new Error("Invalid mock ciphertext");
+    },
+  };
+
   try {
-    const authStore = new McpAuthStore(tempDir);
+    // If safeStorage is missing/unavailable, saving tokens must throw
+    const failStore = new McpAuthStore(tempDir);
+    assert.throws(
+      () => failStore.saveTokens("notion", { accessToken: "tok" }),
+      /Electron safeStorage is unavailable/
+    );
+
+    const authStore = new McpAuthStore(tempDir, { safeStorage: mockSafeStorage });
     authStore.saveTokens("notion", {
       accessToken: "secret_access_token_12345",
       refreshToken: "secret_refresh_token_67890",

@@ -1,7 +1,8 @@
 // OAuth 2.1 + PKCE for remote MCP servers using SDK auth helpers.
 // Handles system browser launch and 127.0.0.1 loopback redirect.
-// Stores tokens encrypted with Electron safeStorage in userData.
+// Stores tokens encrypted with Electron safeStorage (DPAPI) in userData.
 // INVARIANT: Tokens are NEVER stored in mcp.json, NEVER logged, and NEVER sent to renderer.
+// INVARIANT: No AES fallback storing keys beside data.
 
 const http = require("http");
 const url = require("url");
@@ -15,47 +16,34 @@ function getTokensPath(userDataDir) {
   return path.join(userDataDir || ".", TOKENS_FILE);
 }
 
-// Encryption helpers using Electron safeStorage or AES-256-GCM fallback for test environments
+// Encryption helpers strictly using Electron safeStorage (DPAPI) or mock safeStorage in tests.
 function encryptTokens(tokensObj, safeStorage) {
-  const jsonStr = JSON.stringify(tokensObj || {});
-  if (safeStorage && typeof safeStorage.isEncryptionAvailable === "function" && safeStorage.isEncryptionAvailable()) {
-    return safeStorage.encryptString(jsonStr);
+  if (
+    !safeStorage ||
+    typeof safeStorage.isEncryptionAvailable !== "function" ||
+    !safeStorage.isEncryptionAvailable()
+  ) {
+    throw new Error("Electron safeStorage is unavailable; credentials cannot be securely saved.");
   }
-  // Fallback for tests/non-electron environments: obfuscate / mock encryption
-  const iv = crypto.randomBytes(12);
-  const key = crypto.createHash("sha256").update("overlay-mcp-internal-fallback-key").digest();
-  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-  const enc = Buffer.concat([cipher.update(jsonStr, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return Buffer.concat([Buffer.from("MOCK_ENC:", "utf8"), iv, tag, enc]);
+  const jsonStr = JSON.stringify(tokensObj || {});
+  return safeStorage.encryptString(jsonStr);
 }
 
 function decryptTokens(buffer, safeStorage) {
   if (!buffer || !buffer.length) return {};
-  if (buffer.subarray(0, 9).toString("utf8") === "MOCK_ENC:") {
-    try {
-      const iv = buffer.subarray(9, 21);
-      const tag = buffer.subarray(21, 37);
-      const enc = buffer.subarray(37);
-      const key = crypto.createHash("sha256").update("overlay-mcp-internal-fallback-key").digest();
-      const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
-      decipher.setAuthTag(tag);
-      const dec = Buffer.concat([decipher.update(enc), decipher.final()]);
-      return JSON.parse(dec.toString("utf8"));
-    } catch {
-      return {};
-    }
+  if (
+    !safeStorage ||
+    typeof safeStorage.isEncryptionAvailable !== "function" ||
+    !safeStorage.isEncryptionAvailable()
+  ) {
+    throw new Error("Electron safeStorage is unavailable; credentials cannot be decrypted.");
   }
-
-  if (safeStorage && typeof safeStorage.isEncryptionAvailable === "function" && safeStorage.isEncryptionAvailable()) {
-    try {
-      const decrypted = safeStorage.decryptString(buffer);
-      return JSON.parse(decrypted);
-    } catch {
-      return {};
-    }
+  try {
+    const decrypted = safeStorage.decryptString(buffer);
+    return JSON.parse(decrypted);
+  } catch {
+    return {};
   }
-  return {};
 }
 
 class McpAuthStore {
@@ -107,24 +95,21 @@ class McpAuthStore {
   }
 
   persistAll(allTokens) {
-    try {
-      const encrypted = encryptTokens(allTokens, this.safeStorage);
-      this.fsImpl.mkdirSync(path.dirname(this.filePath), { recursive: true });
-      this.fsImpl.writeFileSync(this.filePath, encrypted);
-    } catch {
-      // ignore
-    }
+    const encrypted = encryptTokens(allTokens, this.safeStorage);
+    this.fsImpl.mkdirSync(path.dirname(this.filePath), { recursive: true });
+    this.fsImpl.writeFileSync(this.filePath, encrypted);
   }
 }
 
-// Generate PKCE code verifier and challenge
+// Generate PKCE code verifier and S256 challenge
 function generatePkce() {
   const verifier = crypto.randomBytes(32).toString("base64url");
   const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
   return { verifier, challenge };
 }
 
-// Starts a local loopback server on 127.0.0.1 to receive OAuth callback
+// Starts a local loopback server on 127.0.0.1 (only) with random port held exclusively.
+// Closes after one callback or a 5-minute timeout.
 function startLoopbackServer(port = 0) {
   return new Promise((resolve, reject) => {
     let resolved = false;
@@ -134,18 +119,23 @@ function startLoopbackServer(port = 0) {
       if (!resolved) reject(err);
     });
 
+    // Bind strictly to 127.0.0.1
     server.listen(port, "127.0.0.1", () => {
+      resolved = true;
       const address = server.address();
       const actualPort = typeof address === "object" ? address.port : port;
       resolve({
         server,
         port: actualPort,
         redirectUri: `http://127.0.0.1:${actualPort}/callback`,
-        waitForCode: (timeoutMs = 120000) => {
+        waitForCode: (timeoutMs = 300000) => {
+          // 5-minute timeout per requirements
           return new Promise((res, rej) => {
             const timer = setTimeout(() => {
-              server.close();
-              rej(new Error("OAuth callback timed out"));
+              try {
+                server.close();
+              } catch {}
+              rej(new Error("OAuth callback timed out after 5 minutes"));
             }, timeoutMs);
 
             server.on("request", (req, resHttp) => {
@@ -163,7 +153,10 @@ function startLoopbackServer(port = 0) {
                 );
 
                 clearTimeout(timer);
-                server.close();
+                // Close after one callback
+                try {
+                  server.close();
+                } catch {}
 
                 if (error) {
                   rej(new Error(`OAuth error: ${error}`));
@@ -187,7 +180,8 @@ function startLoopbackServer(port = 0) {
 async function performOAuthFlow(serverName, serverUrl, { authStore, openBrowser }) {
   const { verifier, challenge } = generatePkce();
   const loopback = await startLoopbackServer();
-  const state = crypto.randomBytes(16).toString("hex");
+  // Cryptographically random 32-byte state
+  const state = crypto.randomBytes(32).toString("hex");
 
   // Build OAuth URL (standard OAuth 2.1 authorization endpoint for MCP)
   const baseUrl = new URL(serverUrl);
@@ -203,8 +197,8 @@ async function performOAuthFlow(serverName, serverUrl, { authStore, openBrowser 
     await openBrowser(authEndpoint.toString());
   }
 
-  const { code, state: returnedState } = await loopback.waitForCode();
-  if (returnedState && returnedState !== state) {
+  const { code, state: returnedState } = await loopback.waitForCode(300000);
+  if (!returnedState || returnedState !== state) {
     throw new Error("OAuth state mismatch; possible CSRF");
   }
 

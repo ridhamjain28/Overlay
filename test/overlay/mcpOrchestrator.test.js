@@ -13,6 +13,7 @@ const riskPolicy = require("../../src/helpers/overlay/commandMode/riskPolicy");
 test("Filesystem server scoped to temp folder runs 'list files in my test folder' through orchestrator", async () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "overlay-mcp-e2e-"));
   const fixtureServer = path.resolve(__dirname, "../fixtures/fake-mcp-server.js");
+  let manager;
 
   try {
     const configStore = new McpConfigStore({
@@ -30,7 +31,7 @@ test("Filesystem server scoped to temp folder runs 'list files in my test folder
       },
     });
 
-    const manager = new McpManager({
+    manager = new McpManager({
       appDataDir: tempDir,
       userDataDir: tempDir,
       configStore,
@@ -43,6 +44,7 @@ test("Filesystem server scoped to temp folder runs 'list files in my test folder
     const tools = await manager.listToolsForServer("filesystem");
     assert.ok(tools.some((t) => t.name === "list_test_files"));
 
+    let confirmCalled = false;
     // Build the orchestrator with MCP tools and manager
     const orchestrator = createOrchestrator({
       parseIntent: async (text) => {
@@ -63,6 +65,10 @@ test("Filesystem server scoped to temp folder runs 'list files in my test folder
         }
         return { action: "none", args: {} };
       },
+      confirm: async () => {
+        confirmCalled = true;
+        return true;
+      },
       callMcpTool: (server, tool, args) => manager.callTool(server, tool, args),
       riskPolicy,
     });
@@ -70,6 +76,7 @@ test("Filesystem server scoped to temp folder runs 'list files in my test folder
     // Run utterance "list files in my test folder" through the orchestrator
     const result = await orchestrator.orchestrate("list files in my test folder");
 
+    assert.equal(confirmCalled, true, "First use of MCP tool must prompt for confirmation");
     assert.equal(result.handled, true);
     assert.equal(result.success, true);
     assert.equal(result.steps.length, 1);
@@ -80,9 +87,10 @@ test("Filesystem server scoped to temp folder runs 'list files in my test folder
     assert.ok(result.message.includes("file1.txt"));
     assert.ok(result.message.includes("file2.json"));
     assert.ok(result.message.includes("report.pdf"));
-
-    await manager.shutdown();
   } finally {
+    if (manager) {
+      await manager.shutdown().catch(() => {});
+    }
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });

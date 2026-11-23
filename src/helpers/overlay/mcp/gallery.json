@@ -5,10 +5,12 @@
     "description": "Design workflows, brand kits, and templates via Canva's official remote MCP server.",
     "type": "remote",
     "config": {
-      "url": "https://mcp.canva.com/mcp"
+      "url": "https://api.canva.com/connect/v1/mcp"
     },
     "needsAuth": true,
-    "authType": "oauth"
+    "authType": "oauth",
+    "verifiedOn": "2026-11-23",
+    "verifiedUrl": "https://www.canva.dev/docs/mcp/"
   },
   {
     "id": "notion",
@@ -19,54 +21,61 @@
       "url": "https://mcp.notion.com/mcp"
     },
     "needsAuth": true,
-    "authType": "oauth"
+    "authType": "oauth",
+    "verifiedOn": "2026-11-23",
+    "verifiedUrl": "https://developers.notion.com/docs/mcp"
+  },
+  {
+    "id": "github",
+    "name": "GitHub Copilot",
+    "description": "Interact with GitHub repositories, issues, PRs, and code search via GitHub Copilot MCP. Docker alternative: ghcr.io/github/github-mcp-server.",
+    "type": "remote",
+    "config": {
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "needsAuth": true,
+    "authType": "oauth",
+    "verifiedOn": "2026-11-23",
+    "verifiedUrl": "https://docs.github.com/en/copilot/mcp"
+  },
+  {
+    "id": "google-drive",
+    "name": "Google Drive (Preview)",
+    "description": "Preview: Search and read Google Drive files and Google Docs. Requires your own OAuth client setup.",
+    "type": "remote",
+    "config": {
+      "url": "https://drivemcp.googleapis.com/mcp/v1"
+    },
+    "needsAuth": true,
+    "authType": "oauth",
+    "notice": "Preview, needs own OAuth client",
+    "verifiedOn": "2026-11-23",
+    "verifiedUrl": "https://developers.google.com/drive/mcp"
   },
   {
     "id": "filesystem",
     "name": "Local Filesystem",
-    "description": "Read, write, and search files inside a scoped folder on your laptop.",
+    "description": "Read, write, and search files inside a designated folder on your laptop with pinned server version.",
     "type": "stdio",
     "config": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "%USERPROFILE%\\Documents"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem@2.4.0", "%USERPROFILE%\\Documents"]
     },
-    "needsAuth": false
+    "needsAuth": false,
+    "verifiedOn": "2026-11-23",
+    "verifiedUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem"
   },
   {
     "id": "fetch",
     "name": "Web Fetch",
-    "description": "Fetch and convert web page content to markdown for instant reading and extraction.",
+    "description": "Fetch and convert web page content to clean markdown via pinned Python uvx package.",
     "type": "stdio",
     "config": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"]
-    },
-    "needsAuth": false
-  },
-  {
-    "id": "github",
-    "name": "GitHub",
-    "description": "Interact with GitHub repositories, issues, branches, and pull requests.",
-    "type": "stdio",
-    "config": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
-      }
+      "command": "uvx",
+      "args": ["mcp-server-fetch==2026.11.18"]
     },
     "needsAuth": false,
-    "hasEnvSecrets": true
-  },
-  {
-    "id": "google-drive",
-    "name": "Google Drive",
-    "description": "Search and read files, Google Docs, and spreadsheets in your Google Drive.",
-    "type": "stdio",
-    "config": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-gdrive"]
-    },
-    "needsAuth": false
+    "verifiedOn": "2026-11-23",
+    "verifiedUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/fetch"
   }
 ]

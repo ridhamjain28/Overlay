@@ -2,6 +2,7 @@
 // - Claude Desktop (%APPDATA%\Claude\claude_desktop_config.json)
 // - Cursor (%USERPROFILE%\.cursor\mcp.json, %APPDATA%\Cursor\User\globalStorage\mcp.json)
 // - Antigravity (%USERPROFILE%\.gemini\antigravity\mcp_config.json)
+// INVARIANT: Never log secrets, always mask values in renderer.
 
 const fs = require("fs");
 const path = require("path");
@@ -64,14 +65,34 @@ function discoverExternalConfigs(options = {}) {
         const envKeys = Object.keys(env);
         const hasSecrets = hasSecretKeyNames(env);
 
+        // Env details with masked values (never plaintext secrets)
+        const envDetails = envKeys.map((k) => ({
+          key: k,
+          maskedValue: env[k] ? "••••••••" : "",
+          isSecret: /token|key|secret|password|auth|credential/i.test(k),
+          hasValue: Boolean(env[k]),
+        }));
+
+        // Mask config for display
+        const safeConfig = { ...serverCfg };
+        if (safeConfig.env) {
+          const maskedEnv = {};
+          for (const k of envKeys) {
+            maskedEnv[k] = safeConfig.env[k] ? "••••••••" : "";
+          }
+          safeConfig.env = maskedEnv;
+        }
+
         discovered.push({
           source: candidate.source,
           sourceKey: candidate.sourceKey,
           filePath: candidate.filePath,
           serverName: name,
-          config: serverCfg,
+          config: safeConfig,
+          _rawEnv: env, // Kept internal for import, never sent to renderer
           hasEnvSecrets: hasSecrets,
           envKeys,
+          envDetails,
         });
       }
     } catch {
@@ -82,7 +103,7 @@ function discoverExternalConfigs(options = {}) {
   return discovered;
 }
 
-function importSelectedServers(selectedList = [], { mcpConfigStore, importEnvValues = false }) {
+function importSelectedServers(selectedList = [], { mcpConfigStore, envImportChoices = {}, importEnvValues = false }) {
   if (!mcpConfigStore || !Array.isArray(selectedList)) {
     return { ok: false, imported: 0, errors: ["Invalid arguments"] };
   }
@@ -97,17 +118,21 @@ function importSelectedServers(selectedList = [], { mcpConfigStore, importEnvVal
     if (!name || !cfg) continue;
 
     const newCfg = { ...cfg };
-    if (newCfg.env) {
-      if (!importEnvValues) {
-        // Redact or clear env values if user opted not to import env
-        const emptyEnv = {};
-        for (const k of Object.keys(newCfg.env)) {
-          emptyEnv[k] = "";
+    const rawEnv = item._rawEnv || cfg.env || {};
+    const serverChoices = envImportChoices[name] || {};
+
+    if (newCfg.env || item._rawEnv) {
+      const newEnv = {};
+      const keys = Object.keys(rawEnv);
+      for (const k of keys) {
+        // Copy secret/value only if explicitly allowed per key or blanket importEnvValues
+        if (serverChoices[k] === true || (importEnvValues && serverChoices[k] !== false)) {
+          newEnv[k] = rawEnv[k] || "";
+        } else {
+          newEnv[k] = ""; // Keep placeholder key without value
         }
-        newCfg.env = emptyEnv;
-      } else {
-        newCfg.env = { ...newCfg.env };
       }
+      newCfg.env = newEnv;
     }
 
     servers[name] = newCfg;

@@ -109,6 +109,15 @@ export default function AgentDictationPillOverlay() {
   );
 
   useEffect(() => {
+    const unsub = window.electronAPI.onOverlayCommandProgress?.((payload) => {
+      if (payload?.text) {
+        showFinalText(payload.text);
+      }
+    });
+    return () => unsub?.();
+  }, [showFinalText]);
+
+  useEffect(() => {
     if (!liveTranscriptMounted) {
       void window.electronAPI.resizeAgentDictationPillToContent?.(null);
     }

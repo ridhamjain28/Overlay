@@ -65,6 +65,24 @@ function validateConfig(configOrText) {
     if (hasCommand) {
       const args = Array.isArray(server.args) ? server.args.map(String) : [];
       const env = server.env && typeof server.env === "object" && !Array.isArray(server.env) ? { ...server.env } : undefined;
+
+      // No unpinned npx -y: require exact versions
+      if (server.command.trim() === "npx") {
+        for (const arg of args) {
+          if (arg.startsWith("-")) continue;
+          if (arg.startsWith("@") || /^[a-z0-9_-]+/i.test(arg)) {
+            const atCount = (arg.match(/@/g) || []).length;
+            const hasVersion = arg.startsWith("@") ? atCount >= 2 : atCount >= 1;
+            if (!hasVersion) {
+              errors.push(
+                `Server "${trimmedName}" uses unpinned npx package "${arg}". Exact version is required (e.g. ${arg}@1.0.0).`
+              );
+            }
+            break;
+          }
+        }
+      }
+
       validServers[trimmedName] = {
         command: server.command.trim(),
         args,

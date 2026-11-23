@@ -161,9 +161,31 @@ class McpManager {
       if (!servers[name]) {
         this.disconnect(name).catch(() => {});
         removeServerCache(name, { appDataDir: this.appDataDir, fsImpl: this.fsImpl });
+        try {
+          const riskPolicy = require("../commandMode/riskPolicy");
+          riskPolicy.revokeServerPermissions(this.userDataDir, name, this.fsImpl);
+        } catch {}
       }
     }
     this.refreshIndexFromDisk();
+  }
+
+  listPermissions() {
+    try {
+      const riskPolicy = require("../commandMode/riskPolicy");
+      return riskPolicy.listSavedPermissions(this.userDataDir, this.fsImpl);
+    } catch {
+      return [];
+    }
+  }
+
+  revokePermission(key) {
+    try {
+      const riskPolicy = require("../commandMode/riskPolicy");
+      return riskPolicy.revokePermission(this.userDataDir, key, this.fsImpl);
+    } catch {
+      return false;
+    }
   }
 
   async connect(serverName) {
@@ -205,17 +227,25 @@ class McpManager {
           headers["Authorization"] = `Bearer ${token.accessToken}`;
         }
 
-        try {
-          // First attempt Streamable HTTP
+        const isNotion = serverCfg.url.toLowerCase().includes("notion.com");
+        if (isNotion) {
+          // Notion: strictly Streamable HTTP, no /sse fallback
           transport = new StreamableHTTPClientTransport(new URL(serverCfg.url), {
             requestInit: { headers },
           });
-        } catch {
-          // Fall back to SSE
-          transport = new SSEClientTransport(new URL(serverCfg.url), {
-            eventSourceInit: { headers },
-            requestInit: { headers },
-          });
+        } else {
+          try {
+            // First attempt Streamable HTTP
+            transport = new StreamableHTTPClientTransport(new URL(serverCfg.url), {
+              requestInit: { headers },
+            });
+          } catch {
+            // Fall back to SSE
+            transport = new SSEClientTransport(new URL(serverCfg.url), {
+              eventSourceInit: { headers },
+              requestInit: { headers },
+            });
+          }
         }
       }
 
@@ -368,6 +398,7 @@ class McpManager {
         name,
         type: cfg.command ? "stdio" : "remote",
         command: cfg.command,
+        args: cfg.args,
         url: cfg.url,
         status: status.status,
         error: status.error,

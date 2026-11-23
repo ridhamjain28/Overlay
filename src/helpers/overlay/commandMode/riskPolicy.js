@@ -1,11 +1,14 @@
 // Central risk policy module for Overlay Command mode, System Actions, and MCP tools.
 // Categorizes every action into:
-//   - "auto": runs immediately without dialog
+//   - "auto": runs immediately without dialog (ONLY built-in Overlay actions!)
 //   - "confirm": shows native confirmation dialog ("Overlay wants to do this on your laptop")
 //   - "block": refused even after confirm (destructive / malicious / credential export)
+// Rule: first use of any MCP tool asks; user can then "Always allow" it.
+// Hints like readOnlyHint are untrusted server metadata and NEVER bypass confirmation.
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const PERMISSIONS_FILE = "risk-permissions.json";
 
@@ -40,6 +43,13 @@ const CONFIRM_COMMAND_PATTERNS = [
   /\b(invoke-expression|\biex\b|invoke-webrequest\b.*\|\s*iex)\b/i,
 ];
 
+function computeToolSchemaHash(toolOrStep) {
+  if (!toolOrStep || typeof toolOrStep !== "object") return "";
+  const desc = String(toolOrStep.description || "").trim();
+  const schema = JSON.stringify(toolOrStep.inputSchema || toolOrStep.schema || {});
+  return crypto.createHash("sha256").update(`${desc}:${schema}`).digest("hex").slice(0, 32);
+}
+
 function stepKey(step) {
   if (!step || typeof step !== "object") return "unknown";
   const action = String(step.action || step.type || "").trim();
@@ -64,16 +74,25 @@ function stepKey(step) {
 }
 
 function loadPermissions(userDataDir, fsImpl = fs) {
-  if (!userDataDir) return new Set();
+  if (!userDataDir) return new Map();
   const filePath = path.join(userDataDir, PERMISSIONS_FILE);
   try {
-    if (!fsImpl.existsSync(filePath)) return new Set();
+    if (!fsImpl.existsSync(filePath)) return new Map();
     const raw = fsImpl.readFileSync(filePath, "utf-8");
     const data = JSON.parse(raw);
-    const list = Array.isArray(data?.allowedKeys) ? data.allowedKeys : [];
-    return new Set(list.map((k) => String(k).trim()).filter(Boolean));
+    const map = new Map();
+    if (data && typeof data.permissions === "object" && !Array.isArray(data.permissions)) {
+      for (const [k, v] of Object.entries(data.permissions)) {
+        if (v && typeof v === "object") map.set(k, v);
+      }
+    } else if (Array.isArray(data?.allowedKeys)) {
+      for (const k of data.allowedKeys) {
+        if (k) map.set(String(k).trim(), { key: String(k).trim(), type: "legacy" });
+      }
+    }
+    return map;
   } catch {
-    return new Set();
+    return new Map();
   }
 }
 
@@ -81,27 +100,126 @@ function savePermissions(userDataDir, permissions, fsImpl = fs) {
   if (!userDataDir) return;
   const filePath = path.join(userDataDir, PERMISSIONS_FILE);
   try {
-    const allowedKeys = Array.from(permissions instanceof Set ? permissions : new Set(permissions));
+    const obj = {};
+    if (permissions instanceof Map) {
+      for (const [k, v] of permissions.entries()) {
+        obj[k] = v;
+      }
+    } else if (permissions instanceof Set) {
+      for (const k of permissions) {
+        obj[k] = { key: k, type: "legacy" };
+      }
+    } else if (permissions && typeof permissions === "object" && !Array.isArray(permissions)) {
+      Object.assign(obj, permissions);
+    }
     fsImpl.mkdirSync(path.dirname(filePath), { recursive: true });
-    fsImpl.writeFileSync(filePath, JSON.stringify({ allowedKeys }, null, 2), "utf-8");
+    fsImpl.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          allowedKeys: Object.keys(obj),
+          permissions: obj,
+        },
+        null,
+        2
+      ),
+      "utf-8"
+    );
   } catch {
     // Ignore write failures in read-only / restricted environments
   }
 }
 
-function isAlwaysAllowed(step, permissions) {
+function isAlwaysAllowed(step, permissions, options = {}) {
   if (!permissions) return false;
   const key = stepKey(step);
-  if (permissions instanceof Set) return permissions.has(key);
-  if (Array.isArray(permissions)) return permissions.includes(key);
-  return false;
+  let entry = null;
+  if (permissions instanceof Map) {
+    entry = permissions.get(key);
+  } else if (permissions instanceof Set) {
+    if (permissions.has(key)) entry = { key, type: "legacy" };
+  } else if (Array.isArray(permissions)) {
+    if (permissions.includes(key)) entry = { key, type: "legacy" };
+  } else if (typeof permissions === "object") {
+    entry = permissions[key];
+  }
+  if (!entry) return false;
+
+  // For MCP tools: invalidate permission if inputSchema or description hash changed!
+  const isMcp = step.type === "mcp" || step.action === "mcp";
+  if (isMcp && entry.schemaHash) {
+    const currentHash = computeToolSchemaHash(step);
+    if (currentHash && entry.schemaHash !== currentHash) {
+      if (options.userDataDir) {
+        revokePermission(options.userDataDir, key, options.fsImpl || fs);
+      }
+      return false;
+    }
+  }
+  return true;
 }
 
 function allowAction(userDataDir, step, fsImpl = fs) {
-  const current = loadPermissions(userDataDir, fsImpl);
+  if (isBlocked(step)) return false; // NEVER offer or allow for "block"
+  const permissions = loadPermissions(userDataDir, fsImpl);
   const key = stepKey(step);
-  current.add(key);
-  savePermissions(userDataDir, current, fsImpl);
+  const isMcp = step.type === "mcp" || step.action === "mcp";
+  const entry = {
+    key,
+    type: isMcp ? "mcp" : "builtin",
+    allowedAt: Date.now(),
+  };
+  if (isMcp) {
+    entry.server = String(step.server || "").trim();
+    entry.tool = String(step.tool || "").trim();
+    entry.schemaHash = computeToolSchemaHash(step);
+  } else {
+    entry.action = key;
+  }
+  permissions.set(key, entry);
+  savePermissions(userDataDir, permissions, fsImpl);
+  return true;
+}
+
+function revokePermission(userDataDir, key, fsImpl = fs) {
+  const permissions = loadPermissions(userDataDir, fsImpl);
+  if (permissions.delete(key)) {
+    savePermissions(userDataDir, permissions, fsImpl);
+    return true;
+  }
+  return false;
+}
+
+function revokeServerPermissions(userDataDir, serverName, fsImpl = fs) {
+  const permissions = loadPermissions(userDataDir, fsImpl);
+  let changed = false;
+  const prefix = `mcp:${serverName}:`;
+  for (const key of Array.from(permissions.keys())) {
+    if (key.startsWith(prefix)) {
+      permissions.delete(key);
+      changed = true;
+    }
+  }
+  if (changed) {
+    savePermissions(userDataDir, permissions, fsImpl);
+  }
+  return changed;
+}
+
+function listSavedPermissions(userDataDir, fsImpl = fs) {
+  const permissions = loadPermissions(userDataDir, fsImpl);
+  const list = [];
+  for (const [key, val] of permissions.entries()) {
+    list.push({
+      key,
+      type: val.type || (key.startsWith("mcp:") ? "mcp" : "builtin"),
+      server: val.server || (key.startsWith("mcp:") ? key.split(":")[1] : undefined),
+      tool: val.tool || (key.startsWith("mcp:") ? key.split(":")[2] : undefined),
+      action: val.action || key,
+      allowedAt: val.allowedAt || 0,
+    });
+  }
+  return list;
 }
 
 function isBlocked(step) {
@@ -140,36 +258,34 @@ function classify(step, options = {}) {
     return "block";
   }
 
-  // Check permissions / always allow
-  const permissions =
-    options.permissions || (options.userDataDir ? loadPermissions(options.userDataDir, options.fsImpl) : null);
-  if (isAlwaysAllowed(step, permissions)) {
-    return "auto";
-  }
-
-  // If "Ask before every action" toggle is enabled, everything non-block asks first
+  // 2. Check "Ask before every action" toggle: if true, TRULY overrides auto for everything
   if (options.askBeforeEveryAction === true) {
     return "confirm";
+  }
+
+  // 3. Check permissions / always allow
+  const permissions =
+    options.permissions || (options.userDataDir ? loadPermissions(options.userDataDir, options.fsImpl) : null);
+  if (isAlwaysAllowed(step, permissions, { userDataDir: options.userDataDir, fsImpl: options.fsImpl })) {
+    return "auto";
   }
 
   const action = String(step.action || step.type || "").trim().toLowerCase();
   const args = step.args || step.params || {};
 
-  // 2. Database actions with explicit risk
+  // 4. Database actions with explicit risk
   if (step.risk === "confirm") return "confirm";
   if (step.risk === "safe") return "auto";
 
-  // 3. MCP tools
+  // 5. MCP tools:
+  // Rule: first use of ANY MCP tool asks; user can then "Always allow" it.
+  // Hints like readOnlyHint are untrusted server metadata and NEVER bypass confirmation.
+  // Only built-in Overlay actions use the auto tier.
   if (step.type === "mcp" || action === "mcp") {
-    const annotations = step.annotations || {};
-    if (annotations.readOnlyHint === true || step.readOnlyHint === true) {
-      return "auto";
-    }
-    // Destructive or unknown MCP tools require confirmation
     return "confirm";
   }
 
-  // 4. CONFIRM tier actions
+  // 6. CONFIRM tier actions (built-in destructive or stateful actions)
   // - Send message / email (real send, not prefill)
   if (
     action === "send_message" ||
@@ -223,8 +339,18 @@ function classify(step, options = {}) {
     return "confirm";
   }
 
-  // - Running shell/cli commands not in DB
+  // - Running shell/cli commands not in DB or running an executable found via find_path
   if (action === "run_command") {
+    return "confirm";
+  }
+
+  // Running an executable file via open_path / find_path
+  if (
+    (action === "open_path" || action === "find_path") &&
+    (/\.(exe|bat|cmd|ps1|vbs|msi)$/i.test(String(args.path || step.path || "")) ||
+      step.isExecutable === true ||
+      args.isExecutable === true)
+  ) {
     return "confirm";
   }
 
@@ -234,7 +360,7 @@ function classify(step, options = {}) {
     return "confirm";
   }
 
-  // 5. AUTO tier actions
+  // 7. AUTO tier actions (Built-in Overlay actions only)
   // - Brightness
   if (action === "brightness_set" || action === "brightness") return "auto";
 
@@ -269,8 +395,14 @@ function classify(step, options = {}) {
     return "auto";
   }
 
-  // - Open app / URL / file
-  if (action === "open_app" || action === "open_url" || action === "open_file") {
+  // - Open app / URL / file / folder
+  if (
+    action === "open_app" ||
+    action === "open_url" ||
+    action === "open_file" ||
+    action === "open_path" ||
+    action === "find_path"
+  ) {
     return "auto";
   }
 
@@ -305,7 +437,7 @@ function classify(step, options = {}) {
     return "auto";
   }
 
-  // - App action default: if not explicitly confirm, check if launch/open
+  // - App action default: if launch/open/show, auto
   if (action === "app_action") {
     const actionId = String(args.actionId || "").toLowerCase();
     if (actionId === "launch" || actionId === "open" || actionId === "show") {
@@ -317,34 +449,63 @@ function classify(step, options = {}) {
   return "auto";
 }
 
+function formatPlainLanguageArgs(args) {
+  if (!args || typeof args !== "object") return "";
+  const entries = Object.entries(args).filter(
+    ([k, v]) => v !== undefined && v !== null && v !== "" && k !== "appId" && k !== "actionId"
+  );
+  if (entries.length === 0) return "";
+  return entries
+    .map(([k, v]) => {
+      let str = typeof v === "object" ? JSON.stringify(v) : String(v);
+      if (str.length > 80) str = str.slice(0, 77) + "...";
+      return `${k}: "${str}"`;
+    })
+    .join(", ");
+}
+
 function formatRiskConfirmDetail(step) {
   if (!step) return "Run this action?";
   const action = String(step.action || step.type || "").trim();
   const args = step.args || step.params || {};
   if (action === "mcp" || step.type === "mcp") {
-    return `Call tool "${step.tool}" on MCP server "${step.server}"?`;
+    const argSummary = formatPlainLanguageArgs(args);
+    return `Call tool "${step.tool}" on MCP server "${step.server}"${argSummary ? ` with ${argSummary}` : ""}?`;
   }
   if (action === "run_command") {
     return `Run shell command: ${String(args.command || step.command || "").slice(0, 100)}`;
   }
   if (action === "app_action") {
-    return `Perform action "${args.actionId}" on ${args.appId}?`;
+    const argSummary = formatPlainLanguageArgs(args);
+    return `Perform action "${args.actionId}" on ${args.appId}${argSummary ? ` (${argSummary})` : ""}?`;
+  }
+  if (action === "open_path") {
+    return `Open "${args.path || step.path}" in File Explorer?`;
+  }
+  if (action === "find_path") {
+    return `Search for "${args.name || step.name}"?`;
   }
   if (action === "shutdown" || action === "lock_screen") {
     return `Perform ${action.replace("_", " ")} on your laptop?`;
   }
-  return `Run ${action}?`;
+  const argSummary = formatPlainLanguageArgs(args);
+  return `Run ${action.replace(/_/g, " ")}${argSummary ? ` with ${argSummary}` : ""}?`;
 }
 
 module.exports = {
   classify,
   stepKey,
+  computeToolSchemaHash,
   isAlwaysAllowed,
   allowAction,
+  revokePermission,
+  revokeServerPermissions,
+  listSavedPermissions,
   loadPermissions,
   savePermissions,
   isBlocked,
   formatRiskConfirmDetail,
+  formatPlainLanguageArgs,
   BLOCK_PATTERNS,
   CONFIRM_COMMAND_PATTERNS,
 };

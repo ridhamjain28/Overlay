@@ -60,13 +60,6 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         group: t("settingsModal.groups.app"),
       },
       {
-        id: "connectors",
-        label: t("settingsModal.sections.connectors.label"),
-        icon: Blocks,
-        description: t("settingsModal.sections.connectors.description"),
-        group: t("settingsModal.groups.app"),
-      },
-      {
         id: "toneStyle",
         label: t("settingsModal.sections.toneStyle.label"),
         icon: SquareSparkle,
@@ -85,6 +78,13 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         label: t("settingsModal.sections.llms.label"),
         icon: Brain,
         description: t("settingsModal.sections.llms.description"),
+        group: t("settingsModal.groups.aiModels"),
+      },
+      {
+        id: "connectors",
+        label: t("settingsModal.sections.connectors.label"),
+        icon: Blocks,
+        description: t("settingsModal.sections.connectors.description"),
         group: t("settingsModal.groups.aiModels"),
       },
     ],

@@ -3446,7 +3446,7 @@ declare global {
       overlayApps?: import("./overlayApps").OverlayAppsApi;
       overlayMcp?: import("./overlayMcp").OverlayMcpApi;
       onOverlayCommandProgress?: (
-        callback: (payload: { phase?: string; code?: string }) => void
+        callback: (payload: { phase?: string; code?: string; current?: number; total?: number; text?: string }) => void
       ) => () => void;
       overlaySetCommandModePrefs?: (prefs: {
         enabled: boolean;
