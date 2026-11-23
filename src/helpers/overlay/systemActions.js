@@ -12,6 +12,7 @@
 
 const path = require("path");
 const fs = require("fs");
+const appLauncher = require("./appLauncher");
 
 const VK = {
   VOLUME_MUTE: 0xad,
@@ -189,27 +190,9 @@ function listShortcuts(dirs, fsImpl = fs, maxDepth = 3) {
   return found;
 }
 
-/** Finds an app: built-in list first, then Start-menu shortcuts. */
-function resolveApp(appName, { shortcuts = [] } = {}) {
-  const raw = normalizeName(appName);
-  const name = canonicalAppName(appName);
-  if (BUILTIN_APPS[name]) return BUILTIN_APPS[name];
-  if (BUILTIN_APPS[raw]) return BUILTIN_APPS[raw];
-  const usable = shortcuts.filter(
-    (s) => !isBlockedApp(s.name) && !/uninstall|readme|help|documentation/.test(s.name)
-  );
-  const matchName = (candidate) => {
-    const exact = usable.find((s) => s.name === candidate);
-    const prefix = usable
-      .filter((s) => s.name.startsWith(candidate))
-      .sort((a, b) => a.name.length - b.name.length)[0];
-    const contains = usable
-      .filter((s) => s.name.includes(candidate))
-      .sort((a, b) => a.name.length - b.name.length)[0];
-    return exact || prefix || contains;
-  };
-  const hit = (name && matchName(name)) || (raw && raw !== name && matchName(raw));
-  return hit ? { type: "shortcut", target: hit.path, label: hit.name } : null;
+/** Finds an app: built-in list first, then Start-menu shortcuts and app launcher index. */
+function resolveApp(appName, options = {}) {
+  return appLauncher.resolveApp(appName, options);
 }
 
 function keyPressScript(vk, times) {
@@ -363,14 +346,8 @@ function createSystemActions(deps) {
               code: "NOT_FOUND",
             };
           }
-          if (app.type === "uri") await openExternal(app.target);
-          else if (app.type === "exe")
-            await execFile(app.target, [], { windowsHide: false, timeout: 5000, detached: true });
-          else {
-            const error = await openPath(app.target);
-            if (error) throw new Error(error);
-          }
-          return { success: true, message: `Opened ${app.label}` };
+          await appLauncher.launchApp(app, { execFile, openPath, openExternal });
+          return { success: true, message: `Opened ${app.name || app.label}` };
         }
         case "lock_screen":
           await execFile("rundll32.exe", ["user32.dll,LockWorkStation"], {
@@ -407,6 +384,7 @@ module.exports = {
   VK,
   validateRequest,
   resolveApp,
+  launchApp: appLauncher.launchApp,
   canonicalAppName,
   APP_ALIASES,
   listShortcuts,
