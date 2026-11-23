@@ -1506,6 +1506,10 @@
       "system": {
         "description": "Updates, Speicher & Entwicklertools",
         "label": "System"
+      },
+      "connectors": {
+        "label": "Konnektoren",
+        "description": "Externe Apps und Dienste über das Model Context Protocol (MCP) verbinden"
       }
     },
     "title": "Einstellungen"
@@ -1883,7 +1887,9 @@
         "parserLocal": "Lokal (Ollama / llama-server)",
         "parserCloud": "Cloud (konfigurierter Anbieter)",
         "idleMinutes": "Neuen Chat nach N Minuten Inaktivität beginnen",
-        "idleMinutesDescription": "Wenn du den Assistenten innerhalb dieser Minuten erneut öffnest, setzt Overlay denselben Chat fort. Die Schaltfläche „Neuer Chat“ startet immer einen neuen."
+        "idleMinutesDescription": "Wenn du den Assistenten innerhalb dieser Minuten erneut öffnest, setzt Overlay denselben Chat fort. Die Schaltfläche „Neuer Chat“ startet immer einen neuen.",
+        "askBeforeEveryAction": "Vor jeder Aktion fragen",
+        "askBeforeEveryActionDescription": "Vor Desktop-Aktionen um Bestätigung bitten. Wenn deaktiviert, werden harmlose Aktionen automatisch ausgeführt."
       }
     },
     "permissions": {
@@ -4350,6 +4356,62 @@
       "saved": "Erfolgreich gespeichert",
       "errorsFound": "{{count}} Fehler gefunden",
       "line": "Zeile"
+    }
+  },
+  "mcp": {
+    "title": "Konnektoren (MCP)",
+    "description": "Lokale Tools und Remotedienste über das Model Context Protocol mit Overlay verbinden.",
+    "galleryButton": "Galerie durchsuchen",
+    "importButton": "Importieren",
+    "noServers": "Keine MCP-Server konfiguriert",
+    "noServersHint": "Lokalen Befehl hinzufügen, Remoteserver verbinden oder Galerie durchsuchen.",
+    "exploreGallery": "Galerie erkunden",
+    "signIn": "Anmelden",
+    "disconnect": "Trennen",
+    "connect": "Verbinden",
+    "test": "Testen",
+    "toolsTitle": "Tools ({{count}})",
+    "noToolsDiscovered": "Noch keine Tools gefunden.",
+    "readOnly": "Schreibgeschützt",
+    "destructive": "Destruktiv",
+    "noToolDescription": "Keine Beschreibung verfügbar.",
+    "addServerTitle": "Server hinzufügen",
+    "addServerDescription": "Lokalen Befehl (stdio) oder Remote-URL konfigurieren.",
+    "serverName": "Servername",
+    "serverNamePlaceholder": "z.B. filesystem, github",
+    "serverType": "Servertyp",
+    "typeStdio": "Lokaler Befehl (stdio)",
+    "typeRemote": "Remotedienst (URL)",
+    "command": "Befehl",
+    "args": "Argumente",
+    "url": "Dienst-URL",
+    "addServerButton": "Server hinzufügen",
+    "nameRequired": "Servername ist erforderlich",
+    "commandRequired": "Befehl ist erforderlich",
+    "urlRequired": "URL ist erforderlich",
+    "serverAdded": "Server erfolgreich hinzugefügt",
+    "editorTitle": "Konfigurations-Editor",
+    "editorDescription": "Die standardmäßige mcp.json direkt bearbeiten.",
+    "errorsFound": "{{count}} Fehler gefunden",
+    "configValid": "Konfiguration ist gültig",
+    "configSaved": "Konfiguration gespeichert",
+    "galleryModalTitle": "MCP-Server-Galerie",
+    "galleryModalDescription": "Verifizierte Tools mit einem Klick hinzufügen.",
+    "addFromGallery": "Zu Overlay hinzufügen",
+    "importModalTitle": "Vorhandene Server importieren",
+    "importModalDescription": "MCP-Konfigurationen aus anderen Apps importieren.",
+    "noExternalServersFound": "Keine MCP-Server in Claude Desktop, Cursor oder Antigravity gefunden.",
+    "containsEnvSecrets": "Enthält Umgebungsvariablen ({{keys}})",
+    "importEnvValuesPrompt": "Umgebungsvariablenwerte importieren",
+    "noServersSelected": "Bitte mindestens einen Server auswählen",
+    "importSuccess": "{{count}} Server erfolgreich importiert",
+    "importConfirm": "Ausgewählte importieren",
+    "status": {
+      "connected": "Verbunden",
+      "connecting": "Verbinde...",
+      "disconnected": "Getrennt",
+      "needsAuth": "Auth erforderlich",
+      "error": "Fehler"
     }
   }
 }

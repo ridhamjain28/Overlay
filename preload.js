@@ -1270,6 +1270,28 @@ contextBridge.exposeInMainWorld("electronAPI", {
     customValidate: (text) => ipcRenderer.invoke("overlay-apps-custom-validate", text),
     customOpenFile: () => ipcRenderer.invoke("overlay-apps-custom-open-file"),
   },
+  overlayMcp: {
+    list: () => ipcRenderer.invoke("overlay-mcp-list"),
+    add: (name, cfg) => ipcRenderer.invoke("overlay-mcp-add", { name, cfg }),
+    remove: (name) => ipcRenderer.invoke("overlay-mcp-remove", { name }),
+    connect: (name) => ipcRenderer.invoke("overlay-mcp-connect", { name }),
+    disconnect: (name) => ipcRenderer.invoke("overlay-mcp-disconnect", { name }),
+    auth: (name) => ipcRenderer.invoke("overlay-mcp-auth", { name }),
+    tools: (name) => ipcRenderer.invoke("overlay-mcp-tools", { name }),
+    setToolEnabled: (name, tool, on) =>
+      ipcRenderer.invoke("overlay-mcp-set-tool-enabled", { name, tool, on }),
+    configGet: () => ipcRenderer.invoke("overlay-mcp-config-get"),
+    configSave: (text) => ipcRenderer.invoke("overlay-mcp-config-save", { text }),
+    test: (name) => ipcRenderer.invoke("overlay-mcp-test", { name }),
+    gallery: () => ipcRenderer.invoke("overlay-mcp-gallery"),
+    importDiscover: () => ipcRenderer.invoke("overlay-mcp-import-discover"),
+    importServers: (selected, importEnvValues) =>
+      ipcRenderer.invoke("overlay-mcp-import-servers", { selected, importEnvValues }),
+    onStatus: registerListener(
+      "overlay-mcp-status",
+      (callback) => (_event, payload) => callback(payload)
+    ),
+  },
   // Feature C: intent detection, calendar/reminder scheduling and todos
   overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
   overlayIntentExtract: (text, opts) => ipcRenderer.invoke("overlay-intent-extract", text, opts),

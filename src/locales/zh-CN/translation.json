@@ -1506,6 +1506,10 @@
       "workspace": {
         "description": "成员、团队空间和 API 密钥",
         "label": "工作区"
+      },
+      "connectors": {
+        "label": "连接器",
+        "description": "通过 Model Context Protocol (MCP) 连接外部应用与服务"
       }
     },
     "title": "设置"
@@ -1883,7 +1887,9 @@
         "parserLocal": "本地（Ollama / llama-server）",
         "parserCloud": "云端（已配置的服务商）",
         "idleMinutes": "空闲 N 分钟后开始新对话",
-        "idleMinutesDescription": "在这段时间内再次打开助手时，Overlay 会继续同一段对话。“新对话”按钮始终会开始新的对话。"
+        "idleMinutesDescription": "在这段时间内再次打开助手时，Overlay 会继续同一段对话。“新对话”按钮始终会开始新的对话。",
+        "askBeforeEveryAction": "每次操作前提示",
+        "askBeforeEveryActionDescription": "在执行桌面操作前提示确认。关闭后，安全操作将自动运行。"
       }
     },
     "permissions": {
@@ -4350,6 +4356,62 @@
       "saved": "保存成功",
       "errorsFound": "发现 {{count}} 处错误",
       "line": "行"
+    }
+  },
+  "mcp": {
+    "title": "连接器 (MCP)",
+    "description": "使用 Model Context Protocol 将本地工具和远程服务连接到 Overlay。",
+    "galleryButton": "浏览画廊",
+    "importButton": "导入",
+    "noServers": "未配置任何 MCP 服务器",
+    "noServersHint": "添加本地命令、连接远程服务器或浏览内置画廊。",
+    "exploreGallery": "探索画廊",
+    "signIn": "登录",
+    "disconnect": "断开连接",
+    "connect": "连接",
+    "test": "测试",
+    "toolsTitle": "工具 ({{count}})",
+    "noToolsDiscovered": "尚未发现工具。",
+    "readOnly": "只读",
+    "destructive": "破坏性",
+    "noToolDescription": "未提供描述。",
+    "addServerTitle": "添加服务器",
+    "addServerDescription": "配置本地 CLI 命令 (stdio) 或远程服务 URL。",
+    "serverName": "服务器名称",
+    "serverNamePlaceholder": "例如 filesystem, github",
+    "serverType": "服务器类型",
+    "typeStdio": "本地命令 (stdio)",
+    "typeRemote": "远程服务 (URL)",
+    "command": "命令",
+    "args": "参数",
+    "url": "服务 URL",
+    "addServerButton": "添加服务器",
+    "nameRequired": "服务器名称为必填项",
+    "commandRequired": "命令为必填项",
+    "urlRequired": "URL 为必填项",
+    "serverAdded": "服务器添加成功",
+    "editorTitle": "配置编辑器",
+    "editorDescription": "直接查看和编辑标准的 mcp.json 配置文件。",
+    "errorsFound": "发现 {{count}} 个错误",
+    "configValid": "配置有效",
+    "configSaved": "配置已保存",
+    "galleryModalTitle": "MCP 服务器画廊",
+    "galleryModalDescription": "一键添加经过验证的工具和服务。",
+    "addFromGallery": "添加到 Overlay",
+    "importModalTitle": "导入已有服务器",
+    "importModalDescription": "从笔记本上的其他应用导入 MCP 配置。",
+    "noExternalServersFound": "未在 Claude Desktop、Cursor 或 Antigravity 中找到服务器。",
+    "containsEnvSecrets": "包含环境变量 ({{keys}})",
+    "importEnvValuesPrompt": "导入环境变量值",
+    "noServersSelected": "请至少选择一个服务器进行导入",
+    "importSuccess": "成功导入 {{count}} 个服务器",
+    "importConfirm": "导入所选",
+    "status": {
+      "connected": "已连接",
+      "connecting": "正在连接...",
+      "disconnected": "已断开",
+      "needsAuth": "需要授权",
+      "error": "错误"
     }
   }
 }

@@ -1506,6 +1506,10 @@
       "workspace": {
         "description": "Участники, командные пространства и API-ключи",
         "label": "Рабочее пространство"
+      },
+      "connectors": {
+        "label": "Коннекторы",
+        "description": "Подключение внешних приложений и сервисов через Model Context Protocol (MCP)"
       }
     },
     "title": "Настройки"
@@ -1883,7 +1887,9 @@
         "parserLocal": "Локально (Ollama / llama-server)",
         "parserCloud": "Облако (настроенный провайдер)",
         "idleMinutes": "Начинать новый чат после N минут простоя",
-        "idleMinutesDescription": "Если открыть ассистента снова в течение этого времени, Overlay продолжит тот же чат. Кнопка «Новый чат» всегда начинает новый."
+        "idleMinutesDescription": "Если открыть ассистента снова в течение этого времени, Overlay продолжит тот же чат. Кнопка «Новый чат» всегда начинает новый.",
+        "askBeforeEveryAction": "Спрашивать перед каждым действием",
+        "askBeforeEveryActionDescription": "Запрашивать подтверждение перед действиями на компьютере. Если выключено, безопасные действия выполняются автоматически."
       }
     },
     "permissions": {
@@ -4362,6 +4368,62 @@
       "saved": "Успешно сохранено",
       "errorsFound": "{{count}} ошибок найдено",
       "line": "Строка"
+    }
+  },
+  "mcp": {
+    "title": "Коннекторы (MCP)",
+    "description": "Подключение локальных инструментов и удаленных сервисов через Model Context Protocol.",
+    "galleryButton": "Галерея",
+    "importButton": "Импорт",
+    "noServers": "Нет настроенных MCP-серверов",
+    "noServersHint": "Добавьте команду stdio, подключите сервер или выберите из галереи.",
+    "exploreGallery": "Открыть галерею",
+    "signIn": "Войти",
+    "disconnect": "Отключить",
+    "connect": "Подключить",
+    "test": "Тест",
+    "toolsTitle": "Инструменты ({{count}})",
+    "noToolsDiscovered": "Инструменты пока не обнаружены.",
+    "readOnly": "Только чтение",
+    "destructive": "Опасное",
+    "noToolDescription": "Описание отсутствует.",
+    "addServerTitle": "Добавить сервер",
+    "addServerDescription": "Настройте локальную команду (stdio) или URL сервиса.",
+    "serverName": "Имя сервера",
+    "serverNamePlaceholder": "например, filesystem, github",
+    "serverType": "Тип сервера",
+    "typeStdio": "Локальная команда (stdio)",
+    "typeRemote": "Удаленный сервис (URL)",
+    "command": "Команда",
+    "args": "Аргументы",
+    "url": "URL сервиса",
+    "addServerButton": "Добавить сервер",
+    "nameRequired": "Имя сервера обязательно",
+    "commandRequired": "Команда обязательна",
+    "urlRequired": "URL обязателен",
+    "serverAdded": "Сервер успешно добавлен",
+    "editorTitle": "Редактор конфигурации",
+    "editorDescription": "Прямое редактирование стандартного файла mcp.json.",
+    "errorsFound": "Найдено ошибок: {{count}}",
+    "configValid": "Конфигурация верна",
+    "configSaved": "Конфигурация сохранена",
+    "galleryModalTitle": "Галерея серверов MCP",
+    "galleryModalDescription": "Добавляйте проверенные инструменты в один клик.",
+    "addFromGallery": "Добавить в Overlay",
+    "importModalTitle": "Импорт существующих серверов",
+    "importModalDescription": "Импортируйте настройки MCP из других приложений.",
+    "noExternalServersFound": "Серверы в Claude Desktop, Cursor или Antigravity не найдены.",
+    "containsEnvSecrets": "Содержит переменные среды ({{keys}})",
+    "importEnvValuesPrompt": "Импортировать значения переменных среды",
+    "noServersSelected": "Выберите хотя бы один сервер",
+    "importSuccess": "Успешно импортировано серверов: {{count}}",
+    "importConfirm": "Импортировать выбранное",
+    "status": {
+      "connected": "Подключено",
+      "connecting": "Подключение...",
+      "disconnected": "Отключено",
+      "needsAuth": "Требуется авторизация",
+      "error": "Ошибка"
     }
   }
 }

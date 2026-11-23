@@ -1506,6 +1506,10 @@
       "workspace": {
         "description": "Membri, spazi del team e chiavi API",
         "label": "Area di lavoro"
+      },
+      "connectors": {
+        "label": "Connettori",
+        "description": "Collega app e servizi esterni tramite Model Context Protocol (MCP)"
       }
     },
     "title": "Impostazioni"
@@ -1883,7 +1887,9 @@
         "parserLocal": "Locale (Ollama / llama-server)",
         "parserCloud": "Cloud (provider configurato)",
         "idleMinutes": "Avvia una nuova chat dopo N minuti di inattività",
-        "idleMinutesDescription": "Se riapri l’assistente entro questi minuti, Overlay continua la stessa chat. Il pulsante Nuova chat ne avvia sempre una nuova."
+        "idleMinutesDescription": "Se riapri l’assistente entro questi minuti, Overlay continua la stessa chat. Il pulsante Nuova chat ne avvia sempre una nuova.",
+        "askBeforeEveryAction": "Chiedi prima di ogni azione",
+        "askBeforeEveryActionDescription": "Chiedi conferma prima di eseguire azioni desktop. Quando disattivato, le azioni innocue vengono eseguite automaticamente."
       }
     },
     "permissions": {
@@ -4350,6 +4356,62 @@
       "saved": "Salvato con successo",
       "errorsFound": "{{count}} errore/i trovato/i",
       "line": "Riga"
+    }
+  },
+  "mcp": {
+    "title": "Connettori (MCP)",
+    "description": "Collega strumenti locali e remoti a Overlay con Model Context Protocol.",
+    "galleryButton": "Esplora galleria",
+    "importButton": "Importa",
+    "noServers": "Nessun server MCP configurato",
+    "noServersHint": "Aggiungi un comando locale o esplora la galleria integrata.",
+    "exploreGallery": "Esplora galleria",
+    "signIn": "Accedi",
+    "disconnect": "Disconnetti",
+    "connect": "Connetti",
+    "test": "Testa",
+    "toolsTitle": "Strumenti ({{count}})",
+    "noToolsDiscovered": "Nessuno strumento rilevato.",
+    "readOnly": "Sola lettura",
+    "destructive": "Distruttivo",
+    "noToolDescription": "Nessuna descrizione.",
+    "addServerTitle": "Aggiungi server",
+    "addServerDescription": "Configura un comando locale (stdio) o un URL remoto.",
+    "serverName": "Nome server",
+    "serverNamePlaceholder": "es. filesystem, github",
+    "serverType": "Tipo di server",
+    "typeStdio": "Comando locale (stdio)",
+    "typeRemote": "Servizio remoto (URL)",
+    "command": "Comando",
+    "args": "Argomenti",
+    "url": "URL del servizio",
+    "addServerButton": "Aggiungi server",
+    "nameRequired": "Nome obbligatorio",
+    "commandRequired": "Comando obbligatorio",
+    "urlRequired": "URL obbligatorio",
+    "serverAdded": "Server aggiunto con successo",
+    "editorTitle": "Editor di configurazione",
+    "editorDescription": "Modifica direttamente il file mcp.json standard.",
+    "errorsFound": "{{count}} errori trovati",
+    "configValid": "Configurazione valida",
+    "configSaved": "Configurazione salvata",
+    "galleryModalTitle": "Galleria server MCP",
+    "galleryModalDescription": "Aggiungi strumenti verificati con un clic.",
+    "addFromGallery": "Aggiungi a Overlay",
+    "importModalTitle": "Importa server esistenti",
+    "importModalDescription": "Importa configurazioni MCP da altre applicazioni.",
+    "noExternalServersFound": "Nessun server trovato in Claude Desktop, Cursor o Antigravity.",
+    "containsEnvSecrets": "Contiene variabili d'ambiente ({{keys}})",
+    "importEnvValuesPrompt": "Importa valori delle variabili d'ambiente",
+    "noServersSelected": "Seleziona almeno un server",
+    "importSuccess": "{{count}} server importati",
+    "importConfirm": "Importa selezionati",
+    "status": {
+      "connected": "Connesso",
+      "connecting": "Connessione...",
+      "disconnected": "Disconnesso",
+      "needsAuth": "Richiede autenticazione",
+      "error": "Errore"
     }
   }
 }

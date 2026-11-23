@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePolicyStore } from "../stores/policyStore";
-import { Sliders, Mic, Brain, Keyboard, ShieldCheck, SquareSparkle } from "./icons";
+import { Sliders, Mic, Brain, Keyboard, ShieldCheck, SquareSparkle, Blocks } from "./icons";
 import SidebarModal, { type SidebarItem } from "./ui/SidebarModal";
 import SettingsPage, { SettingsSectionType } from "./SettingsPage";
 
@@ -12,6 +12,8 @@ const SECTION_ALIASES: Record<string, SettingsSectionType> = {
   account: "general",
   plansBilling: "general",
   workspace: "general",
+  connectors: "connectors",
+  mcp: "connectors",
   privacyData: "general",
   privacy: "general",
   permissions: "general",
@@ -55,6 +57,13 @@ export default function SettingsModal({ open, onOpenChange, initialSection }: Se
         label: t("settingsModal.sections.hotkeys.label"),
         icon: Keyboard,
         description: t("settingsModal.sections.hotkeys.description"),
+        group: t("settingsModal.groups.app"),
+      },
+      {
+        id: "connectors",
+        label: t("settingsModal.sections.connectors.label"),
+        icon: Blocks,
+        description: t("settingsModal.sections.connectors.description"),
         group: t("settingsModal.groups.app"),
       },
       {
