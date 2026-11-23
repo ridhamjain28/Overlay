@@ -586,6 +586,18 @@
       "check": "Ricontrolla",
       "restart": "Riavvia l’app",
       "restartRequired": "Riavvia Overlay per applicare l’accesso allo schermo."
+    },
+    "findApps": {
+      "titleScanning": "Ricerca delle tue app…",
+      "descriptionScanning": "Overlay sta esaminando le app installate su questo PC e le confronta con i comandi già pronti.",
+      "progress": "Analisi di {{stage}}…",
+      "titleDone": "Trovate {{count}} app, {{ready}} hanno comandi pronti",
+      "descriptionDone": "Questi comandi vengono copiati sul computer. Puoi disattivarne alcuni e ripetere l’analisi più tardi da Impostazioni.",
+      "readyBadge": "Comandi pronti",
+      "genericBadge": "Solo apertura",
+      "webBadge": "Web",
+      "error": "Impossibile completare l’analisi delle app. Puoi riprovare da Impostazioni.",
+      "retry": "Riprova"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "Copia il testo qui sotto, poi premi {{shortcut}} per incollarlo.",
         "openSettings": "Apri impostazioni",
         "copyToClipboard": "Copia negli appunti",
-      "writing": "Scrittura…",
-      "cancelWriting": "Annulla",
+        "writing": "Scrittura…",
+        "cancelWriting": "Annulla",
         "copyFailed": "Copia non riuscita"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "Dimentica la memoria dell’assistente",
       "forgetChatsDescription": "L’assistente non ricorderà più le chat passate. Le chat restano in Home.",
       "forgetButton": "Dimentica"
+    },
+    "appsSkills": {
+      "title": "App e competenze",
+      "description": "Comandi che Overlay può eseguire nelle app di questo PC.",
+      "rescan": "Rianalizza app",
+      "scanning": "Analisi…",
+      "summary": "{{count}} app, {{ready}} con comandi pronti",
+      "enabled": "Attivato",
+      "test": "Prova",
+      "testOk": "Eseguito {{action}}",
+      "testFailed": "Impossibile eseguire questa azione",
+      "learnedTitle": "Esempi appresi",
+      "learnedEmpty": "Nessun esempio appreso al momento.",
+      "learnedDelete": "Elimina",
+      "search": "Filtra app",
+      "noApps": "Nessuna app trovata. Ripeti l’analisi di questo PC."
     }
   }
 }

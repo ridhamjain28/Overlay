@@ -11,7 +11,7 @@ const { buildIntentParseMessages } = require("../../src/helpers/overlay/commandM
 test("bundled command skill is versioned and contains the required rules and few-shots", () => {
   const skill = loadCommandSkill();
   assert.equal(skill.filename, SKILL_FILENAME);
-  assert.equal(skill.version, "2");
+  assert.equal(skill.version, "3");
   assert.match(skill.text, /Never drop a clause/i);
   assert.match(skill.text, /Output JSON only/i);
   assert.match(skill.text, /open edge and search for weather in pune/i);

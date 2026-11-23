@@ -1,0 +1,1444 @@
+{
+  "version": 1,
+  "remoteUrl": "",
+  "apps": [
+    {
+      "appId": "google-chrome",
+      "name": "Google Chrome",
+      "aliases": [
+        "chrome",
+        "google chrome",
+        "browser"
+      ],
+      "match": {
+        "exeNames": [
+          "chrome.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "chrome"
+        ],
+        "displayNameRegexes": [
+          "^Google Chrome$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Google Chrome",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open chrome",
+              "params": {}
+            },
+            {
+              "utterance": "open google chrome",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "search",
+          "description": "Search the web in Chrome",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://www.google.com/search?q={query}"
+          },
+          "examples": [
+            {
+              "utterance": "search for weather in pune in chrome",
+              "params": {
+                "query": "weather in pune"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "microsoft-edge",
+      "name": "Microsoft Edge",
+      "aliases": [
+        "edge",
+        "microsoft edge",
+        "msedge"
+      ],
+      "match": {
+        "exeNames": [
+          "msedge.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "microsoft-edge",
+          "ms-edge"
+        ],
+        "displayNameRegexes": [
+          "^Microsoft Edge$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Microsoft Edge",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open edge",
+              "params": {}
+            },
+            {
+              "utterance": "open microsoft edge",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "search",
+          "description": "Search the web in Edge",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://www.google.com/search?q={query}"
+          },
+          "examples": [
+            {
+              "utterance": "search weather in pune in edge",
+              "params": {
+                "query": "weather in pune"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "default-browser",
+      "name": "Default Browser",
+      "aliases": [
+        "the browser",
+        "browser",
+        "default browser"
+      ],
+      "match": {
+        "exeNames": [],
+        "aumidPrefixes": [],
+        "protocols": [
+          "http",
+          "https"
+        ],
+        "displayNameRegexes": [
+          "^Default Browser$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "open_url",
+          "description": "Open a link in the default browser",
+          "params": [
+            {
+              "name": "url",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "{url}"
+          },
+          "examples": [
+            {
+              "utterance": "open this link in the browser",
+              "params": {
+                "url": "https://example.com"
+              }
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "search",
+          "description": "Search the web in the default browser",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://www.google.com/search?q={query}"
+          },
+          "examples": [
+            {
+              "utterance": "search flights to goa on the browser",
+              "params": {
+                "query": "flights to goa"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "alwaysAvailable": true,
+      "kind": "web"
+    },
+    {
+      "appId": "spotify",
+      "name": "Spotify",
+      "aliases": [
+        "spotify",
+        "music",
+        "music player",
+        "songs"
+      ],
+      "match": {
+        "exeNames": [
+          "spotify.exe"
+        ],
+        "aumidPrefixes": [
+          "SpotifyAB.SpotifyMusic"
+        ],
+        "protocols": [
+          "spotify"
+        ],
+        "displayNameRegexes": [
+          "^Spotify$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Spotify",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "spotify:"
+          },
+          "examples": [
+            {
+              "utterance": "open spotify",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "play_track",
+          "description": "Search and play a song or artist in Spotify",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "uri",
+            "template": "spotify:search:{query}"
+          },
+          "examples": [
+            {
+              "utterance": "play starboy on spotify",
+              "params": {
+                "query": "starboy"
+              }
+            },
+            {
+              "utterance": "listen to queen on spotify",
+              "params": {
+                "query": "queen"
+              }
+            },
+            {
+              "utterance": "play my focus tracks on spotify",
+              "params": {
+                "query": "focus tracks"
+              }
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "media_toggle",
+          "description": "Play or pause Spotify",
+          "params": [],
+          "how": {
+            "type": "keys",
+            "template": "MediaPlayPause"
+          },
+          "examples": [
+            {
+              "utterance": "pause spotify",
+              "params": {}
+            },
+            {
+              "utterance": "resume music",
+              "params": {}
+            },
+            {
+              "utterance": "play pause spotify",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "next_track",
+          "description": "Skip to the next Spotify track",
+          "params": [],
+          "how": {
+            "type": "keys",
+            "template": "MediaNextTrack"
+          },
+          "examples": [
+            {
+              "utterance": "next song",
+              "params": {}
+            },
+            {
+              "utterance": "skip this track on spotify",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "whatsapp",
+      "name": "WhatsApp",
+      "aliases": [
+        "whatsapp",
+        "whatsapp desktop",
+        "whatsapp web"
+      ],
+      "match": {
+        "exeNames": [
+          "whatsapp.exe"
+        ],
+        "aumidPrefixes": [
+          "5319275A.WhatsAppDesktop",
+          "WhatsAppDesktop"
+        ],
+        "protocols": [
+          "whatsapp"
+        ],
+        "displayNameRegexes": [
+          "^WhatsApp$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open WhatsApp",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "whatsapp://"
+          },
+          "examples": [
+            {
+              "utterance": "open whatsapp",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "send_message",
+          "description": "Compose a WhatsApp message",
+          "params": [
+            {
+              "name": "text",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "uri",
+            "template": "whatsapp://send?text={text}"
+          },
+          "examples": [
+            {
+              "utterance": "send a whatsapp message saying I am on my way",
+              "params": {
+                "text": "I am on my way"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "google-calendar",
+      "name": "Google Calendar",
+      "aliases": [
+        "google calendar",
+        "calendar",
+        "gcal"
+      ],
+      "match": {
+        "exeNames": [],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "Google Calendar"
+        ]
+      },
+      "actions": [
+        {
+          "id": "open",
+          "description": "Open Google Calendar",
+          "params": [],
+          "how": {
+            "type": "url",
+            "template": "https://calendar.google.com/"
+          },
+          "examples": [
+            {
+              "utterance": "open google calendar",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "create_event",
+          "description": "Create a Google Calendar event from a template",
+          "params": [
+            {
+              "name": "title",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "dates",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://calendar.google.com/calendar/render?action=TEMPLATE&text={title}&dates={dates}"
+          },
+          "examples": [
+            {
+              "utterance": "add an event called birthday party",
+              "params": {
+                "title": "birthday party",
+                "dates": ""
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "alwaysAvailable": true,
+      "kind": "web"
+    },
+    {
+      "appId": "gmail",
+      "name": "Gmail",
+      "aliases": [
+        "gmail",
+        "google mail",
+        "email"
+      ],
+      "match": {
+        "exeNames": [],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^Gmail$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "open",
+          "description": "Open Gmail",
+          "params": [],
+          "how": {
+            "type": "url",
+            "template": "https://mail.google.com/"
+          },
+          "examples": [
+            {
+              "utterance": "open gmail",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "compose",
+          "description": "Open a Gmail compose draft",
+          "params": [
+            {
+              "name": "to",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "subject",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "body",
+              "type": "string",
+              "required": false
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://mail.google.com/mail/?view=cm&fs=1&to={to}&su={subject}&body={body}"
+          },
+          "examples": [
+            {
+              "utterance": "compose an email to Riya about the birthday party",
+              "params": {
+                "to": "Riya",
+                "subject": "the birthday party",
+                "body": ""
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "alwaysAvailable": true,
+      "kind": "web"
+    },
+    {
+      "appId": "youtube",
+      "name": "YouTube",
+      "aliases": [
+        "youtube",
+        "yt"
+      ],
+      "match": {
+        "exeNames": [],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^YouTube$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "open",
+          "description": "Open YouTube",
+          "params": [],
+          "how": {
+            "type": "url",
+            "template": "https://www.youtube.com/"
+          },
+          "examples": [
+            {
+              "utterance": "open youtube",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "search",
+          "description": "Search YouTube",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://www.youtube.com/results?search_query={query}"
+          },
+          "examples": [
+            {
+              "utterance": "search youtube for lo-fi beats",
+              "params": {
+                "query": "lo-fi beats"
+              }
+            },
+            {
+              "utterance": "open youtube and search lo-fi beats",
+              "params": {
+                "query": "lo-fi beats"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "alwaysAvailable": true,
+      "kind": "web"
+    },
+    {
+      "appId": "google-maps",
+      "name": "Google Maps",
+      "aliases": [
+        "google maps",
+        "maps"
+      ],
+      "match": {
+        "exeNames": [],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^Google Maps$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "open",
+          "description": "Open Google Maps",
+          "params": [],
+          "how": {
+            "type": "url",
+            "template": "https://maps.google.com/"
+          },
+          "examples": [
+            {
+              "utterance": "open google maps",
+              "params": {}
+            },
+            {
+              "utterance": "open maps",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "search",
+          "description": "Search a place on Google Maps",
+          "params": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "url",
+            "template": "https://www.google.com/maps/search/{query}"
+          },
+          "examples": [
+            {
+              "utterance": "search maps for cafe in pune",
+              "params": {
+                "query": "cafe in pune"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "alwaysAvailable": true,
+      "kind": "web"
+    },
+    {
+      "appId": "vscode",
+      "name": "Visual Studio Code",
+      "aliases": [
+        "vs code",
+        "vscode",
+        "code",
+        "visual studio code"
+      ],
+      "match": {
+        "exeNames": [
+          "code.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "vscode"
+        ],
+        "displayNameRegexes": [
+          "Visual Studio Code"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Visual Studio Code",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open vs code",
+              "params": {}
+            },
+            {
+              "utterance": "open vscode",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "open_file",
+          "description": "Open a file in VS Code",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "uri",
+            "template": "vscode://file/{path}"
+          },
+          "examples": [
+            {
+              "utterance": "open this file in vs code",
+              "params": {
+                "path": ""
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "windows-settings",
+      "name": "Windows Settings",
+      "aliases": [
+        "settings",
+        "windows settings",
+        "system settings"
+      ],
+      "match": {
+        "exeNames": [
+          "SystemSettings.exe"
+        ],
+        "aumidPrefixes": [
+          "windows.immersivecontrolpanel"
+        ],
+        "protocols": [
+          "ms-settings"
+        ],
+        "displayNameRegexes": [
+          "^Settings$",
+          "^Windows Settings$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "open",
+          "description": "Open Windows Settings",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "ms-settings:"
+          },
+          "examples": [
+            {
+              "utterance": "open windows settings",
+              "params": {}
+            },
+            {
+              "utterance": "open settings",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "open_page",
+          "description": "Open a Windows Settings page",
+          "params": [
+            {
+              "name": "page",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "how": {
+            "type": "uri",
+            "template": "ms-settings:{page}"
+          },
+          "examples": [
+            {
+              "utterance": "open display settings",
+              "params": {
+                "page": "display"
+              }
+            },
+            {
+              "utterance": "open sound settings",
+              "params": {
+                "page": "sound"
+              }
+            },
+            {
+              "utterance": "open network settings",
+              "params": {
+                "page": "network"
+              }
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "alwaysAvailable": true,
+      "kind": "app"
+    },
+    {
+      "appId": "notepad",
+      "name": "Notepad",
+      "aliases": [
+        "notepad"
+      ],
+      "match": {
+        "exeNames": [
+          "notepad.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^Notepad$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Notepad",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open notepad",
+              "params": {}
+            },
+            {
+              "utterance": "launch notepad",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "calculator",
+      "name": "Calculator",
+      "aliases": [
+        "calculator",
+        "calc"
+      ],
+      "match": {
+        "exeNames": [
+          "calc.exe",
+          "calculator.exe"
+        ],
+        "aumidPrefixes": [
+          "Microsoft.WindowsCalculator"
+        ],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^Calculator$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Calculator",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open calculator",
+              "params": {}
+            },
+            {
+              "utterance": "launch calculator",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "file-explorer",
+      "name": "File Explorer",
+      "aliases": [
+        "file explorer",
+        "explorer",
+        "files"
+      ],
+      "match": {
+        "exeNames": [
+          "explorer.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^File Explorer$",
+          "^Windows Explorer$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open File Explorer",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open file explorer",
+              "params": {}
+            },
+            {
+              "utterance": "launch file explorer",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "discord",
+      "name": "Discord",
+      "aliases": [
+        "discord"
+      ],
+      "match": {
+        "exeNames": [
+          "discord.exe",
+          "Update.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "discord"
+        ],
+        "displayNameRegexes": [
+          "^Discord$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Discord",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open discord",
+              "params": {}
+            },
+            {
+              "utterance": "launch discord",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "launch_uri",
+          "description": "Open Discord via its app link",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "discord://"
+          },
+          "examples": [
+            {
+              "utterance": "open discord app",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "telegram",
+      "name": "Telegram",
+      "aliases": [
+        "telegram"
+      ],
+      "match": {
+        "exeNames": [
+          "telegram.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "tg"
+        ],
+        "displayNameRegexes": [
+          "^Telegram$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Telegram",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open telegram",
+              "params": {}
+            },
+            {
+              "utterance": "launch telegram",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "open_chat",
+          "description": "Open Telegram",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "tg://"
+          },
+          "examples": [
+            {
+              "utterance": "open telegram",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "slack",
+      "name": "Slack",
+      "aliases": [
+        "slack"
+      ],
+      "match": {
+        "exeNames": [
+          "slack.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "slack"
+        ],
+        "displayNameRegexes": [
+          "^Slack$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Slack",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open slack",
+              "params": {}
+            },
+            {
+              "utterance": "launch slack",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "open_uri",
+          "description": "Open Slack",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "slack://"
+          },
+          "examples": [
+            {
+              "utterance": "open slack",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "zoom",
+      "name": "Zoom",
+      "aliases": [
+        "zoom"
+      ],
+      "match": {
+        "exeNames": [
+          "Zoom.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "zoommtg",
+          "zoomus"
+        ],
+        "displayNameRegexes": [
+          "^Zoom$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Zoom",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open zoom",
+              "params": {}
+            },
+            {
+              "utterance": "launch zoom",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "microsoft-teams",
+      "name": "Microsoft Teams",
+      "aliases": [
+        "teams",
+        "microsoft teams"
+      ],
+      "match": {
+        "exeNames": [
+          "ms-teams.exe",
+          "Teams.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "msteams"
+        ],
+        "displayNameRegexes": [
+          "^Microsoft Teams$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Microsoft Teams",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open teams",
+              "params": {}
+            },
+            {
+              "utterance": "launch microsoft teams",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "microsoft-word",
+      "name": "Microsoft Word",
+      "aliases": [
+        "word",
+        "microsoft word",
+        "winword"
+      ],
+      "match": {
+        "exeNames": [
+          "WINWORD.EXE"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^Word$",
+          "^Microsoft Word$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Microsoft Word",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open word",
+              "params": {}
+            },
+            {
+              "utterance": "launch microsoft word",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "microsoft-excel",
+      "name": "Microsoft Excel",
+      "aliases": [
+        "excel",
+        "microsoft excel"
+      ],
+      "match": {
+        "exeNames": [
+          "EXCEL.EXE"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^Excel$",
+          "^Microsoft Excel$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Microsoft Excel",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open excel",
+              "params": {}
+            },
+            {
+              "utterance": "launch microsoft excel",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "microsoft-powerpoint",
+      "name": "Microsoft PowerPoint",
+      "aliases": [
+        "powerpoint",
+        "power point",
+        "microsoft powerpoint"
+      ],
+      "match": {
+        "exeNames": [
+          "POWERPNT.EXE"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^PowerPoint$",
+          "^Microsoft PowerPoint$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Microsoft PowerPoint",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open powerpoint",
+              "params": {}
+            },
+            {
+              "utterance": "launch microsoft powerpoint",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "vlc",
+      "name": "VLC media player",
+      "aliases": [
+        "vlc",
+        "vlc player"
+      ],
+      "match": {
+        "exeNames": [
+          "vlc.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [],
+        "displayNameRegexes": [
+          "^VLC media player$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open VLC media player",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open vlc",
+              "params": {}
+            },
+            {
+              "utterance": "launch vlc media player",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    },
+    {
+      "appId": "steam",
+      "name": "Steam",
+      "aliases": [
+        "steam"
+      ],
+      "match": {
+        "exeNames": [
+          "steam.exe"
+        ],
+        "aumidPrefixes": [],
+        "protocols": [
+          "steam"
+        ],
+        "displayNameRegexes": [
+          "^Steam$"
+        ]
+      },
+      "actions": [
+        {
+          "id": "launch",
+          "description": "Open Steam",
+          "params": [],
+          "how": {
+            "type": "cli",
+            "template": "{target}"
+          },
+          "examples": [
+            {
+              "utterance": "open steam",
+              "params": {}
+            },
+            {
+              "utterance": "launch steam",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        },
+        {
+          "id": "open_uri",
+          "description": "Open Steam",
+          "params": [],
+          "how": {
+            "type": "uri",
+            "template": "steam://"
+          },
+          "examples": [
+            {
+              "utterance": "open steam",
+              "params": {}
+            }
+          ],
+          "risk": "safe"
+        }
+      ],
+      "kind": "app"
+    }
+  ]
+}

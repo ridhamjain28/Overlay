@@ -586,6 +586,18 @@
       "check": "Vérifier",
       "restart": "Relancer l’app",
       "restartRequired": "Redémarrez Overlay pour appliquer l’accès à l’écran."
+    },
+    "findApps": {
+      "titleScanning": "Recherche de vos applications…",
+      "descriptionScanning": "Overlay examine les applications installées sur ce PC et les compare aux commandes prêtes à l’emploi.",
+      "progress": "Analyse de {{stage}}…",
+      "titleDone": "{{count}} applications trouvées, {{ready}} ont des commandes prêtes",
+      "descriptionDone": "Ces commandes sont copiées sur votre ordinateur. Vous pouvez en désactiver certaines et relancer l’analyse plus tard dans les paramètres.",
+      "readyBadge": "Commandes prêtes",
+      "genericBadge": "Ouverture uniquement",
+      "webBadge": "Web",
+      "error": "L’analyse des applications n’a pas pu se terminer. Vous pouvez réessayer dans les paramètres.",
+      "retry": "Réessayer"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "Copiez votre texte ci-dessous, puis appuyez sur {{shortcut}} pour le coller.",
         "openSettings": "Ouvrir les réglages",
         "copyToClipboard": "Copier le texte",
-      "writing": "Rédaction…",
-      "cancelWriting": "Annuler",
+        "writing": "Rédaction…",
+        "cancelWriting": "Annuler",
         "copyFailed": "Échec de la copie"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "Oublier la mémoire de l’assistant",
       "forgetChatsDescription": "L’assistant ne se souviendra plus des discussions passées. Elles restent dans Accueil.",
       "forgetButton": "Oublier"
+    },
+    "appsSkills": {
+      "title": "Applications et compétences",
+      "description": "Commandes qu’Overlay peut exécuter dans les applications de ce PC.",
+      "rescan": "Réanalyser les applications",
+      "scanning": "Analyse…",
+      "summary": "{{count}} applications, {{ready}} avec des commandes prêtes",
+      "enabled": "Activé",
+      "test": "Tester",
+      "testOk": "{{action}} exécuté",
+      "testFailed": "Impossible d’exécuter cette action",
+      "learnedTitle": "Exemples appris",
+      "learnedEmpty": "Aucun exemple appris pour le moment.",
+      "learnedDelete": "Supprimer",
+      "search": "Filtrer les applications",
+      "noApps": "Aucune application pour le moment. Relancez l’analyse de ce PC."
     }
   }
 }

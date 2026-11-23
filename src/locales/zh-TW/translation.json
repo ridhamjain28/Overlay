@@ -586,6 +586,18 @@
       "check": "重新檢查",
       "restart": "重新啟動",
       "restartRequired": "重新啟動 Overlay 以套用螢幕存取權限。"
+    },
+    "findApps": {
+      "titleScanning": "正在尋找你的應用程式…",
+      "descriptionScanning": "Overlay 正在查看這台電腦上已安裝的應用程式，並與現成的指令進行比對。",
+      "progress": "正在掃描 {{stage}}…",
+      "titleDone": "找到 {{count}} 個應用程式，其中 {{ready}} 個已有現成指令",
+      "descriptionDone": "這些指令會複製到你的電腦。你可以關閉其中任何一項，也可以稍後在設定中重新掃描。",
+      "readyBadge": "現成指令",
+      "genericBadge": "僅開啟",
+      "webBadge": "網頁",
+      "error": "無法完成應用程式掃描。你可以在設定中再試一次。",
+      "retry": "再試一次"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "點擊下方按鈕複製文字，然後按 {{shortcut}} 貼上。",
         "openSettings": "開啟設定",
         "copyToClipboard": "複製到剪貼板",
-      "writing": "正在撰寫…",
-      "cancelWriting": "取消",
+        "writing": "正在撰寫…",
+        "cancelWriting": "取消",
         "copyFailed": "複製失敗"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "清除助理記憶",
       "forgetChatsDescription": "助理將不再記得過去的聊天。聊天仍保留在首頁。",
       "forgetButton": "清除"
+    },
+    "appsSkills": {
+      "title": "應用程式與技能",
+      "description": "Overlay 可在這台電腦的應用程式中執行的指令。",
+      "rescan": "重新掃描應用程式",
+      "scanning": "正在掃描…",
+      "summary": "{{count}} 個應用程式，其中 {{ready}} 個有現成指令",
+      "enabled": "已啟用",
+      "test": "測試",
+      "testOk": "已執行 {{action}}",
+      "testFailed": "無法執行該動作",
+      "learnedTitle": "已學習的範例",
+      "learnedEmpty": "尚無已學習的範例。",
+      "learnedDelete": "刪除",
+      "search": "篩選應用程式",
+      "noApps": "尚未找到應用程式。請重新掃描這台電腦。"
     }
   }
 }

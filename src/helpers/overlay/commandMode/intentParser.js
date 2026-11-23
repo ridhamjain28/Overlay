@@ -12,11 +12,8 @@ const {
   googleSearchUrl,
   resolveBrowserAlias,
 } = require("./browserSearch");
-const {
-  parseCalendarEvent,
-  parseWebAppOpen,
-  parseGmailCompose,
-} = require("./webApps");
+const { parseCalendarEvent, parseWebAppOpen, parseGmailCompose } = require("./webApps");
+const { parseAppSkillIntent, buildDynamicIntentContext } = require("./appSkillMatcher");
 
 const COMMAND_ACTIONS = [
   "open_app",
@@ -26,6 +23,7 @@ const COMMAND_ACTIONS = [
   "compose_text",
   "compose_email",
   "guide",
+  "app_action",
 ];
 
 const URL_PROTOCOL = /^(https?:\/\/)/i;
@@ -277,7 +275,7 @@ function parseGuide(text) {
  * @param {string} text
  * @returns {{ action: string, args: Record<string, string>, confidence: number, source: string }}
  */
-function parseIntentHeuristic(text) {
+function parseIntentHeuristic(text, options = {}) {
   const original = trimText(text);
   if (!original) {
     return { action: "none", args: {}, confidence: 1, source: "heuristic" };
@@ -297,7 +295,9 @@ function parseIntentHeuristic(text) {
     parseCompoundOpenAndType(t) ||
     parseCompoundOpenAndType(original) ||
     parseTypeText(t) ||
-    parseTypeText(original);
+    parseTypeText(original) ||
+    parseAppSkillIntent(t, options) ||
+    parseAppSkillIntent(original, options);
   if (commandHit) return { ...commandHit, source: "heuristic" };
   if (looksLikeChat(original) || looksLikeChat(t)) {
     return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
@@ -318,16 +318,22 @@ function shouldUseLlm(heuristic) {
   return heuristic.confidence < 0.7;
 }
 
-function buildIntentUserMessage(text) {
-  return "User request:\n" + String(text || "").trim();
+function buildIntentUserMessage(text, options = {}) {
+  const base = "User request:\n" + String(text || "").trim();
+  const extra = buildDynamicIntentContext({
+    skills: options.skills,
+    learned: options.learned,
+    text,
+  });
+  return extra ? base + "\n\n" + extra : base;
 }
 
-function buildIntentParseMessages(text) {
-  return { system: commandSkillSystemPrompt(), user: buildIntentUserMessage(text) };
+function buildIntentParseMessages(text, options = {}) {
+  return { system: commandSkillSystemPrompt(), user: buildIntentUserMessage(text, options) };
 }
 
-function buildIntentParsePrompt(text) {
-  const messages = buildIntentParseMessages(text);
+function buildIntentParsePrompt(text, options = {}) {
+  const messages = buildIntentParseMessages(text, options);
   return messages.system + "\n\n" + messages.user;
 }
 
@@ -384,6 +390,12 @@ function normalizeSingleIntent(parsed, source) {
     }
   }
   if (action === "guide") args.target = trimText(parsed.target || parsed.app || parsed.text);
+  if (action === "app_action") {
+    args.appId = trimText(parsed.appId || parsed.app || "");
+    args.actionId = trimText(parsed.actionId || parsed.action_id || "");
+    const params = parsed.params || parsed.args && parsed.args.params;
+    args.params = params && typeof params === "object" && !Array.isArray(params) ? params : {};
+  }
   if (action === "open_app" && !args.app) return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "run_command" && !args.command)
     return { action: "none", args: {}, confidence: 0.2, source };
@@ -394,6 +406,8 @@ function normalizeSingleIntent(parsed, source) {
   if (action === "compose_email" && !args.to && !args.prompt)
     return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "guide" && !args.target) return { action: "none", args: {}, confidence: 0.2, source };
+  if (action === "app_action" && (!args.appId || !args.actionId))
+    return { action: "none", args: {}, confidence: 0.2, source };
   return { action, args, confidence, source };
 }
 
@@ -527,7 +541,7 @@ function repairMissingSearch(text, intent) {
   };
 }
 
-async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false } = {}) {
+async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false, skills, learned } = {}) {
   let current = cleanIntentSearchUrls(text, repairMissingSearch(text, intent));
   const expected = expectedStepCount(text);
   const actual = intentStepsOf(current).length;
@@ -537,7 +551,7 @@ async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked 
       system: commandSkillSystemPrompt(),
       user:
         "The previous plan dropped one or more clauses. Output a complete JSON plan that covers every clause. Do not drop search, type, or compose clauses.\n\n" +
-        buildIntentUserMessage(text),
+        buildIntentUserMessage(text, { skills, learned }),
     });
     const retry = parseIntentFromLlmResponse(raw);
     const repaired = repairMissingSearch(text, retry);
@@ -558,22 +572,22 @@ function parseIntentFromLlmResponse(raw) {
  * Parse text, using the heuristic first and an optional LLM completer
  * (`async (prompt) => string`) when the guess is weak.
  */
-async function parseIntent(text, { llmComplete, forceLlm = false } = {}) {
-  const heuristic = parseIntentHeuristic(text);
+async function parseIntent(text, { llmComplete, forceLlm = false, skills, learned } = {}) {
+  const heuristic = parseIntentHeuristic(text, { skills, learned });
   if (!forceLlm && !shouldUseLlm(heuristic)) {
-    return applyClausePostCheck(text, heuristic, { alreadyReasked: true });
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned });
   }
   if (typeof llmComplete !== "function") {
-    return applyClausePostCheck(text, heuristic, { alreadyReasked: true });
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned });
   }
   try {
-    const raw = await llmComplete(buildIntentParseMessages(text));
+    const raw = await llmComplete(buildIntentParseMessages(text, { skills, learned }));
     const llm = parseIntentFromLlmResponse(raw);
     // Prefer a confident heuristic over a weak LLM "none".
     if (llm.action === "none" && heuristic.action !== "none" && heuristic.confidence >= 0.6) {
-      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true });
+      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true, skills, learned });
     }
-    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false });
+    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false, skills, learned });
   } catch (error) {
     const errorCode =
       error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR";
@@ -586,7 +600,7 @@ async function parseIntent(text, { llmComplete, forceLlm = false } = {}) {
       errorMessage: String(error?.message || "parse failed"),
     };
     if (heuristic.action !== "none" && heuristic.confidence >= 0.6) return heuristic;
-    return applyClausePostCheck(text, failed, { alreadyReasked: true });
+    return applyClausePostCheck(text, failed, { alreadyReasked: true, skills, learned });
   }
 }
 
@@ -618,6 +632,8 @@ function formatIntentForConfirm(intent) {
       return `Draft Gmail to ${intent.args?.to || "recipient"}: ${intent.args?.subject || intent.args?.prompt || ""}`;
     case "guide":
       return `Find on screen: ${intent.args.target}`;
+    case "app_action":
+      return `Run ${intent.args?.actionId || "action"} in ${intent.args?.appId || "app"}`;
     default:
       return String(intent.action);
   }
@@ -643,6 +659,7 @@ module.exports = {
   parseCalendarEvent,
   parseWebAppOpen,
   parseGmailCompose,
+  parseAppSkillIntent,
   looksImperative,
   stripCommandWrappers,
   containsCommandConnector,

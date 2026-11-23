@@ -586,6 +586,18 @@
       "check": "再確認",
       "restart": "アプリを再起動",
       "restartRequired": "画面アクセスを適用するにはOverlayを再起動してください。"
+    },
+    "findApps": {
+      "titleScanning": "アプリを探しています…",
+      "descriptionScanning": "この PC にインストールされているアプリを調べ、用意済みのコマンドと照合しています。",
+      "progress": "{{stage}} をスキャンしています…",
+      "titleDone": "{{count}} 個のアプリが見つかり、{{ready}} 個にコマンドが用意されています",
+      "descriptionDone": "これらのコマンドはこのパソコンにコピーされます。オフにしたり、後で設定から再スキャンしたりできます。",
+      "readyBadge": "コマンドあり",
+      "genericBadge": "起動のみ",
+      "webBadge": "ウェブ",
+      "error": "アプリのスキャンを完了できませんでした。設定から再試行できます。",
+      "retry": "再試行"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "下のボタンでテキストをコピーし、{{shortcut}}を押して貼り付けてください。",
         "openSettings": "設定を開く",
         "copyToClipboard": "テキストをコピー",
-      "writing": "作成中…",
-      "cancelWriting": "キャンセル",
+        "writing": "作成中…",
+        "cancelWriting": "キャンセル",
         "copyFailed": "コピーに失敗しました"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "アシスタントの記憶を消去",
       "forgetChatsDescription": "アシスタントは過去のチャットを思い出さなくなります。チャットはホームに残ります。",
       "forgetButton": "消去する"
+    },
+    "appsSkills": {
+      "title": "アプリとスキル",
+      "description": "この PC のアプリで Overlay が実行できるコマンドです。",
+      "rescan": "アプリを再スキャン",
+      "scanning": "スキャン中…",
+      "summary": "{{count}} 個のアプリ、コマンドあり {{ready}} 個",
+      "enabled": "有効",
+      "test": "テスト",
+      "testOk": "{{action}} を実行しました",
+      "testFailed": "その操作を実行できませんでした",
+      "learnedTitle": "学習した例",
+      "learnedEmpty": "学習した例はまだありません。",
+      "learnedDelete": "削除",
+      "search": "アプリを絞り込む",
+      "noApps": "アプリはまだ見つかりません。この PC を再スキャンしてください。"
     }
   }
 }

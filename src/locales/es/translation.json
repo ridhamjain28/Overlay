@@ -586,6 +586,18 @@
       "check": "Comprobar de nuevo",
       "restart": "Reiniciar app",
       "restartRequired": "Reinicia Overlay para aplicar el acceso a la pantalla."
+    },
+    "findApps": {
+      "titleScanning": "Buscando tus aplicaciones…",
+      "descriptionScanning": "Overlay está revisando las aplicaciones instaladas en este PC y comparándolas con comandos listos.",
+      "progress": "Analizando {{stage}}…",
+      "titleDone": "Se encontraron {{count}} aplicaciones, {{ready}} tienen comandos listos",
+      "descriptionDone": "Estos comandos se copian en tu equipo. Puedes desactivar cualquiera y volver a analizar más tarde en Ajustes.",
+      "readyBadge": "Comandos listos",
+      "genericBadge": "Solo abrir",
+      "webBadge": "Web",
+      "error": "No se pudo terminar de analizar las aplicaciones. Puedes intentarlo de nuevo en Ajustes.",
+      "retry": "Reintentar"
     }
   },
   "streaming": {
@@ -1007,8 +1019,8 @@
         "manualPaste": "Copia tu texto abajo y pulsa {{shortcut}} para pegarlo.",
         "openSettings": "Abrir ajustes",
         "copyToClipboard": "Copiar al portapapeles",
-      "writing": "Escribiendo…",
-      "cancelWriting": "Cancelar",
+        "writing": "Escribiendo…",
+        "cancelWriting": "Cancelar",
         "copyFailed": "Error al copiar"
       },
       "pasteFailed": {
@@ -4253,6 +4265,22 @@
       "forgetChats": "Olvidar la memoria del asistente",
       "forgetChatsDescription": "El asistente dejará de recordar chats anteriores. Los chats siguen en Inicio.",
       "forgetButton": "Olvidar"
+    },
+    "appsSkills": {
+      "title": "Apps y habilidades",
+      "description": "Comandos que Overlay puede ejecutar en las aplicaciones de este PC.",
+      "rescan": "Volver a analizar apps",
+      "scanning": "Analizando…",
+      "summary": "{{count}} aplicaciones, {{ready}} con comandos listos",
+      "enabled": "Activado",
+      "test": "Probar",
+      "testOk": "Se ejecutó {{action}}",
+      "testFailed": "No se pudo ejecutar esa acción",
+      "learnedTitle": "Ejemplos aprendidos",
+      "learnedEmpty": "Todavía no hay ejemplos aprendidos.",
+      "learnedDelete": "Eliminar",
+      "search": "Filtrar aplicaciones",
+      "noApps": "Aún no hay aplicaciones. Vuelve a analizar este PC."
     }
   }
 }

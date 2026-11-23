@@ -9,6 +9,7 @@ import CompactPermissionsStep from "./onboarding/CompactPermissionsStep";
 import LanguageSelectionStep from "./onboarding/LanguageSelectionStep";
 import { preferredLanguageFromSpoken } from "../helpers/overlay/hinglishRoute.js";
 import RequirementsChecklist from "./overlay/RequirementsChecklist";
+import FindAppsStep from "./onboarding/FindAppsStep";
 import ShortcutSetupStep from "./onboarding/ShortcutSetupStep";
 import AssistantHotkeyPreview from "./onboarding/AssistantHotkeyPreview";
 import DemoStep from "./onboarding/DemoStep";
@@ -901,6 +902,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       case "local-dictation":
       case "local-assistant":
         return stageReady;
+      case "find-apps":
+        return stageReady;
       default:
         return true;
     }
@@ -1256,6 +1259,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               resumeState={session.resume.byok[currentStepId]}
               onResumeStateChange={updateCurrentByokDraft}
             />
+          </div>
+        );
+
+      case "find-apps":
+        return (
+          <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-hidden pt-2">
+            <OnboardingStepHeader
+              title={t("onboarding.findApps.titleScanning")}
+              wideTitle
+              description={t("onboarding.findApps.descriptionScanning")}
+            />
+            <FindAppsStep onReadinessChange={setStageReady} />
           </div>
         );
 
