@@ -55,15 +55,30 @@ export function emitAudioDeviceFallback(details = {}) {
   return payload;
 }
 
+/**
+ * @param {Object} options
+ * @param {MediaDevices} options.mediaDevices
+ * @param {(reason: string) => Promise<MediaStream>} options.acquire
+ * @param {((reason: string) => Promise<MediaStream>) | null} [options.acquireFallback]
+ * @param {(replacement: MediaStream, previous: MediaStream) => Promise<void> | void} options.onRecovered
+ * @param {(status: string) => void} options.onStatusChange
+ * @param {((details: any) => void) | null} [options.onFallback]
+ * @param {(() => Promise<any> | any) | null} [options.getSystemDefault]
+ * @param {number} [options.debounceMs]
+ * @param {number} [options.muteGraceMs]
+ * @param {number} [options.retryMs]
+ * @param {number} [options.watchdogIntervalMs]
+ * @param {boolean} [options.watchdogEnabled]
+ */
 export class ActiveMicRecoveryController {
   constructor({
     mediaDevices,
     acquire,
-    acquireFallback,
+    acquireFallback = null,
     onRecovered,
     onStatusChange,
-    onFallback,
-    getSystemDefault,
+    onFallback = null,
+    getSystemDefault = null,
     debounceMs = DEFAULT_DEBOUNCE_MS,
     muteGraceMs = DEFAULT_MUTE_GRACE_MS,
     retryMs = DEFAULT_RETRY_MS,
