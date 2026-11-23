@@ -31,10 +31,10 @@ import {
 } from "./preparedMicCapture";
 import { MicStreamHold } from "./micStreamHold";
 import { PcmTap } from "./pcmTap";
-import { ActiveMicRecoveryController } from "./activeMicRecovery";
+import { ActiveMicRecoveryController, emitAudioDeviceFallback } from "./activeMicRecovery";
 import { followsSystemDefaultMic } from "./micSelectionRecovery";
 import { isCacheableMicrophoneResolution, resolvePreferredMicrophone } from "./microphoneSelection";
-import { isStaleDeviceError } from "./staleMicDevice";
+import { isDeviceDisconnectedError, isStaleDeviceError } from "./staleMicDevice";
 import { shouldSaveDiscardedRecording } from "./discardedRecording";
 import {
   ANALYTICS_COUNTER_VERSION,
@@ -763,7 +763,10 @@ class AudioManager {
         try {
           const constraints = await this.getAudioConstraints(
             false,
-            reason === "devicechange" || reason === "devicechange-ended"
+            reason === "devicechange" ||
+              reason === "devicechange-ended" ||
+              reason === "device-missing" ||
+              reason === "sleep-resume"
           );
           return await navigator.mediaDevices.getUserMedia(constraints);
         } catch (error) {
@@ -778,6 +781,9 @@ class AudioManager {
       },
       onRecovered: (replacement, previous) => this.replaceActiveMic(replacement, previous),
       onStatusChange: (status) => this.setMicCaptureStatus(status),
+      onFallback: (data) => {
+        logger.info("Fell back to system default microphone", data, "audio");
+      },
     });
   }
 
@@ -1744,7 +1750,10 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       // (and possibly a pre-roll recorder); release it before any retry.
       freshTap?.close();
       if (prepared && !preparedAdopted) this._disposePrepared(prepared);
-      if (isStaleDeviceError(error) && !forceDefaultMic) {
+      if (
+        (isStaleDeviceError(error) || isDeviceDisconnectedError(error)) &&
+        !forceDefaultMic
+      ) {
         // Pinned mic is gone (Chromium rotates IDs / device unplugged). Retry once on the default mic. See #900.
         logger.warn("Pinned microphone unavailable, retrying on default mic", {}, "audio");
         this.cachedMicDeviceId = null;
@@ -5644,7 +5653,11 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
         return false;
       }
 
-      if (isStaleDeviceError(error) && !forceDefaultMic && !stopRequested) {
+      if (
+        (isStaleDeviceError(error) || isDeviceDisconnectedError(error)) &&
+        !forceDefaultMic &&
+        !stopRequested
+      ) {
         // Pinned mic is gone (Chromium rotates IDs / device unplugged). Retry once on the default mic. See #900.
         logger.warn(
           "Pinned microphone unavailable, retrying streaming on default mic",

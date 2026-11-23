@@ -1,6 +1,8 @@
 const DEFAULT_DEBOUNCE_MS = 250;
-const DEFAULT_MUTE_GRACE_MS = 800;
+const DEFAULT_MUTE_GRACE_MS = 1500;
 const DEFAULT_RETRY_MS = 2000;
+const DEFAULT_WATCHDOG_INTERVAL_MS = 1000;
+const SLEEP_RESUME_DELTA_MS = 3000;
 
 const deviceKey = (device) =>
   [device?.deviceId || "", device?.groupId || "", device?.label || ""].join("\u0000");
@@ -25,23 +27,76 @@ export const activeTrackIsAvailable = (track, inputs) => {
   return !settings.deviceId && !settings.groupId;
 };
 
+/**
+ * Emits an audio-device-fallback event so the user/UI is notified when Overlay
+ * switches to a fallback microphone (e.g. headset disconnected -> built-in mic).
+ */
+export function emitAudioDeviceFallback(details = {}) {
+  const payload = {
+    previousDevice: details.previousDevice || "Headset",
+    fallbackDevice: details.fallbackDevice || "Built-in Microphone",
+    reason: details.reason || "disconnect",
+    timestamp: details.timestamp || Date.now(),
+    ...details,
+  };
+
+  if (typeof window !== "undefined" && window?.electronAPI?.notifyAudioDeviceFallback) {
+    try {
+      window.electronAPI.notifyAudioDeviceFallback(payload);
+    } catch {}
+  }
+
+  if (typeof window !== "undefined" && typeof window?.dispatchEvent === "function") {
+    try {
+      window.dispatchEvent(new CustomEvent("audio-device-fallback", { detail: payload }));
+    } catch {}
+  }
+
+  return payload;
+}
+
+/**
+ * @param {Object} options
+ * @param {MediaDevices} options.mediaDevices
+ * @param {(reason: string) => Promise<MediaStream>} options.acquire
+ * @param {((reason: string) => Promise<MediaStream>) | null} [options.acquireFallback]
+ * @param {(replacement: MediaStream, previous: MediaStream) => Promise<void> | void} options.onRecovered
+ * @param {(status: string) => void} options.onStatusChange
+ * @param {((details: any) => void) | null} [options.onFallback]
+ * @param {(() => Promise<any> | any) | null} [options.getSystemDefault]
+ * @param {number} [options.debounceMs]
+ * @param {number} [options.muteGraceMs]
+ * @param {number} [options.retryMs]
+ * @param {number} [options.watchdogIntervalMs]
+ * @param {boolean} [options.watchdogEnabled]
+ */
 export class ActiveMicRecoveryController {
   constructor({
     mediaDevices,
     acquire,
+    acquireFallback = null,
     onRecovered,
     onStatusChange,
+    onFallback = null,
+    getSystemDefault = null,
     debounceMs = DEFAULT_DEBOUNCE_MS,
     muteGraceMs = DEFAULT_MUTE_GRACE_MS,
     retryMs = DEFAULT_RETRY_MS,
+    watchdogIntervalMs = DEFAULT_WATCHDOG_INTERVAL_MS,
+    watchdogEnabled = true,
   }) {
     this.mediaDevices = mediaDevices;
     this.acquire = acquire;
+    this.acquireFallback = acquireFallback || null;
     this.onRecovered = onRecovered;
     this.onStatusChange = onStatusChange;
+    this.onFallback = onFallback || null;
+    this.getSystemDefault = getSystemDefault || null;
     this.debounceMs = debounceMs;
     this.muteGraceMs = muteGraceMs;
     this.retryMs = retryMs;
+    this.watchdogIntervalMs = watchdogIntervalMs;
+    this.watchdogEnabled = watchdogEnabled;
     this.status = "inactive";
     this.stream = null;
     this.track = null;
@@ -52,16 +107,38 @@ export class ActiveMicRecoveryController {
     this.debounceTimer = null;
     this.muteTimer = null;
     this.retryTimer = null;
+    this.watchdogTimer = null;
+    this.lastWatchdogTick = null;
+    this.muteStartTime = null;
     this.started = false;
+    this.activeDeviceId = "";
+    this.activeDeviceLabel = "";
+    this.systemDefaultInfo = null;
+
     this.onDeviceChange = () => this.scheduleEvaluation();
     this.onTrackEnded = () => this.recover("ended");
     this.onTrackMute = () => {
+      if (!this.muteStartTime) {
+        this.muteStartTime = Date.now();
+      }
       clearTimeout(this.muteTimer);
       this.muteTimer = setTimeout(() => {
-        if (this.track?.muted) this.recover("muted");
+        if (this.track?.muted || !this.isTrackHealthy()) {
+          this.recover("muted");
+        }
       }, this.muteGraceMs);
     };
-    this.onTrackUnmute = () => clearTimeout(this.muteTimer);
+    this.onTrackUnmute = () => {
+      this.muteStartTime = null;
+      clearTimeout(this.muteTimer);
+    };
+  }
+
+  isTrackHealthy() {
+    if (!this.track) return false;
+    if (this.track.readyState === "ended") return false;
+    if (this.track.muted) return false;
+    return true;
   }
 
   setStatus(status) {
@@ -78,6 +155,7 @@ export class ActiveMicRecoveryController {
     this.mediaDevices?.addEventListener?.("devicechange", this.onDeviceChange);
     this.attachStream(stream);
     await this.refreshInputs();
+    this.startWatchdog();
     if (!this.started) return;
     // The track may have died (or come up muted) before our listeners attached;
     // those events won't replay, so evaluate the track's state directly.
@@ -94,6 +172,10 @@ export class ActiveMicRecoveryController {
     this.detachTrack();
     this.stream = stream || null;
     this.track = stream?.getAudioTracks?.()[0] || null;
+    this.muteStartTime = this.track?.muted ? Date.now() : null;
+    const settings = this.track?.getSettings?.() || {};
+    this.activeDeviceId = settings.deviceId || "";
+    this.activeDeviceLabel = this.track?.label || "";
     this.track?.addEventListener?.("ended", this.onTrackEnded);
     this.track?.addEventListener?.("mute", this.onTrackMute);
     this.track?.addEventListener?.("unmute", this.onTrackUnmute);
@@ -104,8 +186,87 @@ export class ActiveMicRecoveryController {
     this.track?.removeEventListener?.("mute", this.onTrackMute);
     this.track?.removeEventListener?.("unmute", this.onTrackUnmute);
     this.track = null;
+    this.muteStartTime = null;
     clearTimeout(this.muteTimer);
     this.muteTimer = null;
+  }
+
+  startWatchdog() {
+    this.stopWatchdog();
+    if (!this.watchdogEnabled || this.watchdogIntervalMs <= 0) return;
+    this.lastWatchdogTick = Date.now();
+    this.watchdogTimer = setInterval(() => {
+      this.tickWatchdog();
+    }, this.watchdogIntervalMs);
+    if (this.watchdogTimer?.unref) {
+      this.watchdogTimer.unref();
+    }
+  }
+
+  stopWatchdog() {
+    if (this.watchdogTimer) {
+      clearInterval(this.watchdogTimer);
+      this.watchdogTimer = null;
+    }
+    this.lastWatchdogTick = null;
+  }
+
+  async tickWatchdog() {
+    if (!this.started) return;
+    const now = Date.now();
+
+    // 1. Detect resume from sleep (clock jumped significantly)
+    if (
+      this.lastWatchdogTick &&
+      now - this.lastWatchdogTick > Math.max(SLEEP_RESUME_DELTA_MS, this.watchdogIntervalMs * 3)
+    ) {
+      this.lastWatchdogTick = now;
+      await this.evaluateDeviceChange();
+      if (!this.isTrackHealthy()) {
+        this.recover("sleep-resume");
+      }
+      return;
+    }
+    this.lastWatchdogTick = now;
+
+    // 2. Dead track detection
+    if (this.track && this.track.readyState === "ended") {
+      this.recover("ended");
+      return;
+    }
+
+    // 3. Track mute duration watchdog (>1.5s)
+    if (this.track?.muted) {
+      if (!this.muteStartTime) {
+        this.muteStartTime = now;
+      } else if (now - this.muteStartTime >= this.muteGraceMs) {
+        this.recover("muted");
+        return;
+      }
+    } else {
+      this.muteStartTime = null;
+    }
+
+    // 4. Missing device check (e.g. unplugged USB mic or disconnected Bluetooth)
+    if (this.track && !activeTrackIsAvailable(this.track, this.inputs)) {
+      this.recover("device-missing");
+      return;
+    }
+
+    // 5. System default mic change check
+    if (this.followDefault && this.getSystemDefault) {
+      try {
+        const sysDefault = await this.getSystemDefault();
+        const prevNative = this.systemDefaultInfo?.nativeId || this.systemDefaultInfo?.name;
+        const curNative = sysDefault?.nativeId || sysDefault?.name;
+        if (prevNative && curNative && prevNative !== curNative) {
+          this.systemDefaultInfo = sysDefault;
+          this.recover("default-changed");
+          return;
+        }
+        this.systemDefaultInfo = sysDefault;
+      } catch {}
+    }
   }
 
   async refreshInputs() {
@@ -135,8 +296,21 @@ export class ActiveMicRecoveryController {
     const defaultChanged = previous.defaultKey !== current.defaultKey;
     const activeMissing = !activeTrackIsAvailable(this.track, current);
     if ((this.followDefault && defaultChanged) || activeMissing || this.status === "unavailable") {
-      this.recover("devicechange");
+      this.recover(activeMissing ? "device-missing" : "devicechange");
     }
+  }
+
+  notifyFallback(details = {}) {
+    const payload = {
+      previousDevice: details.previousDevice || this.activeDeviceLabel || "Headset",
+      fallbackDevice: details.fallbackDevice || "Default Microphone",
+      reason: details.reason || "disconnect",
+      timestamp: Date.now(),
+      ...details,
+    };
+    this.onFallback?.(payload);
+    emitAudioDeviceFallback(payload);
+    return payload;
   }
 
   recover(reason) {
@@ -147,12 +321,25 @@ export class ActiveMicRecoveryController {
     this.retryTimer = null;
     const generation = this.generation;
     const oldStream = this.stream;
+    const prevLabel = this.activeDeviceLabel || this.track?.label || "microphone";
+    const prevId = this.activeDeviceId || this.track?.getSettings?.()?.deviceId || "";
     this.setStatus("reconnecting");
 
     const attempt = async () => {
       let replacement = null;
+      let usedFallback = false;
       try {
-        replacement = await this.acquire(reason);
+        try {
+          replacement = await this.acquire(reason);
+        } catch (acquireErr) {
+          if (this.acquireFallback) {
+            replacement = await this.acquireFallback(reason, acquireErr);
+            usedFallback = true;
+          } else {
+            throw acquireErr;
+          }
+        }
+
         if (!replacement?.getAudioTracks?.()[0]) throw new Error("No audio track returned");
         if (!this.started || generation !== this.generation) {
           replacement.getTracks?.().forEach((track) => track.stop());
@@ -166,6 +353,28 @@ export class ActiveMicRecoveryController {
         this.attachStream(replacement);
         await this.refreshInputs();
         this.setStatus("active");
+
+        const nextTrack = replacement.getAudioTracks()[0];
+        const nextLabel = nextTrack?.label || "Built-in Microphone";
+        const nextId = nextTrack?.getSettings?.()?.deviceId || "";
+        const isDeviceSwitch = prevId && nextId && prevId !== nextId;
+        const isLabelSwitch = prevLabel && nextLabel && prevLabel !== nextLabel;
+
+        if (
+          usedFallback ||
+          reason === "device-missing" ||
+          reason === "muted" ||
+          reason === "fallback" ||
+          isDeviceSwitch ||
+          isLabelSwitch
+        ) {
+          this.notifyFallback({
+            previousDevice: prevLabel,
+            fallbackDevice: nextLabel,
+            reason: reason || "fallback",
+          });
+        }
+
         return true;
       } catch {
         if (replacement && replacement !== this.stream) {
@@ -198,14 +407,18 @@ export class ActiveMicRecoveryController {
   stop() {
     this.started = false;
     this.generation += 1;
+    this.stopWatchdog();
     this.mediaDevices?.removeEventListener?.("devicechange", this.onDeviceChange);
     this.detachTrack();
     clearTimeout(this.debounceTimer);
     clearTimeout(this.retryTimer);
+    clearTimeout(this.muteTimer);
     this.debounceTimer = null;
     this.retryTimer = null;
+    this.muteTimer = null;
     this.recoveryPromise = null;
     this.stream = null;
     this.setStatus("inactive");
   }
 }
+

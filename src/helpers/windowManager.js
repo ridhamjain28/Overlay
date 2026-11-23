@@ -59,7 +59,12 @@ const MEETING_NOTIFICATION_CARD_REGION = Object.freeze({
   width: NOTIFICATION_WINDOW_CONFIG.width - 8,
   height: NOTIFICATION_WINDOW_CONFIG.height - 8,
 });
-const { centeredBounds, clampedBounds } = require("./onboardingWindowBounds");
+const {
+  centeredBounds,
+  clampedBounds,
+  clampWindowToDisplayWorkArea,
+  convertDpiCoordinates,
+} = require("./onboardingWindowBounds");
 const { ONBOARDING_DEMO_KINDS, isOnboardingInputAllowed } = require("./onboardingInputPolicy");
 const { createHotkeyRepeatGate } = require("./hotkeyRepeatGate");
 const { createAssistantAutoCollapse } = require("./overlay/assistantAutoCollapse");
@@ -144,14 +149,22 @@ class WindowManager {
     this._pendingMeetingNoteNavigation = null;
     this._pendingNoteNavigation = null;
     this._pendingSettingsSection = null;
+    this._screenListenersRegistered = false;
+    this._onDisplayMetricsChanged = null;
+    this._onDisplayRemoved = null;
+    this._onDisplayAdded = null;
 
-    app.on("before-quit", () => {
-      this.isQuitting = true;
-      this.hotkeyManager.unregisterAll();
-    });
+    if (app && typeof app.on === "function") {
+      app.on("before-quit", () => {
+        this.isQuitting = true;
+        this.hotkeyManager.unregisterAll();
+        this._cleanupScreenListeners();
+      });
+    }
   }
 
   async createMainWindow() {
+    this._setupScreenListeners();
     void plasmaWorkAreas.start(() => {
       this.positionAgentDictationPill();
       return this._reanchorMainWindow();
@@ -1481,7 +1494,10 @@ class WindowManager {
         Math.abs(draggedBounds.x - start.x) > DRAG_MOVE_TOLERANCE_PX ||
         Math.abs(draggedBounds.y - start.y) > DRAG_MOVE_TOLERANCE_PX;
       if (moved) {
-        this._mainWindowPlacementCoordinator.markManuallyPositioned();
+        const display = this._getMainWindowDisplayFor(draggedBounds);
+        this._mainWindowPlacementCoordinator.markManuallyPositioned(display?.id, {
+          scaleFactor: display?.scaleFactor,
+        });
         this._baseBoundsBeforeResize = null;
         this._lastResizeBounds = { ...draggedBounds };
       }
@@ -1817,6 +1833,171 @@ class WindowManager {
       );
       this._moveMainWindowTo(newPos);
     });
+  }
+
+  _setupScreenListeners() {
+    if (this._screenListenersRegistered || !screen || typeof screen.on !== "function") {
+      return;
+    }
+    this._screenListenersRegistered = true;
+
+    this._onDisplayMetricsChanged = (event, display, changedMetrics) => {
+      this._handleDisplayMetricsChanged(display, changedMetrics);
+    };
+
+    this._onDisplayRemoved = (event, oldDisplay) => {
+      this._handleDisplayRemoved(oldDisplay);
+    };
+
+    this._onDisplayAdded = (event, newDisplay) => {
+      this._handleDisplayAdded(newDisplay);
+    };
+
+    screen.on("display-metrics-changed", this._onDisplayMetricsChanged);
+    screen.on("display-removed", this._onDisplayRemoved);
+    screen.on("display-added", this._onDisplayAdded);
+  }
+
+  _cleanupScreenListeners() {
+    if (!this._screenListenersRegistered || !screen || typeof screen.removeListener !== "function") {
+      return;
+    }
+    if (this._onDisplayMetricsChanged) {
+      screen.removeListener("display-metrics-changed", this._onDisplayMetricsChanged);
+    }
+    if (this._onDisplayRemoved) {
+      screen.removeListener("display-removed", this._onDisplayRemoved);
+    }
+    if (this._onDisplayAdded) {
+      screen.removeListener("display-added", this._onDisplayAdded);
+    }
+    this._screenListenersRegistered = false;
+  }
+
+  _handleDisplayMetricsChanged(display, changedMetrics) {
+    debugLogger.debug(
+      "[WindowManager] Screen display metrics changed",
+      { displayId: display?.id, changedMetrics },
+      "window"
+    );
+
+    void plasmaWorkAreas.refresh();
+    this.positionAgentDictationPill();
+
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return;
+    }
+
+    this._enqueueMainWindowMutation(() => {
+      if (!this.mainWindow || this.mainWindow.isDestroyed() || this.dragManager.isDragActive()) {
+        return;
+      }
+
+      const currentBounds = this.mainWindow.getBounds();
+      const currentDisplay = this._getMainWindowDisplayFor(currentBounds);
+      const targetDisplay =
+        display && display.id && display.id === currentDisplay.id
+          ? plasmaWorkAreas.resolve(display)
+          : currentDisplay;
+
+      if (this._mainWindowPlacementCoordinator.hasManualPosition()) {
+        const lastScale = this._mainWindowPlacementCoordinator.getLastKnownScaleFactor();
+        const nextScale = targetDisplay.scaleFactor || 1.0;
+        const clampOptions = { margin: 12 };
+        if (lastScale && nextScale && lastScale !== nextScale) {
+          clampOptions.fromScale = lastScale;
+          clampOptions.toScale = nextScale;
+          this._mainWindowPlacementCoordinator.setLastKnownScaleFactor(nextScale);
+        }
+        const clamped = clampWindowToDisplayWorkArea(this.mainWindow, targetDisplay, clampOptions);
+        this._lastResizeBounds = { ...clamped };
+      } else {
+        const newPos = WindowPositionUtil.getMainWindowPosition(
+          targetDisplay,
+          { width: currentBounds.width, height: currentBounds.height },
+          this._panelStartPosition
+        );
+        const clamped = clampWindowToDisplayWorkArea(newPos, targetDisplay, { margin: 4 });
+        if (clamped.x !== currentBounds.x || clamped.y !== currentBounds.y) {
+          this._moveMainWindowTo(clamped);
+        }
+      }
+    });
+  }
+
+  _handleDisplayRemoved(oldDisplay) {
+    debugLogger.debug(
+      "[WindowManager] Screen display removed",
+      { oldDisplayId: oldDisplay?.id },
+      "window"
+    );
+
+    void plasmaWorkAreas.refresh();
+    this.positionAgentDictationPill();
+
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return;
+    }
+
+    this._enqueueMainWindowMutation(() => {
+      if (!this.mainWindow || this.mainWindow.isDestroyed() || this.dragManager.isDragActive()) {
+        return;
+      }
+
+      const allDisplays = typeof screen.getAllDisplays === "function" ? screen.getAllDisplays() : [];
+      const validDisplayIds = allDisplays.map((d) => d.id);
+      const currentBounds = this.mainWindow.getBounds();
+
+      // Check if window was on the removed display
+      const manualDisplayId = this._mainWindowPlacementCoordinator.getManualDisplayId?.();
+      const currentDisplay = this._getMainWindowDisplayFor(currentBounds);
+      const wasOnRemovedDisplay =
+        (oldDisplay && (manualDisplayId === oldDisplay.id || currentDisplay?.id === oldDisplay.id)) ||
+        (manualDisplayId !== null && !validDisplayIds.includes(manualDisplayId));
+
+      if (wasOnRemovedDisplay) {
+        this._mainWindowPlacementCoordinator.resetManualPosition();
+      }
+
+      const targetDisplay = plasmaWorkAreas.resolve(
+        this._getMainWindowDisplayFor(currentBounds) ||
+        (typeof screen.getPrimaryDisplay === "function" ? screen.getPrimaryDisplay() : allDisplays[0])
+      );
+
+      if (!targetDisplay) return;
+
+      if (this._mainWindowPlacementCoordinator.hasManualPosition(validDisplayIds)) {
+        const clamped = clampWindowToDisplayWorkArea(this.mainWindow, targetDisplay, { margin: 12 });
+        this._lastResizeBounds = { ...clamped };
+      } else {
+        const newPos = WindowPositionUtil.getMainWindowPosition(
+          targetDisplay,
+          { width: currentBounds.width, height: currentBounds.height },
+          this._panelStartPosition
+        );
+        const clamped = clampWindowToDisplayWorkArea(newPos, targetDisplay, { margin: 4 });
+        this._moveMainWindowTo(clamped);
+      }
+    });
+  }
+
+  _handleDisplayAdded(newDisplay) {
+    debugLogger.debug(
+      "[WindowManager] Screen display added",
+      { newDisplayId: newDisplay?.id },
+      "window"
+    );
+
+    void plasmaWorkAreas.refresh();
+    this.positionAgentDictationPill();
+
+    if (!this._mainWindowPlacementCoordinator.hasManualPosition()) {
+      void this._reanchorMainWindow();
+    }
+  }
+
+  clampWindowToDisplayWorkArea(window = this.mainWindow, targetDisplay = null, options = {}) {
+    return clampWindowToDisplayWorkArea(window, targetDisplay, options);
   }
 
   showDictationPanel(options = {}) {

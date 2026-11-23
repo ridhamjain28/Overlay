@@ -1,5 +1,15 @@
 const TRACK_READY_TIMEOUT_MS = 600;
 
+export function checkTrackHealth(track) {
+  if (!track) return { healthy: false, reason: "missing" };
+  if (track.readyState === "ended") return { healthy: false, reason: "ended" };
+  if (track.muted) return { healthy: false, reason: "muted" };
+  return { healthy: true, reason: null };
+}
+
+export const waitForTrackHealthy = (track, timeoutMs = 1500) =>
+  waitForTrackReady(track, timeoutMs);
+
 // Waits until a capture track is actually delivering audio (wake-after-idle re-acquire).
 // After the OS suspends the input during idle, getUserMedia can hand back a track that
 // stays muted/ended and yields silence; callers use this to detect that and re-acquire.

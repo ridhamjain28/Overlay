@@ -307,6 +307,8 @@ const BOOLEAN_SETTINGS = new Set([
   "insightsSyncEnabled",
   "telemetryEnabled",
   "audioCuesEnabled",
+  "soundEffectsEnabled",
+  "activeModelProvider",
   "pauseMediaOnDictation",
   "floatingIconAutoHide",
   "keepAssistantOnTop",
@@ -1004,6 +1006,10 @@ export interface SettingsState
   answerSource: string;
   setAnswerSource: (value: string) => void;
   audioCuesEnabled: boolean;
+  soundEffectsEnabled: boolean;
+  setSoundEffectsEnabled: (enabled: boolean) => void;
+  activeModelProvider: string;
+  setActiveModelProvider: (provider: string) => void;
   pauseMediaOnDictation: boolean;
   floatingIconAutoHide: boolean;
   keepAssistantOnTop: boolean;
@@ -1802,6 +1808,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   dataRetentionEnabled: readBoolean("dataRetentionEnabled", true),
   saveDiscardedTranscriptions: readBoolean("saveDiscardedTranscriptions", false),
   audioCuesEnabled: readBoolean("audioCuesEnabled", true),
+  soundEffectsEnabled: readBoolean("soundEffectsEnabled", true),
+  activeModelProvider: readString("activeModelProvider", ""),
   pauseMediaOnDictation: readBoolean("pauseMediaOnDictation", false),
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
   keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
@@ -2621,6 +2629,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   },
   setSaveDiscardedTranscriptions: createBooleanSetter("saveDiscardedTranscriptions"),
   setAudioCuesEnabled: createBooleanSetter("audioCuesEnabled"),
+  setSoundEffectsEnabled: createBooleanSetter("soundEffectsEnabled"),
+  setActiveModelProvider: (provider: string) => {
+    if (isBrowser) localStorage.setItem("activeModelProvider", provider);
+    set({ activeModelProvider: provider });
+  },
   setPauseMediaOnDictation: createBooleanSetter("pauseMediaOnDictation"),
 
   setFloatingIconAutoHide: (enabled: boolean) => {

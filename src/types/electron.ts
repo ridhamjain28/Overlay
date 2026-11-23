@@ -2438,6 +2438,22 @@ declare global {
       onGlobeKeyPressed?: (callback: () => void) => () => void;
       onGlobeKeyReleased?: (callback: () => void) => () => void;
 
+      // Audio device fallback notification events
+      notifyAudioDeviceFallback?: (data: {
+        previousDevice?: string;
+        fallbackDevice?: string;
+        reason?: string;
+        timestamp?: number;
+      }) => void;
+      onAudioDeviceFallback?: (
+        callback: (data: {
+          previousDevice?: string;
+          fallbackDevice?: string;
+          reason?: string;
+          timestamp?: number;
+        }) => void
+      ) => () => void;
+
       // Hotkey registration events
       onHotkeyFallbackUsed?: (
         callback: (data: { original: string; fallback: string }) => void
@@ -3373,6 +3389,8 @@ declare global {
           gpuSource: string | null;
         };
       }>;
+      overlayDiagnosticsGet?: () => Promise<string>;
+      overlayDiagnosticsCopy?: () => Promise<{ ok: boolean; report?: string; error?: string }>;
       overlayAnswerSourcesStatus?: () => Promise<
         import("../services/overlay/answerRouter").AnswerSourcesStatus
       >;

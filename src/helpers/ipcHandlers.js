@@ -2135,6 +2135,10 @@ class IPCHandlers {
       return this.databaseManager.getTranscriptionById(id);
     });
 
+    ipcMain.on("audio-device-fallback", (_event, data) => {
+      broadcastToWindows("audio-device-fallback", data);
+    });
+
     // Every window's AudioManager can hold the mic open outside a recording, so
     // gate the audio-evidence meeting detector until they all release. A
     // renderer that reloads or goes away releases implicitly — otherwise a

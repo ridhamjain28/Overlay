@@ -24,6 +24,8 @@ import { LiquidCancelButton } from "./LiquidCancelButton";
 import { LiveTranscriptPanel, type LiveTranscriptPhase } from "./LiveTranscriptPanel";
 import { VoiceModePanelCore, type VoiceModePanelStage } from "./VoiceModePanelCore";
 import { VoicePill, type VoicePillState } from "./VoicePill";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { playEarcon, resolveModelIndicator } from "../../helpers/overlay/soundCues";
 import "../../styles/agent-dictation-pill.css";
 
 type DictationLifecycle = "idle" | "preparing" | "recording" | "processing";
@@ -47,6 +49,42 @@ export default function AgentDictationPillOverlay() {
   const [hovered, setHovered] = useState(false);
   const audioLevelRef = useRef<number | null>(null);
   const assistantOpenRef = useRef(false);
+
+  const activeModelProvider = useSettingsStore((s) => s.activeModelProvider);
+  const useLocalWhisper = useSettingsStore((s) => s.useLocalWhisper);
+  const commandModeParser = useSettingsStore((s) => s.commandModeParser);
+  const dictationAgentMode = useSettingsStore((s) => s.dictationAgentMode);
+  const isSignedIn = useSettingsStore((s) => s.isSignedIn);
+
+  const modelIndicator = resolveModelIndicator({
+    activeModelProvider,
+    commandModeParser,
+    useLocalWhisper,
+    dictationAgentMode,
+    isSignedIn,
+  });
+
+  const prevLifecycleRef = useRef<DictationLifecycle>(companionState.lifecycle);
+  const commandOutcomeHandledRef = useRef(false);
+
+  useEffect(() => {
+    const prev = prevLifecycleRef.current;
+    const current = companionState.lifecycle;
+    prevLifecycleRef.current = current;
+
+    if (prev !== current) {
+      if (current === "recording" && prev !== "recording") {
+        commandOutcomeHandledRef.current = false;
+        void playEarcon("start");
+      } else if (current === "processing" && prev === "recording") {
+        void playEarcon("stop");
+      } else if (current === "idle" && prev === "processing") {
+        if (!commandOutcomeHandledRef.current) {
+          void playEarcon("success");
+        }
+      }
+    }
+  }, [companionState.lifecycle]);
 
   useEffect(() => {
     let disposed = false;
@@ -112,6 +150,18 @@ export default function AgentDictationPillOverlay() {
     const unsub = window.electronAPI.onOverlayCommandProgress?.((payload) => {
       if (payload?.text) {
         showFinalText(payload.text);
+      }
+      if (payload?.phase === "done") {
+        commandOutcomeHandledRef.current = true;
+        if (payload?.code === "OK") {
+          void playEarcon("success");
+        } else if (
+          payload?.code === "FAILED" ||
+          payload?.code === "BLOCKED" ||
+          payload?.code === "ERROR"
+        ) {
+          void playEarcon("error");
+        }
       }
     });
     return () => unsub?.();
@@ -222,7 +272,7 @@ export default function AgentDictationPillOverlay() {
   return (
     <main className="agent-dictation-pill-window dictation-window">
       <div
-        className={`voice-pill-position voice-pill-position-${voicePillDock} fixed z-50`}
+        className={`voice-pill-position voice-pill-position-${voicePillDock} fixed z-50 flex flex-col items-center`}
         style={
           {
             "--voice-pill-travel-duration": `${voicePillTravelDuration}ms`,
@@ -233,6 +283,18 @@ export default function AgentDictationPillOverlay() {
         }}
         onMouseLeave={() => setHovered(false)}
       >
+        <div
+          data-testid="model-indicator-badge"
+          className={`model-indicator-badge pointer-events-none mb-1 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide shadow-sm transition-all duration-200 select-none ${
+            modelIndicator.isCloud
+              ? "border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300"
+              : "border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-300"
+          }`}
+          role="status"
+          aria-label={modelIndicator.label}
+        >
+          {modelIndicator.badgeText}
+        </div>
         <div className="relative flex items-center">
           <VoicePill
             variant={liveTranscript.open ? "panel" : "floating"}
@@ -261,6 +323,8 @@ export default function AgentDictationPillOverlay() {
               isRecording ? t("app.buttons.cancelRecording") : t("app.buttons.cancelProcessing")
             }
             onCancel={() => {
+              commandOutcomeHandledRef.current = true;
+              void playEarcon("error");
               void window.electronAPI.cancelAgentPanelDictation?.();
             }}
             onFusedSkinChange={setCancelSkinActive}

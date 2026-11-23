@@ -17,6 +17,23 @@ export function useMainProcessNotifications({
   t: TFunction;
 }): void {
   useEffect(() => {
+    const unsubscribeAudioFallback = window.electronAPI?.onAudioDeviceFallback?.((data) => {
+      toast({
+        title: t("app.toasts.audioDeviceFallback.title", { defaultValue: "Microphone switched" }),
+        description:
+          data?.reason === "muted"
+            ? t("app.toasts.audioDeviceFallback.mutedDescription", {
+                defaultValue: `Microphone was muted or unresponsive. Switched to ${data?.fallbackDevice || "default microphone"}.`,
+              })
+            : t("app.toasts.audioDeviceFallback.description", {
+                original: data?.previousDevice || "Headset",
+                fallback: data?.fallbackDevice || "Built-in Microphone",
+                defaultValue: `Disconnected from ${data?.previousDevice || "headset"}. Switched to ${data?.fallbackDevice || "built-in microphone"}.`,
+              }),
+        duration: 8000,
+      });
+    });
+
     const unsubscribeFallback = window.electronAPI?.onHotkeyFallbackUsed?.((data) => {
       toast({
         title: t("app.toasts.hotkeyChanged.title"),
@@ -99,6 +116,7 @@ export function useMainProcessNotifications({
     });
 
     return () => {
+      unsubscribeAudioFallback?.();
       unsubscribeFallback?.();
       unsubscribeFailed?.();
       unsubscribeCudaFallback?.();

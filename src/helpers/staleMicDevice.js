@@ -8,3 +8,35 @@ export function isStaleDeviceError(error) {
   const constraint = error.constraint;
   return !constraint || constraint === "deviceId";
 }
+
+/**
+ * Detects errors indicating an audio device was unplugged, battery died,
+ * Bluetooth dropped, or became unavailable.
+ */
+export function isDeviceDisconnectedError(error) {
+  if (!error) return false;
+  if (isStaleDeviceError(error)) return true;
+  const name = error.name || "";
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") return true;
+  const msg = String(error.message || "").toLowerCase();
+  if (
+    name === "NotReadableError" &&
+    (msg.includes("device") ||
+      msg.includes("audio") ||
+      msg.includes("hardware") ||
+      msg.includes("could not start") ||
+      msg.includes("failed"))
+  ) {
+    return true;
+  }
+  if (
+    msg.includes("device not found") ||
+    msg.includes("disconnected") ||
+    msg.includes("unplugged") ||
+    msg.includes("no such device")
+  ) {
+    return true;
+  }
+  return false;
+}
+
