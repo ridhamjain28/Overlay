@@ -1,0 +1,72 @@
+[
+  {
+    "id": "canva",
+    "name": "Canva",
+    "description": "Design workflows, brand kits, and templates via Canva's official remote MCP server.",
+    "type": "remote",
+    "config": {
+      "url": "https://mcp.canva.com/mcp"
+    },
+    "needsAuth": true,
+    "authType": "oauth"
+  },
+  {
+    "id": "notion",
+    "name": "Notion",
+    "description": "Search Notion workspaces, query databases, and read/edit workspace pages.",
+    "type": "remote",
+    "config": {
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "needsAuth": true,
+    "authType": "oauth"
+  },
+  {
+    "id": "filesystem",
+    "name": "Local Filesystem",
+    "description": "Read, write, and search files inside a scoped folder on your laptop.",
+    "type": "stdio",
+    "config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "%USERPROFILE%\\Documents"]
+    },
+    "needsAuth": false
+  },
+  {
+    "id": "fetch",
+    "name": "Web Fetch",
+    "description": "Fetch and convert web page content to markdown for instant reading and extraction.",
+    "type": "stdio",
+    "config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    },
+    "needsAuth": false
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "description": "Interact with GitHub repositories, issues, branches, and pull requests.",
+    "type": "stdio",
+    "config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
+    },
+    "needsAuth": false,
+    "hasEnvSecrets": true
+  },
+  {
+    "id": "google-drive",
+    "name": "Google Drive",
+    "description": "Search and read files, Google Docs, and spreadsheets in your Google Drive.",
+    "type": "stdio",
+    "config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"]
+    },
+    "needsAuth": false
+  }
+]
