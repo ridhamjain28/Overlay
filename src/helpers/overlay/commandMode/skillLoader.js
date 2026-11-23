@@ -21,6 +21,7 @@ const INTENT_JSON_SCHEMA = Object.freeze({
         "run_command",
         "type_text",
         "compose_text",
+        "compose_email",
         "guide",
         "plan",
         "none",
@@ -32,6 +33,8 @@ const INTENT_JSON_SCHEMA = Object.freeze({
     command: { type: "string" },
     text: { type: "string" },
     prompt: { type: "string" },
+    to: { type: "string" },
+    subject: { type: "string" },
     target: { type: "string" },
     confidence: { type: "number" },
     steps: {
@@ -42,7 +45,7 @@ const INTENT_JSON_SCHEMA = Object.freeze({
         properties: {
           action: {
             type: "string",
-            enum: ["open_app", "open_url", "run_command", "type_text", "compose_text", "guide"],
+            enum: ["open_app", "open_url", "run_command", "type_text", "compose_text", "compose_email", "guide"],
           },
           app: { type: "string" },
           url: { type: "string" },
@@ -50,6 +53,8 @@ const INTENT_JSON_SCHEMA = Object.freeze({
           command: { type: "string" },
           text: { type: "string" },
           prompt: { type: "string" },
+          to: { type: "string" },
+          subject: { type: "string" },
           target: { type: "string" },
         },
         required: ["action"],

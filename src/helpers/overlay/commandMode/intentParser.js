@@ -12,8 +12,21 @@ const {
   googleSearchUrl,
   resolveBrowserAlias,
 } = require("./browserSearch");
+const {
+  parseCalendarEvent,
+  parseWebAppOpen,
+  parseGmailCompose,
+} = require("./webApps");
 
-const COMMAND_ACTIONS = ["open_app", "open_url", "run_command", "type_text", "compose_text", "guide"];
+const COMMAND_ACTIONS = [
+  "open_app",
+  "open_url",
+  "run_command",
+  "type_text",
+  "compose_text",
+  "compose_email",
+  "guide",
+];
 
 const URL_PROTOCOL = /^(https?:\/\/)/i;
 const BARE_SITE =
@@ -273,8 +286,14 @@ function parseIntentHeuristic(text) {
   // Compound open+write and type/compose must win over chat patterns such as
   // "write an email …", so "open notepad and write an email to …" stays a plan.
   const commandHit =
+    parseCalendarEvent(t) ||
+    parseCalendarEvent(original) ||
     parseBrowserSearch(t) ||
     parseBrowserSearch(original) ||
+    parseWebAppOpen(t) ||
+    parseWebAppOpen(original) ||
+    parseGmailCompose(t) ||
+    parseGmailCompose(original) ||
     parseCompoundOpenAndType(t) ||
     parseCompoundOpenAndType(original) ||
     parseTypeText(t) ||
@@ -354,6 +373,16 @@ function normalizeSingleIntent(parsed, source) {
   if (action === "run_command") args.command = trimText(parsed.command || parsed.cmd || parsed.text);
   if (action === "type_text") args.text = String(parsed.text || parsed.content || "");
   if (action === "compose_text") args.prompt = trimText(parsed.prompt || parsed.text || parsed.content || "");
+  if (action === "compose_email") {
+    args.to = trimText(parsed.to || parsed.email || "");
+    args.subject = trimText(parsed.subject || parsed.su || "");
+    args.prompt = trimText(parsed.prompt || parsed.text || parsed.content || "");
+    if (!args.prompt && (args.to || args.subject)) {
+      args.prompt = `Write an email${args.to ? " to " + args.to : ""}${
+        args.subject ? " about " + args.subject : ""
+      }. Output only the email body as plain text, with no subject line and no preamble.`;
+    }
+  }
   if (action === "guide") args.target = trimText(parsed.target || parsed.app || parsed.text);
   if (action === "open_app" && !args.app) return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "run_command" && !args.command)
@@ -361,6 +390,8 @@ function normalizeSingleIntent(parsed, source) {
   if (action === "type_text" && !String(args.text || "").trim())
     return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "compose_text" && !args.prompt)
+    return { action: "none", args: {}, confidence: 0.2, source };
+  if (action === "compose_email" && !args.to && !args.prompt)
     return { action: "none", args: {}, confidence: 0.2, source };
   if (action === "guide" && !args.target) return { action: "none", args: {}, confidence: 0.2, source };
   return { action, args, confidence, source };
@@ -583,6 +614,8 @@ function formatIntentForConfirm(intent) {
       const preview = t.length > 160 ? `${t.slice(0, 157)}...` : t;
       return `Write: ${preview}`;
     }
+    case "compose_email":
+      return `Draft Gmail to ${intent.args?.to || "recipient"}: ${intent.args?.subject || intent.args?.prompt || ""}`;
     case "guide":
       return `Find on screen: ${intent.args.target}`;
     default:
@@ -607,6 +640,9 @@ module.exports = {
   intentStepsOf,
   toHttpsUrl,
   looksLikeChat,
+  parseCalendarEvent,
+  parseWebAppOpen,
+  parseGmailCompose,
   looksImperative,
   stripCommandWrappers,
   containsCommandConnector,

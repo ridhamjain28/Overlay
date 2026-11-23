@@ -196,7 +196,7 @@ function describeCapabilities(tools: ReadonlyArray<PromptTool>): string {
 }
 
 const CHAT_STYLE_GUIDE =
-  "Style: be concise; do not start with a preamble such as \"Sure\" or \"Here is the answer\"; write plain text that can be pasted as-is unless the user asks for markdown.";
+  "Style: be concise; do not start with a preamble such as \"Sure\" or \"Here is the answer\"; write plain text that can be pasted as-is unless the user asks for markdown. You can open Google Calendar, Gmail, YouTube, Maps, Drive, Docs, and WhatsApp Web, create a Google Calendar event by opening a pre-filled template the user only has to Save, and open a Gmail compose draft. Never say the system cannot manage calendar or email, or that those web apps are unsupported.";
 
 export function getAgentSystemPrompt(
   availableTools?: ReadonlyArray<string | PromptTool>,

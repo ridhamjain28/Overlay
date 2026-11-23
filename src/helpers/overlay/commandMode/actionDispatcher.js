@@ -10,8 +10,9 @@ const {
   browserProductFromName,
   resolveBrowserLaunch,
 } = require("../chromiumProfile");
+const { buildGmailComposeUrl } = require("./webApps");
 
-const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "guide"]);
+const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
 const PLAN_STEP_DELAY_MS = 1500;
 const APP_LAUNCH_GRACE_MS = 300;
@@ -115,6 +116,17 @@ function validateCommandRequest(request) {
     const prompt = clampString(args.prompt || request.prompt, MAX_COMPOSE_PROMPT_LENGTH).trim();
     if (!prompt) return { ok: false, error: "compose_text needs a writing request", code: "NOT_ALLOWED" };
     args.prompt = prompt;
+  }
+  if (action === "compose_email") {
+    const to = clampString(args.to || request.to, 320).trim();
+    const subject = clampString(args.subject || request.subject, 300).trim();
+    const prompt = clampString(args.prompt || request.prompt, MAX_COMPOSE_PROMPT_LENGTH).trim();
+    if (!to && !prompt) {
+      return { ok: false, error: "compose_email needs a recipient or a writing request", code: "NOT_ALLOWED" };
+    }
+    if (to) args.to = to;
+    if (subject) args.subject = subject;
+    args.prompt = prompt || `Write an email${to ? " to " + to : ""}${subject ? " about " + subject : ""}. Output only the email body as plain text, with no subject line and no preamble.`;
   }
   if (action === "guide") {
     const target = String(args.target || request.target || "").trim();
@@ -445,6 +457,50 @@ function createCommandDispatcher(deps = {}) {
             args,
             text,
           };
+        }
+        case "compose_email": {
+          if (typeof composeText !== "function") {
+            return { success: false, error: "Writing is not available", code: "FAILED" };
+          }
+          if (options.signal?.aborted) {
+            return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+          }
+          const emitProgress = typeof options.onProgress === "function" ? options.onProgress : onProgress;
+          if (typeof emitProgress === "function") {
+            try { emitProgress("writing"); } catch { /* ignore */ }
+          }
+          let generated = "";
+          try {
+            const write = typeof options.composeText === "function" ? options.composeText : composeText;
+            generated = await write(args.prompt, {
+              signal: options.signal,
+              onToken: options.onToken,
+            });
+          } catch (error) {
+            if (error?.code === "TIMEOUT" || error?.name === "AbortError" || options.signal?.aborted) {
+              return {
+                success: false,
+                error: options.signal?.aborted
+                  ? "You cancelled this command"
+                  : "Couldn't write that in time",
+                code: options.signal?.aborted ? "CANCELLED" : "TIMEOUT",
+              };
+            }
+            return { success: false, error: "Couldn't write that email", code: "COMPOSE_FAILED" };
+          }
+          const body = clampString(String(generated || "").trim(), MAX_COMPOSE_OUTPUT_LENGTH);
+          if (!body) {
+            return { success: false, error: "Couldn't write that email", code: "COMPOSE_FAILED" };
+          }
+          if (options.signal?.aborted) {
+            return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+          }
+          const url = buildGmailComposeUrl({
+            to: args.to || "",
+            subject: args.subject || "",
+            body,
+          });
+          return perform({ action: "open_url", args: { url, browser: args.browser } }, { ...options, confirmed: true });
         }
         case "guide": {
           const found = await locateGuide(args.target, { platform, execFile });
