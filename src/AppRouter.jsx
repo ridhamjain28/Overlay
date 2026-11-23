@@ -95,6 +95,8 @@ function MainApp() {
     if (!authLoaded) return;
 
     const onboardingCompleted = localStorage.getItem("onboardingCompleted") === "true";
+    const appPackVersion = localStorage.getItem("appPackVersion");
+    const needsAppPackMigration = onboardingCompleted && appPackVersion !== "1";
     const authSkipped =
       localStorage.getItem("authenticationSkipped") === "true" ||
       localStorage.getItem("skipAuth") === "true";
@@ -109,14 +111,14 @@ function MainApp() {
     const resolved = localStorage.getItem("onboardingCompleted") === "true";
 
     if (isControlPanel) {
-      if (!resolved) {
+      if (!resolved || needsAppPackMigration) {
         setShowOnboarding(true);
       } else if (!isSignedIn && !authSkipped) {
         setNeedsReauth(true);
       }
     }
 
-    if (isDictationPanel && !resolved) {
+    if (isDictationPanel && (!resolved || needsAppPackMigration)) {
       // Keep the dictation overlay hidden during onboarding — OnboardingFlow
       // shows it explicitly when the user reaches the activation step.
       window.electronAPI?.hideWindow?.();
@@ -132,10 +134,12 @@ function MainApp() {
     // Signed-out account users fall through so reauthentication can select the
     // compact window without first flashing restored control-panel dimensions.
     const completed = localStorage.getItem("onboardingCompleted") === "true";
+    const appPackVersion = localStorage.getItem("appPackVersion");
+    const needsAppPackMigration = completed && appPackVersion !== "1";
     const authSkipped =
       localStorage.getItem("authenticationSkipped") === "true" ||
       localStorage.getItem("skipAuth") === "true";
-    if (completed && !isOnboardingInProgress() && (isSignedIn || authSkipped)) {
+    if (completed && !needsAppPackMigration && !isOnboardingInProgress() && (isSignedIn || authSkipped)) {
       void window.electronAPI?.setOnboardingWindowMode?.("restore");
     }
   }, [authLoaded, isControlPanel, isSignedIn]);
@@ -160,8 +164,10 @@ function MainApp() {
     if (isLoading || isWaitingForPolicyStart) return;
 
     const onboardingCompleted = localStorage.getItem("onboardingCompleted") === "true";
+    const appPackVersion = localStorage.getItem("appPackVersion");
+    const needsAppPackMigration = onboardingCompleted && appPackVersion !== "1";
     const normalAppVisible =
-      onboardingCompleted && (!isControlPanel || (!showOnboarding && !needsReauth));
+      onboardingCompleted && !needsAppPackMigration && (!isControlPanel || (!showOnboarding && !needsReauth));
     const authSkipped =
       localStorage.getItem("authenticationSkipped") === "true" ||
       localStorage.getItem("skipAuth") === "true";
@@ -194,6 +200,7 @@ function MainApp() {
     }
     setShowOnboarding(false);
     localStorage.setItem("onboardingCompleted", "true");
+    localStorage.setItem("appPackVersion", "1");
   };
 
   // isLoading clears once the onboarding effect has run, which itself waits
@@ -204,9 +211,16 @@ function MainApp() {
   }
 
   if (isControlPanel && showOnboarding) {
+    const isAppPackMigration =
+      localStorage.getItem("onboardingCompleted") === "true" &&
+      localStorage.getItem("appPackVersion") !== "1";
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
+        <OnboardingFlow
+          onComplete={handleOnboardingComplete}
+          initialStep={isAppPackMigration ? "finding-apps" : undefined}
+          singleStepMode={isAppPackMigration}
+        />
         <BackgroundModelDownloadTray placement="onboarding" />
       </Suspense>
     );

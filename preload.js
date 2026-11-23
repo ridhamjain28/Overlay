@@ -1265,6 +1265,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     learnedList: () => ipcRenderer.invoke("overlay-apps-learned-list"),
     learnedDelete: (id) => ipcRenderer.invoke("overlay-apps-learned-delete", id),
     getSummary: () => ipcRenderer.invoke("overlay-apps-get-summary"),
+    customGet: () => ipcRenderer.invoke("overlay-apps-custom-get"),
+    customSave: (text) => ipcRenderer.invoke("overlay-apps-custom-save", text),
+    customValidate: (text) => ipcRenderer.invoke("overlay-apps-custom-validate", text),
+    customOpenFile: () => ipcRenderer.invoke("overlay-apps-custom-open-file"),
   },
   // Feature C: intent detection, calendar/reminder scheduling and todos
   overlayIntentDetect: (text) => ipcRenderer.invoke("overlay-intent-detect", text),
