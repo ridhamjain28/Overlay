@@ -13,6 +13,7 @@
 const path = require("path");
 const fs = require("fs");
 const appLauncher = require("./appLauncher");
+const riskPolicy = require("./commandMode/riskPolicy");
 
 const VK = {
   VOLUME_MUTE: 0xad,
@@ -35,8 +36,8 @@ const ACTIONS = {
   open_url: { confirm: false, description: "Open a http(s) link in the default browser" },
   show_time: { confirm: false, description: "Tell the current date and time" },
   lock_screen: { confirm: true, description: "Lock the screen" },
-  screenshot: { confirm: true, description: "Save a screenshot to Pictures\\Overlay Screenshots" },
-  brightness_set: { confirm: true, description: "Set screen brightness from 0 to 100" },
+  screenshot: { confirm: false, description: "Save a screenshot to Pictures\\Overlay Screenshots" },
+  brightness_set: { confirm: false, description: "Set screen brightness from 0 to 100" },
 };
 
 // Never opened, even if the model asks: shells and system tools.
@@ -299,12 +300,16 @@ function createSystemActions(deps) {
       };
     }
 
-    if (check.confirm) {
+    const riskTier = riskPolicy.classify({ action, params });
+    if (riskTier === "block") {
+      return { success: false, error: "Action is blocked for security", code: "BLOCKED" };
+    }
+    if (riskTier === "confirm") {
       const detail =
         action === "brightness_set"
           ? `Set screen brightness to ${params.level}%?`
           : `${ACTIONS[action].description}?`;
-      const allowed = await confirm(detail);
+      const allowed = await confirm(detail, { step: { action, params } });
       if (!allowed)
         return { success: false, error: "You cancelled this action", code: "CANCELLED" };
     }

@@ -984,50 +984,46 @@ export default function AppsSkillsSettings() {
           title={t("appSkills.custom.title")}
           description={t("appSkills.custom.description")}
         />
-        <div className="space-y-4">
-          <SettingsPanel>
-            <SettingsPanelRow>
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-medium text-foreground">
-                    {t("appSkills.custom.addAppTitle")}
-                  </h4>
-                  <p className="text-xs text-muted-foreground/80">
-                    {t("appSkills.custom.addAppDescription")}
-                  </p>
-                </div>
-                <AddAppForm
-                  availableApps={rows}
-                  onAppAdded={() => {
-                    void reload();
-                    setCustomEditorKey((k) => k + 1);
-                  }}
-                />
+        <SettingsPanel>
+          <SettingsPanelRow>
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xs font-medium text-foreground">
+                  {t("appSkills.custom.addAppTitle")}
+                </h4>
+                <p className="text-xs text-muted-foreground/80">
+                  {t("appSkills.custom.addAppDescription")}
+                </p>
               </div>
-            </SettingsPanelRow>
-          </SettingsPanel>
+              <AddAppForm
+                availableApps={rows}
+                onAppAdded={() => {
+                  void reload();
+                  setCustomEditorKey((k) => k + 1);
+                }}
+              />
+            </div>
+          </SettingsPanelRow>
 
-          <SettingsPanel>
-            <SettingsPanelRow>
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-medium text-foreground">
-                    {t("appSkills.custom.editorTitle")}
-                  </h4>
-                  <p className="text-xs text-muted-foreground/80">
-                    {t("appSkills.custom.editorDescription")}
-                  </p>
-                </div>
-                <CustomJsonEditor
-                  editorKey={customEditorKey}
-                  onSaved={() => {
-                    void reload();
-                  }}
-                />
+          <SettingsPanelRow>
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-xs font-medium text-foreground">
+                  {t("appSkills.custom.editorTitle")}
+                </h4>
+                <p className="text-xs text-muted-foreground/80">
+                  {t("appSkills.custom.editorDescription")}
+                </p>
               </div>
-            </SettingsPanelRow>
-          </SettingsPanel>
-        </div>
+              <CustomJsonEditor
+                editorKey={customEditorKey}
+                onSaved={() => {
+                  void reload();
+                }}
+              />
+            </div>
+          </SettingsPanelRow>
+        </SettingsPanel>
       </div>
 
       <div>

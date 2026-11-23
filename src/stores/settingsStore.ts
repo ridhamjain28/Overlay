@@ -1009,6 +1009,8 @@ export interface SettingsState
   keepAssistantOnTop: boolean;
   commandModeEnabled: boolean;
   commandModeAutoRunTrusted: boolean;
+  askBeforeEveryAction: boolean;
+  setAskBeforeEveryAction: (enabled: boolean) => void;
   autoSaveCreatedItems: boolean;
   commandModeParser: "local" | "cloud";
   assistantChatIdleMinutes: number;
@@ -1804,7 +1806,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
   keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
   commandModeEnabled: readBoolean("commandModeEnabled", false),
-  commandModeAutoRunTrusted: readBoolean("commandModeAutoRunTrusted", false),
+  commandModeAutoRunTrusted: !readBoolean("askBeforeEveryAction", false),
+  askBeforeEveryAction: readBoolean("askBeforeEveryAction", false),
   autoSaveCreatedItems: readBoolean("autoSaveCreatedItems", true),
   commandModeParser: ((): "local" | "cloud" => {
     const v = readString("commandModeParser", "local");
@@ -2669,14 +2672,29 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     }
   },
 
+  setAskBeforeEveryAction: (enabled: boolean) => {
+    if (get().askBeforeEveryAction === enabled) return;
+    if (isBrowser) localStorage.setItem("askBeforeEveryAction", String(enabled));
+    set({ askBeforeEveryAction: enabled, commandModeAutoRunTrusted: !enabled });
+    if (isBrowser) {
+      window.electronAPI?.overlaySetCommandModePrefs?.({
+        enabled: get().commandModeEnabled,
+        autoRunTrusted: !enabled,
+        askBeforeEveryAction: enabled,
+        autoSaveCreatedItems: get().autoSaveCreatedItems,
+      });
+    }
+  },
+
   setCommandModeAutoRunTrusted: (enabled: boolean) => {
     if (get().commandModeAutoRunTrusted === enabled) return;
     if (isBrowser) localStorage.setItem("commandModeAutoRunTrusted", String(enabled));
-    set({ commandModeAutoRunTrusted: enabled });
+    set({ commandModeAutoRunTrusted: enabled, askBeforeEveryAction: !enabled });
     if (isBrowser) {
       window.electronAPI?.overlaySetCommandModePrefs?.({
         enabled: get().commandModeEnabled,
         autoRunTrusted: enabled,
+        askBeforeEveryAction: !enabled,
         autoSaveCreatedItems: get().autoSaveCreatedItems,
       });
     }

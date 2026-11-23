@@ -186,8 +186,8 @@ export default function PreferencesSettings() {
   const setAssistantChatIdleMinutes = useSettingsStore((s) => s.setAssistantChatIdleMinutes);
   const commandModeEnabled = useSettingsStore((s) => s.commandModeEnabled);
   const setCommandModeEnabled = useSettingsStore((s) => s.setCommandModeEnabled);
-  const commandModeAutoRunTrusted = useSettingsStore((s) => s.commandModeAutoRunTrusted);
-  const setCommandModeAutoRunTrusted = useSettingsStore((s) => s.setCommandModeAutoRunTrusted);
+  const askBeforeEveryAction = useSettingsStore((s) => s.askBeforeEveryAction);
+  const setAskBeforeEveryAction = useSettingsStore((s) => s.setAskBeforeEveryAction);
   const autoSaveCreatedItems = useSettingsStore((s) => s.autoSaveCreatedItems);
   const setAutoSaveCreatedItems = useSettingsStore((s) => s.setAutoSaveCreatedItems);
 
@@ -310,12 +310,12 @@ export default function PreferencesSettings() {
             <>
               <SettingsPanelRow>
                 <SettingsRow
-                  label={t("settingsPage.general.commandMode.autoRunTrusted")}
-                  description={t("settingsPage.general.commandMode.autoRunTrustedDescription")}
+                  label={t("settingsPage.general.commandMode.askBeforeEveryAction")}
+                  description={t("settingsPage.general.commandMode.askBeforeEveryActionDescription")}
                 >
                   <Toggle
-                    checked={commandModeAutoRunTrusted}
-                    onChange={setCommandModeAutoRunTrusted}
+                    checked={askBeforeEveryAction}
+                    onChange={setAskBeforeEveryAction}
                   />
                 </SettingsRow>
               </SettingsPanelRow>

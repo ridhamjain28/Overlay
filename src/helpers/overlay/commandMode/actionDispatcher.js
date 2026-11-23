@@ -12,6 +12,7 @@ const {
 } = require("../chromiumProfile");
 const { buildGmailComposeUrl } = require("./webApps");
 const { fillActionTemplate } = require("../appSkillTemplates");
+const riskPolicy = require("./riskPolicy");
 
 const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide", "app_action"]);
 const ALWAYS_CONFIRM_ACTIONS = new Set(["run_command"]);
@@ -217,12 +218,18 @@ function createCommandDispatcher(deps = {}) {
     }
     const autoRunTrusted = options.autoRunTrusted === true || getAutoRunTrusted() === true;
     const alreadyConfirmed = options.confirmed === true;
+    for (const step of validated) {
+      const risk = riskPolicy.classify(step, { askBeforeEveryAction: !autoRunTrusted });
+      if (risk === "block") {
+        return { success: false, error: "That command is blocked because it looks destructive or unsafe", code: "BLOCKED" };
+      }
+    }
     const planIntent = { action: "plan", args: {}, steps: validated };
     const mustConfirm =
-      validated.some((step) => needsConfirmation(step.action, { autoRunTrusted })) && !alreadyConfirmed;
+      validated.some((step) => riskPolicy.classify(step, { askBeforeEveryAction: !autoRunTrusted }) === "confirm") && !alreadyConfirmed;
     if (mustConfirm) {
       const allowed =
-        typeof confirm === "function" ? await confirm(formatIntentForConfirm(planIntent)) : false;
+        typeof confirm === "function" ? await confirm(formatIntentForConfirm(planIntent), { step: planIntent }) : false;
       if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
     }
     const delay = Number.isFinite(options.stepDelayMs) ? options.stepDelayMs : stepDelayMs;
@@ -272,19 +279,22 @@ function createCommandDispatcher(deps = {}) {
     const { action, args } = check;
     const autoRunTrusted = options.autoRunTrusted === true || getAutoRunTrusted() === true;
     const alreadyConfirmed = options.confirmed === true;
-    const mustConfirm = needsConfirmation(action, { autoRunTrusted }) && !alreadyConfirmed;
     const skillForAction =
       action === "app_action" && typeof getAppSkill === "function" ? getAppSkill(args.appId) : null;
     const skillAction =
       skillForAction && (skillForAction.actions || []).find((item) => item.id === args.actionId);
-    if (action === "app_action" && skillAction?.risk === "confirm" && !alreadyConfirmed) {
-      const allowed = typeof confirm === "function" ? await confirm(confirmMessage(action, args)) : false;
-      if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
-    } else if (action === "run_command" && !alreadyConfirmed) {
-      const allowed = typeof confirm === "function" ? await confirm(confirmMessage(action, args)) : false;
-      if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
-    } else if (mustConfirm) {
-      const allowed = typeof confirm === "function" ? await confirm(confirmMessage(action, args)) : false;
+    const riskTier = riskPolicy.classify(
+      { action, args, risk: skillAction?.risk },
+      { askBeforeEveryAction: !autoRunTrusted }
+    );
+    if (riskTier === "block") {
+      return { success: false, error: "That command is blocked because it looks destructive or unsafe", code: "BLOCKED" };
+    }
+    if (riskTier === "confirm" && !alreadyConfirmed) {
+      const allowed =
+        typeof confirm === "function"
+          ? await confirm(confirmMessage(action, args), { step: { action, args, risk: skillAction?.risk } })
+          : false;
       if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
     }
 

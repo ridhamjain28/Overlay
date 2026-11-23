@@ -24,6 +24,7 @@ const COMMAND_ACTIONS = [
   "compose_email",
   "guide",
   "app_action",
+  "mcp",
 ];
 
 const URL_PROTOCOL = /^(https?:\/\/)/i;
@@ -650,6 +651,8 @@ function formatIntentForConfirm(intent) {
       return `Find on screen: ${intent.args.target}`;
     case "app_action":
       return `Run ${intent.args?.actionId || "action"} in ${intent.args?.appId || "app"}`;
+    case "mcp":
+      return `Call tool "${intent.args?.tool || intent.tool}" on ${intent.args?.server || intent.server || "MCP server"}`;
     default:
       return String(intent.action);
   }
