@@ -59,13 +59,14 @@
           <h1>Talk instead of type.<br><span class="accent">Anywhere on your PC.</span></h1>
           <p class="lead">Overlay is an always-on-top voice and typing assistant. Press a hotkey to dictate into any app with local Whisper, or ask a question and get just the answer in a small overlay. It understands Hinglish too.</p>
           <div class="cta">
-            <a class="btn btn-primary" href="https://github.com/ridhamjain28/Overlay-public/releases/download/v0.1.1/Overlay-Setup-0.1.1.exe">
-              Download for Windows
+            <a class="btn btn-primary" href="https://github.com/ridhamjain28/Overlay-public/releases/download/v0.2.3/Overlay-Setup-0.2.3.exe">
+              Download for Windows (v0.2.3)
             </a>
             <a class="btn btn-secondary" href="#start">Install steps</a>
           </div>
           <ul class="pills">
-            <li>Local Whisper</li>
+            <li>Local Whisper &amp; Qwen3</li>
+            <li>MCP Connectors</li>
             <li>Hinglish (Roman)</li>
             <li>MIT licensed</li>
           </ul>
@@ -86,38 +87,38 @@
       <div class="container">
         <div class="section-head reveal">
           <h2>What Overlay does</h2>
-          <p>Two hotkeys, one small window, and no subscription.</p>
+          <p>Voice dictation, real-time AI orchestration, MCP connectors, and smart OS control — with no subscription.</p>
         </div>
         <div class="grid features">
           <article class="card reveal">
             <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
-            <h3>Dictation hotkey</h3>
-            <p>Press your shortcut, speak, and your words are typed into whatever app you're using. Speech-to-text runs on your PC with local Whisper, so it stays private and works offline.</p>
+            <h3>Dictation &amp; Earcons</h3>
+            <p>Press your hotkey, speak, and dictate into any app with local Whisper. Subtle audio cues let you know when listening starts, finishes, or succeeds—no staring at the screen required.</p>
           </article>
           <article class="card reveal">
             <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M9 10h6M9 14h4"/></svg></div>
-            <h3>Assistant hotkey</h3>
-            <p>Ask a question out loud and get just the answer in a small overlay on top of your work. It can search the web and shows its sources.</p>
+            <h3>MCP Connectors</h3>
+            <p>Connect Canva, GitHub, Notion, Google Drive, Filesystem, and custom MCP servers with OAuth 2.1 + DPAPI-encrypted tokens, or import straight from Claude Desktop &amp; Cursor.</p>
           </article>
           <article class="card reveal">
             <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-            <h3>Safe PC actions</h3>
-            <p>Say things like &ldquo;open Notepad&rdquo; or &ldquo;turn the volume down&rdquo;. Only actions on an allowlist can run, so the assistant can't do anything you haven't allowed.</p>
+            <h3>Smart Risk Tiers</h3>
+            <p>Harmless commands like volume, brightness, and opening apps run instantly with zero friction. Destructive actions and first-time MCP tools always ask first, with per-tool &ldquo;Always allow&rdquo;.</p>
           </article>
           <article class="card reveal">
             <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 6 8M11 5c-1 4-4 7-7 8"/><path d="m13 21 4-10 4 10M14.5 17h5"/></svg></div>
-            <h3>Hinglish support</h3>
-            <p>Speak the way you actually talk, mixing Hindi and English. Overlay can write it out in Roman script (Hinglish).</p>
+            <h3>Typo-Tolerant App &amp; File Control</h3>
+            <p>Launch any installed Win32 or Store app (even with typos like &ldquo;whastapp&rdquo;), search nested folders in File Explorer, add custom JSON commands, or speak naturally in Hinglish.</p>
           </article>
           <article class="card reveal">
             <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h10M4 17h6M18 7h2M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/></svg></div>
-            <h3>Pick your answer source</h3>
-            <p>Use a local Ollama model, an OpenClaw gateway, Gemini with Google Search, or Tavily. Switch whenever you like.</p>
+            <h3>Real-Time AI Orchestrator</h3>
+            <p>Routes between fast local models (<code>qwen3:4b-instruct</code>, <code>qwen3:8b</code>, <code>strands-decider</code>) and your own Cloud API keys (OpenAI, Anthropic, Gemini, Groq, OpenRouter).</p>
           </article>
           <article class="card reveal">
             <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
-            <h3>Free and local-first</h3>
-            <p>Every option is free to use. Wherever possible things run on your own machine, in a clean maroon-themed interface.</p>
+            <h3>Multi-Monitor &amp; Mic Resilient</h3>
+            <p>DPI-aware pill clamping across mixed 4K/1080p monitors, automatic fallback if Bluetooth headphones disconnect mid-session, and one-click sanitized diagnostic reports.</p>
           </article>
         </div>
       </div>
@@ -160,8 +161,8 @@
         <div class="grid sources">
           <article class="card source reveal">
             <span class="tag">Private</span>
-            <h3>Local Ollama model</h3>
-            <p>Runs a model on your own PC. Free, and your questions don't leave your machine.</p>
+            <h3>Local Ollama (Qwen3)</h3>
+            <p>Runs <code>qwen3:8b</code> &amp; <code>qwen3:4b-instruct</code> on your own PC (with optional <code>strands-decider</code> routing). Free, fast, and private.</p>
           </article>
           <article class="card source reveal">
             <span class="tag">Self-hosted</span>
@@ -226,7 +227,7 @@
           <p>No Git or Node.js needed. Download the installer, run it, then open Overlay from the Start menu.</p>
         </div>
         <div class="cta reveal" style="margin-bottom:1.25rem">
-          <a class="btn btn-primary" href="https://github.com/ridhamjain28/Overlay-public/releases/download/v0.1.1/Overlay-Setup-0.1.1.exe">Download Overlay Setup 0.1.1</a>
+          <a class="btn btn-primary" href="https://github.com/ridhamjain28/Overlay-public/releases/download/v0.2.3/Overlay-Setup-0.2.3.exe">Download Overlay Setup 0.2.3</a>
           <a class="btn btn-secondary" href="https://github.com/ridhamjain28/Overlay-public/releases" target="_blank" rel="noopener">All releases</a>
         </div>
         <div class="code-block reveal">
@@ -307,7 +308,7 @@
         <h2>Try it and tell me what to improve</h2>
         <p>Overlay is a young project. Download it, try it on your PC, and tell Ridham what to fix.</p>
         <div class="cta">
-          <a class="btn btn-primary" href="https://github.com/ridhamjain28/Overlay-public/releases/download/v0.1.1/Overlay-Setup-0.1.1.exe">Download for Windows</a>
+          <a class="btn btn-primary" href="https://github.com/ridhamjain28/Overlay-public/releases/download/v0.2.3/Overlay-Setup-0.2.3.exe">Download for Windows (v0.2.3)</a>
           <a class="btn btn-secondary" href="https://github.com/ridhamjain28/Overlay-public/releases" target="_blank" rel="noopener">Releases</a>
         </div>
       </div>
