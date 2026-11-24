@@ -1,6 +1,6 @@
 import logger from "../../utils/logger";
 
-const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
+const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
 const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
 
 export type CommandModeParser = "local" | "cloud";

@@ -141,8 +141,16 @@ function cloudConfig(provider, env = process.env) {
       model: firstEnv(env, ["MISTRAL_MODEL"]) || "mistral-small-latest",
     };
   }
+  if (p === "anthropic" || p === "claude") {
+    return {
+      url: "https://api.anthropic.com/v1/messages",
+      key: firstEnv(env, ["ANTHROPIC_API_KEY"]),
+      model: firstEnv(env, ["ANTHROPIC_MODEL"]) || "claude-3-5-haiku-latest",
+      isAnthropic: true,
+    };
+  }
   // Unspecified: first configured cloud key wins.
-  const order = ["openrouter", "gemini", "groq", "openai", "mistral"];
+  const order = ["openrouter", "gemini", "groq", "openai", "anthropic", "mistral"];
   for (const name of order) {
     const cfg = cloudConfig(name, env);
     if (cfg.key) return { ...cfg, provider: name };
@@ -167,6 +175,34 @@ function messagesFromPrompt(prompt) {
     };
   }
   return { system: commandSkillSystemPrompt(), user: String(prompt || "") };
+}
+
+async function completeAnthropicChat({ url, key, model, prompt, fetchImpl, signal }) {
+  const { system, user } = messagesFromPrompt(prompt);
+  const response = await fetchImpl(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: PARSE_MAX_TOKENS,
+      temperature: 0,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+    signal,
+  });
+  if (!response.ok) {
+    const err = new Error(`Intent parser HTTP ${response.status}`);
+    err.status = response.status;
+    throw err;
+  }
+  const json = await response.json();
+  const parts = Array.isArray(json?.content) ? json.content : [];
+  return parts.map((part) => (part && part.type === "text" ? part.text : "")).join("\n");
 }
 
 async function completeChat({ url, key, model, prompt, fetchImpl, signal, headers = {} }) {
@@ -272,6 +308,16 @@ function createIntentCompleter(opts = {}) {
         const cloud = cloudConfig(cloudProvider, env);
         if (!cloud.key || !cloud.url) {
           throw new Error("No cloud API key is configured for Command mode");
+        }
+        if (cloud.isAnthropic) {
+          return await completeAnthropicChat({
+            url: cloud.url,
+            key: cloud.key,
+            model: model || cloud.model,
+            prompt,
+            fetchImpl,
+            signal: controller?.signal,
+          });
         }
         return await completeChat({
           url: cloud.url,
