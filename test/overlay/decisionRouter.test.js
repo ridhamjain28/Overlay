@@ -187,3 +187,29 @@ test("orchestrator forces LLM when decideRoute returns mcp_tool and skips comman
   assert.equal(mcpCalls.length, 1);
   assert.match(mcpOutcome.message, /Wire decision router/);
 });
+
+test("orchestrator fast heuristic skips decideRoute latency for clear local commands", async () => {
+  let routerCalls = 0;
+  const orch = createOrchestrator({
+    parseHeuristic: (text) => {
+      if (text === "open spotify") {
+        return { action: "open_app", args: { app: "spotify" }, confidence: 0.95, source: "heuristic" };
+      }
+      return { action: "none", args: {}, confidence: 0.2, source: "heuristic" };
+    },
+    decideRoute: async () => {
+      routerCalls += 1;
+      return { lane: "chat", confidence: 0.9, source: "strands-decider" };
+    },
+    parseIntent: async () => ({ action: "none", args: {} }),
+  });
+
+  const fastPlan = await orch.plan("open spotify");
+  assert.equal(routerCalls, 0, "confident local heuristic must bypass decision router delay");
+  assert.equal(fastPlan.steps.length, 1);
+  assert.equal(fastPlan.steps[0].action, "open_app");
+
+  const routedPlan = await orch.plan("what is quantum entanglement?");
+  assert.equal(routerCalls, 1, "low-confidence heuristic falls through to decision router");
+  assert.equal(routedPlan.source, "decision-router");
+});

@@ -1814,8 +1814,19 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   floatingIconAutoHide: readBoolean("floatingIconAutoHide", false),
   keepAssistantOnTop: readBoolean("keepAssistantOnTop", false),
   commandModeEnabled: readBoolean("commandModeEnabled", false),
-  commandModeAutoRunTrusted: !readBoolean("askBeforeEveryAction", false),
-  askBeforeEveryAction: readBoolean("askBeforeEveryAction", false),
+  ...(() => {
+    const hasAsk = isBrowser && localStorage.getItem("askBeforeEveryAction") !== null;
+    const hasAuto = isBrowser && localStorage.getItem("commandModeAutoRunTrusted") !== null;
+    const askBeforeEveryAction = hasAsk
+      ? readBoolean("askBeforeEveryAction", false)
+      : hasAuto
+        ? !readBoolean("commandModeAutoRunTrusted", true)
+        : false;
+    return {
+      askBeforeEveryAction,
+      commandModeAutoRunTrusted: !askBeforeEveryAction,
+    };
+  })(),
   autoSaveCreatedItems: readBoolean("autoSaveCreatedItems", true),
   commandModeParser: ((): "local" | "cloud" => {
     const v = readString("commandModeParser", "local");

@@ -158,7 +158,6 @@ async function decideWithStrandsDecider(text, options = {}) {
     questions: {
       route: {
         type: "choice",
-        choices: ROUTE_LANES,
         instructions: buildRouteInstructions(mcpTools),
         criteria: buildRouteCriteria(mcpTools),
       },
@@ -256,7 +255,7 @@ function createDecisionRouter(options = {}) {
     fetchImpl = fetch,
   } = options;
 
-  return async function decideRoute(text, context = {}) {
+  async function decideRoute(text, context = {}) {
     if (!String(text || "").trim()) {
       return { lane: "unknown", confidence: 0, source: "none" };
     }
@@ -297,7 +296,9 @@ function createDecisionRouter(options = {}) {
     }
 
     return { lane: "unknown", confidence: 0, source: "none" };
-  };
+  }
+  decideRoute.decideRoute = decideRoute;
+  return decideRoute;
 }
 
 module.exports = {

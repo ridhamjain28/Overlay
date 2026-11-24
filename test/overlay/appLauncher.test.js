@@ -248,6 +248,39 @@ test("launchApp invokes execFile for normal exes", async () => {
   assert.equal(executed[0].file, "notepad.exe");
 });
 
+test("launchApp spawns detached executables without a 5-second kill timeout and calls unref", async () => {
+  const calls = [];
+  let unrefCalled = false;
+  const mockSpawn = (file, args, opts) => {
+    calls.push({ file, args, opts });
+    return {
+      once: () => {},
+      unref: () => {
+        unrefCalled = true;
+      },
+    };
+  };
+
+  const resolved = {
+    appId: "notepad",
+    name: "Notepad",
+    launch: {
+      type: "exe",
+      target: "C:\\Windows\\System32\\notepad.exe",
+    },
+    score: 1.0,
+  };
+
+  const result = await launchApp(resolved, { spawn: mockSpawn });
+  assert.deepEqual(result, { ok: true });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].file, "C:\\Windows\\System32\\notepad.exe");
+  assert.equal(calls[0].opts.detached, true);
+  assert.equal(calls[0].opts.stdio, "ignore");
+  assert.equal(calls[0].opts.timeout, undefined);
+  assert.equal(unrefCalled, true);
+});
+
 test("editDistance computes Optimal String Alignment (Damerau-Levenshtein) distances", () => {
   assert.equal(editDistance("whatsapp", "whatsapp"), 0);
   assert.equal(editDistance("whastapp", "whatsapp"), 1); // adjacent transposition

@@ -6,7 +6,7 @@ const os = require("os");
 const SKIP_DIR_RE =
   /^(windows|windows\.old|program files|program files \(x86\)|programdata|appdata|node_modules|\$recycle\.bin|system volume information|recovery|\$windows\.\~bt|\.git)$/i;
 const EXECUTABLE_RE = /\.(exe|bat|cmd|com|msi|ps1|scr|msc)$/i;
-const DEFAULT_TIMEOUT_MS = 3000;
+const DEFAULT_TIMEOUT_MS = 4500;
 const KNOWN_FOLDER_NAMES = ["Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"];
 const FILE_MANAGER_RE = /(?:file\s+)?explorer|windows\s+explorer|\bfiles\b/i;
 
@@ -315,7 +315,7 @@ async function findPaths(name, options = {}) {
     }
   }
 
-  const remaining = Math.max(200, timeoutMs - (now() - start));
+  const remaining = Math.max(1200, timeoutMs - (now() - start));
   const known = scopeRoots || defaultKnownRoots({ env: options.env, fsImpl, platform: options.platform });
   const walked = await walkAndScore({
     roots: known,
@@ -372,8 +372,14 @@ function explorerSearchMsUrl(query, location) {
   return `search-ms:query=${q}${loc}`;
 }
 
+function sanitizeSearchTerm(value) {
+  return String(value || "")
+    .replace(/'/g, "''")
+    .replace(/[*%"[\]]/g, "");
+}
+
 function buildWindowsSearchSql({ name, kind, roots } = {}) {
-  const safe = String(name || "").replace(/'/g, "''").replace(/"/g, "");
+  const safe = sanitizeSearchTerm(name);
   if (!safe) return "";
   let filter = `CONTAINS(System.FileName, '"${safe}*"')`;
   if (kind === "folder") filter += " AND System.Kind = 'folder'";
@@ -396,14 +402,15 @@ async function queryWindowsSearch(execFile, options = {}) {
     "utf8"
   ).toString("base64");
   if (!options.name && !payload) return [];
-  const timeout = Math.max(400, Math.min(Number(options.remainingMs) || 2000, 3000));
+  const timeout = Math.max(400, Math.min(Number(options.remainingMs) || 2500, 3000));
   const script = `
 $ErrorActionPreference = 'Stop'
 $payload = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}'))
 $opts = $payload | ConvertFrom-Json
 $name = [string]$opts.name
 if (-not $name) { '[]'; exit 0 }
-$safe = $name.Replace("'", "''").Replace('"','')
+$safe = $name.Replace("'", "''") -replace '[*%"\\[\\]]', ''
+if (-not $safe) { '[]'; exit 0 }
 $filter = "CONTAINS(System.FileName, '" + '"' + $safe + '*"' + "')"
 if ($opts.kind -eq 'folder') { $filter += " AND System.Kind = 'folder'" }
 elseif ($opts.kind -eq 'file') { $filter += " AND System.Kind <> 'folder'" }

@@ -3,7 +3,9 @@ const assert = require("node:assert/strict");
 const {
   createIntentCompleter,
   pickLocalParseModel,
+  pickCloudModel,
   isThinkingModel,
+  cloudConfig,
   PREFERRED_LOCAL_PARSE_MODEL,
 } = require("../../src/helpers/overlay/commandMode/llmClient");
 
@@ -84,4 +86,38 @@ test("local completer refuses a non-loopback base URL", async () => {
     },
   });
   await assert.rejects(() => complete("prompt"), /this computer/);
+});
+
+test("pickCloudModel never sends local Ollama tags to cloud providers and uses current Anthropic Haiku", async () => {
+  assert.equal(pickCloudModel("anthropic", "qwen3:8b", "claude-haiku-4-5-20251001"), "claude-haiku-4-5-20251001");
+  assert.equal(pickCloudModel("openai", "qwen3.5:4b-q4_K_M", "gpt-4o-mini"), "gpt-4o-mini");
+  assert.equal(pickCloudModel("gemini", "qwen3:4b-instruct", "gemini-2.0-flash"), "gemini-2.0-flash");
+  assert.equal(pickCloudModel("openrouter", "qwen3:8b", "openrouter/auto"), "openrouter/auto");
+  assert.equal(pickCloudModel("openai", "gpt-4o", "gpt-4o-mini"), "gpt-4o");
+  assert.equal(pickCloudModel("anthropic", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"), "claude-sonnet-4-6");
+
+  const cfg = cloudConfig("anthropic", { ANTHROPIC_API_KEY: "test-key" });
+  assert.equal(cfg.model, "claude-haiku-4-5-20251001");
+  assert.equal(cfg.isAnthropic, true);
+
+  let sentBody = null;
+  let sentHeaders = null;
+  const cloudComplete = createIntentCompleter({
+    parser: "cloud",
+    cloudProvider: "anthropic",
+    model: "qwen3:8b",
+    env: { ANTHROPIC_API_KEY: "test-anthropic-key" },
+    fetchImpl: async (_url, init) => {
+      sentHeaders = init.headers;
+      sentBody = JSON.parse(init.body);
+      return {
+        ok: true,
+        json: async () => ({ content: [{ type: "text", text: '{"action":"none"}' }] }),
+      };
+    },
+  });
+  const out = await cloudComplete("hello");
+  assert.equal(out, '{"action":"none"}');
+  assert.equal(sentBody.model, "claude-haiku-4-5-20251001");
+  assert.equal(sentHeaders["x-api-key"], "test-anthropic-key");
 });

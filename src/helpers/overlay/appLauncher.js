@@ -487,22 +487,77 @@ async function launchApp(resolved, deps = {}) {
     throw new Error(`Resolved app "${resolved.name || resolved.appId}" has no launch target`);
   }
 
-  const execFile = deps.execFile || childProcess.execFile;
+  const execFile = deps.execFile;
+  const spawn = deps.spawn || childProcess.spawn;
+
+  function launchDetachedProcess(file, args = [], { ignoreExitCode1 = false } = {}) {
+    if (typeof execFile === "function") {
+      return new Promise((resolve, reject) => {
+        execFile(file, args, { windowsHide: false, detached: true }, (err) => {
+          if (err && !(ignoreExitCode1 && err.code === 1)) reject(err);
+          else resolve({ ok: true });
+        });
+      });
+    }
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      let child;
+      try {
+        child = spawn(file, args, {
+          windowsHide: false,
+          detached: true,
+          stdio: "ignore",
+        });
+      } catch (err) {
+        reject(err);
+        return;
+      }
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        try {
+          child.unref();
+        } catch {}
+        resolve({ ok: true });
+      }, 250);
+      if (typeof timer.unref === "function") timer.unref();
+
+      child.once("error", (err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      });
+      child.once("exit", (code) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (code && code !== 0 && !(ignoreExitCode1 && code === 1)) {
+          reject(new Error(`${file} exited with code ${code}`));
+        } else {
+          resolve({ ok: true });
+        }
+      });
+    });
+  }
+
   const openExternal = deps.openExternal || (async (uri) => {
     // Fallback if not inside Electron
+    const runner = execFile || childProcess.execFile;
     return new Promise((res, rej) => {
-      execFile("rundll32.exe", ["url.dll,FileProtocolHandler", uri], { windowsHide: false }, (err) => {
+      runner("rundll32.exe", ["url.dll,FileProtocolHandler", uri], { windowsHide: false }, (err) => {
         if (err) rej(err);
         else res();
       });
     });
   });
   const openPath = deps.openPath || (async (filePath) => {
-    return new Promise((res) => {
-      execFile("explorer.exe", [filePath], { windowsHide: false, detached: true }, (err) => {
-        res(err ? err.message : "");
-      });
-    });
+    try {
+      await launchDetachedProcess("explorer.exe", [filePath], { ignoreExitCode1: true });
+      return "";
+    } catch (err) {
+      return err ? err.message : "Failed to open path";
+    }
   });
 
   const target = launch.target;
@@ -510,13 +565,7 @@ async function launchApp(resolved, deps = {}) {
 
   // Store apps / UWP apps launch via explorer.exe shell:AppsFolder\<AUMID>
   if (type === "shell" || target.toLowerCase().startsWith("shell:appsfolder\\")) {
-    return new Promise((resolve, reject) => {
-      execFile("explorer.exe", [target], { windowsHide: false, timeout: 5000, detached: true }, (err) => {
-        // explorer.exe returns code 1 even on success in some Windows versions
-        if (err && err.code !== 1) reject(err);
-        else resolve({ ok: true });
-      });
-    });
+    return launchDetachedProcess("explorer.exe", [target], { ignoreExitCode1: true });
   }
 
   if (type === "shortcut" || target.toLowerCase().endsWith(".lnk")) {
@@ -532,13 +581,8 @@ async function launchApp(resolved, deps = {}) {
     return { ok: true };
   }
 
-  // Executable
-  return new Promise((resolve, reject) => {
-    execFile(target, [], { windowsHide: false, timeout: 5000, detached: true }, (err) => {
-      if (err) reject(err);
-      else resolve({ ok: true });
-    });
-  });
+  // Executable — detached without timeout so the child process stays alive
+  return launchDetachedProcess(target, []);
 }
 
 module.exports = {

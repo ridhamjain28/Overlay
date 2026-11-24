@@ -145,7 +145,7 @@ function cloudConfig(provider, env = process.env) {
     return {
       url: "https://api.anthropic.com/v1/messages",
       key: firstEnv(env, ["ANTHROPIC_API_KEY"]),
-      model: firstEnv(env, ["ANTHROPIC_MODEL"]) || "claude-3-5-haiku-latest",
+      model: firstEnv(env, ["ANTHROPIC_MODEL"]) || "claude-haiku-4-5-20251001",
       isAnthropic: true,
     };
   }
@@ -156,6 +156,38 @@ function cloudConfig(provider, env = process.env) {
     if (cfg.key) return { ...cfg, provider: name };
   }
   return { url: "", key: "", model: "", provider: p || "" };
+}
+
+function isLocalOllamaModelTag(model) {
+  const m = String(model || "").trim().toLowerCase();
+  if (!m) return false;
+  if (m.includes(":") && !m.startsWith("us.") && !m.startsWith("eu.") && !m.startsWith("apac.")) {
+    return true;
+  }
+  return /q4_k|q5_k|q8_0|gguf|ollama/.test(m);
+}
+
+function pickCloudModel(provider, requestedModel, defaultModel) {
+  const req = String(requestedModel || "").trim();
+  if (!req || isLocalOllamaModelTag(req)) return defaultModel;
+  const p = String(provider || "").toLowerCase();
+  const low = req.toLowerCase();
+  if (p === "anthropic" || p === "claude") {
+    return low.startsWith("claude-") ? req : defaultModel;
+  }
+  if (p === "gemini" || p === "google") {
+    return low.startsWith("gemini-") ? req : defaultModel;
+  }
+  if (p === "openai") {
+    return /^(gpt-|o[134](-|$)|chatgpt-)/.test(low) ? req : defaultModel;
+  }
+  if (p === "mistral") {
+    return /^(mistral|ministral|codestral|pixtral)/.test(low) ? req : defaultModel;
+  }
+  if (p === "openrouter") {
+    return low.includes("/") ? req : defaultModel;
+  }
+  return req;
 }
 
 function contentFromOpenAiMessage(content) {
@@ -309,11 +341,13 @@ function createIntentCompleter(opts = {}) {
         if (!cloud.key || !cloud.url) {
           throw new Error("No cloud API key is configured for Command mode");
         }
+        const effectiveProvider = cloudProvider || cloud.provider;
+        const selectedCloudModel = pickCloudModel(effectiveProvider, model, cloud.model);
         if (cloud.isAnthropic) {
           return await completeAnthropicChat({
             url: cloud.url,
             key: cloud.key,
-            model: model || cloud.model,
+            model: selectedCloudModel,
             prompt,
             fetchImpl,
             signal: controller?.signal,
@@ -322,7 +356,7 @@ function createIntentCompleter(opts = {}) {
         return await completeChat({
           url: cloud.url,
           key: cloud.key,
-          model: model || cloud.model,
+          model: selectedCloudModel,
           prompt,
           fetchImpl,
           signal: controller?.signal,
@@ -381,6 +415,8 @@ module.exports = {
   nativeOllamaBase,
   isThinkingModel,
   pickLocalParseModel,
+  pickCloudModel,
+  isLocalOllamaModelTag,
   cloudConfig,
   createIntentCompleter,
   INTENT_JSON_SCHEMA,

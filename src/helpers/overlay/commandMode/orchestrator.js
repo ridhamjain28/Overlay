@@ -374,6 +374,8 @@ function createOrchestrator(deps = {}) {
   const recent = new Map();
   const inFlight = new Set();
   const parseIntent = deps.parseIntent;
+  const parseHeuristic = deps.parseHeuristic;
+  const shouldUseLlm = deps.shouldUseLlm;
   const decideRoute = deps.decideRoute;
   const perform = deps.perform;
   const listWindows = deps.listWindows;
@@ -559,6 +561,29 @@ function createOrchestrator(deps = {}) {
     if (isMetaIntent(text)) {
       return { steps: [], intent: { action: "none", metaIntent: true }, source: "meta", metaIntent: true };
     }
+
+    // Fast path: run local grammar / app heuristics first so clear local commands
+    // ("open spotify", "brightness 80") execute in <1ms without waiting on routers.
+    let heuristic;
+    if (typeof parseHeuristic === "function") {
+      try {
+        heuristic = parseHeuristic(text, options);
+      } catch {
+        heuristic = undefined;
+      }
+      const needsLlm =
+        typeof shouldUseLlm === "function"
+          ? shouldUseLlm(heuristic, { text, mcpTools: options.mcpTools })
+          : !heuristic || heuristic.action === "none" || Number(heuristic.confidence) < 0.7;
+
+      if (!needsLlm && heuristic && heuristic.action !== "none") {
+        const cleaned = sanitizePlan(text, intentSteps(heuristic));
+        const autoSaveCreatedItems = options.autoSaveCreatedItems !== false;
+        const steps = attachFinishSteps(text, cleaned, { autoSaveCreatedItems });
+        return { steps, intent: heuristic, source: heuristic.source || "heuristic" };
+      }
+    }
+
     let route;
     if (typeof decideRoute === "function") {
       try {
@@ -566,7 +591,14 @@ function createOrchestrator(deps = {}) {
       } catch {
         route = undefined;
       }
-      if (route && route.lane === "chat" && Number(route.confidence) >= 0.8) {
+      // Only let a high-confidence chat verdict bypass the command parser when
+      // local heuristics found no action.
+      if (
+        route &&
+        route.lane === "chat" &&
+        Number(route.confidence) >= 0.85 &&
+        (!heuristic || heuristic.action === "none")
+      ) {
         return { steps: [], intent: { action: "none" }, source: "decision-router", route };
       }
     }

@@ -2,37 +2,36 @@
   <img src="src/assets/logo.svg" alt="Overlay logo: a sound wave turning into a floating answer card" width="112" />
 </p>
 
-# Overlay
+# Overlay (`Overlay_Core`)
 
-**Overlay** is a private, local-first voice assistant for Windows. It does two jobs:
+**Overlay** is a private, local-first voice, dictation, and AI assistant for Windows:
 
-1. **Dictation.** Hold (or tap) a global hotkey, speak, and your words are typed into whatever app has focus. Speech-to-text runs on your own PC with Whisper (GPU-accelerated on NVIDIA cards).
-2. **Ask anything.** Press a second hotkey, speak or type a question, and a small always-on-top window shows just the answer. Overlay can search the web, cite its sources, and do a few safe things on your PC ("open Spotify", "volume 30", "take a screenshot").
-
-By default everything runs locally: Whisper for speech, and [Ollama](https://ollama.com) with `qwen3.5:4b-q4_K_M` for answers. Cloud services are optional and only used when you add their key.
+1. **Voice Dictation.** Press your hotkey, speak, and your words are typed into whichever app has focus using local Whisper (GPU-accelerated on NVIDIA) — with optional Roman-script Hinglish support and subtle audio cues (earcons).
+2. **Real-Time AI & OS Assistant.** Press a second hotkey (or type in the overlay), and ask questions, run local apps, search files, or trigger external integrations via **MCP Connectors**. By default everything runs locally on [Ollama](https://ollama.com) (`qwen3:8b` for chat/reasoning, `qwen3:4b-instruct` for fast command parsing, plus optional `strands-decider` routing), or you can bring your own cloud API keys (OpenAI, Anthropic Claude, Gemini, Groq, OpenRouter, Mistral, Tavily, OpenClaw).
 
 > Based on OpenWhispr (MIT) by Gizmo Labs Inc. and contributors.
 > Upstream: https://github.com/OpenWhispr/openwhispr (commit `1e9f243`). See `LICENSE` and `NOTICE`.
+> Public releases & site: https://github.com/ridhamjain28/Overlay
 
-New to the code? Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (a beginner's tour of the code).
+New to the code? Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (a beginner's tour of the codebase).
 
 ---
 
 ## Quick start (Windows)
 
-**Before you start, install:**
+**Prerequisites:**
 
 - [Node.js 24](https://nodejs.org) (`winget install OpenJS.NodeJS`)
 - [Git](https://git-scm.com) (`winget install Git.Git`)
 - [Ollama](https://ollama.com/download) (`winget install Ollama.Ollama`). Leave it running.
 
-An NVIDIA GPU is optional but recommended. You need about 8 GB of free disk space for the models.
+An NVIDIA GPU is optional but recommended. Reserve ~8–10 GB free disk space for local speech and language models.
 
-**Then copy and paste:**
+**Setup & launch:**
 
 ```powershell
-git clone https://github.com/ridhamjain28/Overlay.git
-cd Overlay
+git clone https://github.com/ridhamjain28/Overlay_Core.git
+cd Overlay_Core
 npm run setup
 npm start
 ```
@@ -63,7 +62,7 @@ Pass an option like this: `npm run setup -- --skip-models`.
 
 ```powershell
 npm ci
-ollama pull qwen3.5:4b-q4_K_M
+ollama pull qwen3:8b
 ollama pull qwen3:4b-instruct
 npm run download:whisper-cpp
 npm run dev
@@ -87,16 +86,17 @@ Windows SmartScreen may warn about an unsigned app; that is expected for a perso
 
 ## The models
 
-| Job                        | Default                                     | Where it runs                                       | How to get it                                             |
-| -------------------------- | ------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------- |
-| Speech → text              | Whisper `small` (whisper.cpp)               | Your PC; NVIDIA GPU when the CUDA pack is installed | Downloaded during setup, or **Settings → Speech-to-Text** |
-| Answers, cleanup, tools    | `qwen3.5:4b-q4_K_M`                         | Ollama at `http://localhost:11434/v1`               | `ollama pull qwen3.5:4b-q4_K_M`                           |
-| Fallback answer model      | `qwen3:4b-instruct`                         | Ollama                                              | `ollama pull qwen3:4b-instruct`                           |
-| Hinglish speech (optional) | `MSpider3/whisper-hindi2hinglish-swift-ct2` | `hinglish-asr/` server on `127.0.0.1:8765`          | `hinglish-asr\start.bat`                                  |
+| Job | Default | Where it runs | How to get it |
+|---|---|---|---|
+| Speech → text | Whisper `base`/`small` (`whisper.cpp`) | Your PC (NVIDIA CUDA when installed) | Downloaded during setup or **Settings → Speech-to-Text** |
+| Chat & reasoning | `qwen3:8b` | Ollama (`http://localhost:11434/v1`) | `ollama pull qwen3:8b` |
+| Fast command & MCP parser | `qwen3:4b-instruct` | Ollama (`http://127.0.0.1:11434/api/chat`) | `ollama pull qwen3:4b-instruct` |
+| System-1 router *(optional)* | `strands-decider` | `strands-decider serve` (`127.0.0.1:8000`) | `pip install strands-decider` *(auto-falls back to `qwen3:4b-instruct`)* |
+| Hinglish speech *(optional)* | `MSpider3/whisper-hindi2hinglish-swift-ct2` | `hinglish-asr/` (`127.0.0.1:8765`) | `hinglish-asr\start.bat` |
 
-Overlay turns Qwen's "thinking" off (`reasoning_effort: "none"`) so answers come back fast. If `qwen3.5:4b-q4_K_M` isn't pulled but `qwen3:4b-instruct` is, Overlay switches to the fallback by itself when it starts.
+Overlay disables "thinking" for command parsing (`think: false`) and routes command/MCP planning to `qwen3:4b-instruct` whenever installed so tool planning stays fast (~100 tok/s on 8 GB GPUs). If `qwen3:8b` isn't pulled, Overlay automatically falls back to `qwen3:4b-instruct`.
 
-**Context size** is set by Ollama, not by Overlay (Ollama's OpenAI-style API has no per-request context option). Ollama's docs say it picks the default from your VRAM, so check current behaviour there. On the RTX 5060 8 GB test laptop, `ollama ps` showed a 16384-token context and 3.4 GB of VRAM for the default model. To pin about 8k, set the environment variable `OLLAMA_CONTEXT_LENGTH=8192` for Ollama (or use the context slider in the Ollama app), then restart Ollama.
+**Context size:** Set via Ollama (`OLLAMA_CONTEXT_LENGTH=8192` recommended for 8 GB VRAM GPUs to keep models resident in VRAM alongside Whisper).
 
 **GPU speech:** in **Settings → Speech-to-Text**, download the CUDA acceleration pack. After that Whisper uses the GPU automatically (set `WHISPER_CUDA_ENABLED=false` to force CPU). Support for the newest cards (RTX 50-series) depends on the pack and has not been verified yet; if it does not work on your card, set `WHISPER_CUDA_ENABLED=false` to use the CPU.
 
@@ -185,22 +185,21 @@ For Hindi/Hinglish speech typed in **Roman script**.
 
 ---
 
-## What the assistant can do on your PC
+## Capabilities & Risk Tiers
 
-The `system_action` tool has a fixed allowlist. Anything else is refused.
+All desktop actions, installed apps, file searches, and MCP tool calls pass through a single policy gate (`src/helpers/overlay/commandMode/riskPolicy.js`):
 
-| Action                         | Example             | Asks first?                                    |
-| ------------------------------ | ------------------- | ---------------------------------------------- |
-| Open an app                    | "open Notepad"      | No (built-in list + your Start-menu shortcuts) |
-| Open a website                 | "open youtube.com"  | No (http/https only)                           |
-| Volume up/down/mute/set        | "volume 30"         | No                                             |
-| Media play/pause/next/previous | "next song"         | No                                             |
-| Screen brightness              | "brightness 60"     | **Yes**                                        |
-| Tell the time                  | "what time is it"   | No                                             |
-| Screenshot                     | "take a screenshot" | **Yes**                                        |
-| Lock the PC                    | "lock my PC"        | **Yes**                                        |
+| Tier | Behavior | Examples |
+|---|---|---|
+| **`auto`** | Runs immediately with zero interruption *(unless **Ask before every action** is toggled ON)* | Volume/brightness/media, Wi-Fi/Bluetooth, launching installed apps (Start Menu, App Paths, UWP AUMIDs, typo-tolerant fuzzy match), `find_path` folder search, screenshots, web prefills |
+| **`confirm`** | Prompts with a plain-language summary + **Always allow** option *(also supports spoken "yes"/"no")* | File delete/move/overwrite, process kill, shutdown/restart/sleep, arbitrary shell commands, launching found `.exe` files, first-time **MCP connector** calls (auto-invalidates if tool schema changes) |
+| **`block`** | Hard-blocked; cannot be allowed or executed | Disabling Defender/firewall, formatting disks, credential/token export |
 
-There is no shell access, no shutdown/restart, and no file deletion. Risky actions show an on-screen confirmation that you must click.
+### Core Subsystems
+- **Real-Time Orchestrator (`src/helpers/overlay/commandMode/`):** Runs fast local heuristics first, optional `strands-decider` + Ollama routing (`decisionRouter.js`), and schema-validated MCP execution (`orchestrator.js`).
+- **Installed Apps & Custom Commands (`appLauncher.js`, `customSkillsService.js`):** Discovers Start Menu shortcuts, App Paths, UWP apps, and protocols with Damerau-Levenshtein typo tolerance, plus hot-reloaded `%APPDATA%\Overlay\skills\custom.json`.
+- **MCP Connectors (`src/helpers/overlay/mcp/`):** Stdio & Streamable HTTP/SSE transports, OAuth 2.1 + PKCE encrypted in Windows DPAPI (`safeStorage`), BM25 top-$k$ tool selection, Claude Desktop / Cursor / Antigravity config importer, and built-in connector gallery (**Settings → Connectors**).
+- **Resilience & Diagnostics:** Multi-monitor mixed-DPI bounds clamping (`windowManager.js`), Bluetooth/USB mic hot-plug watchdog (`activeMicRecovery.js`), Web Audio earcons (`soundCues.ts`), and sanitized one-click bug reports (`diagnosticReport.js`).
 
 ---
 

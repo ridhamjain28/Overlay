@@ -37,6 +37,7 @@ const { createSystemActions } = require("./systemActions");
 const {
   parseIntent,
   parseIntentHeuristic,
+  shouldUseLlm,
   createIntentCompleter,
   createCommandDispatcher,
   createOrchestrator,
@@ -699,9 +700,15 @@ function registerOverlayIpc({
   const decisionRouter = createDecisionRouter();
 
   const commandOrchestrator = createOrchestrator({
+    parseHeuristic: (utterance) => {
+      const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
+      const learned = searchExamples(skillsDir, utterance, { k: 3 });
+      return parseIntentHeuristic(utterance, { skills, learned });
+    },
+    shouldUseLlm,
     decideRoute: (utterance, routeOpts = {}) => {
       const mcpTools = routeOpts?.mcpTools || mcpManager.pickTopKTools(utterance, 8);
-      return decisionRouter.decideRoute(utterance, { ...routeOpts, mcpTools });
+      return decisionRouter(utterance, { ...routeOpts, mcpTools });
     },
     parseIntent: async (text, options = {}) => {
       const completer = createIntentCompleter({
@@ -1033,17 +1040,27 @@ function registerOverlayIpc({
     }
   }
 
+  let activeAppScanPromise = null;
   ipcMain.handle("overlay-apps-scan", async (event) => {
-    const result = await appSkills.rescanAndBuildPack({
-      baseDir: skillsDir,
-      scanOpts: {
-        readShortcutLink: typeof shell.readShortcutLink === "function"
-          ? (file) => shell.readShortcutLink(file)
-          : undefined,
-      },
-      onProgress: (progress) => sendSkillProgress(event, progress),
-    });
-    return result.scanResult;
+    if (activeAppScanPromise) {
+      return activeAppScanPromise;
+    }
+    activeAppScanPromise = appSkills
+      .rescanAndBuildPack({
+        baseDir: skillsDir,
+        scanOpts: {
+          readShortcutLink:
+            typeof shell.readShortcutLink === "function"
+              ? (file) => shell.readShortcutLink(file)
+              : undefined,
+        },
+        onProgress: (progress) => sendSkillProgress(event, progress),
+      })
+      .then((result) => result.scanResult)
+      .finally(() => {
+        activeAppScanPromise = null;
+      });
+    return activeAppScanPromise;
   });
 
   ipcMain.handle("overlay-apps-list", async () => {

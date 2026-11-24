@@ -387,3 +387,11 @@ test("real filesystem E2E: find_path walks a Linux fixture", async () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("buildWindowsSearchSql escapes wildcards (*, %) and quotes in CONTAINS filter", () => {
+  const { buildWindowsSearchSql } = require("../../src/helpers/overlay/commandMode/findPath");
+  const sql = buildWindowsSearchSql({ name: `foo*bar%baz"qux'test`, kind: "folder" });
+  assert.ok(sql.includes(`CONTAINS(System.FileName, '"foobarbazqux''test*"')`));
+  assert.ok(!sql.includes(`foo*bar`));
+  assert.ok(!sql.includes(`bar%baz`));
+});

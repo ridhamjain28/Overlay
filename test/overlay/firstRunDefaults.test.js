@@ -82,3 +82,16 @@ test("applying a recommended model updates every self-hosted Overlay scope", asy
   assert.equal(useSettingsStore.getState().cleanupModel, "qwen2.5:1.5b");
   assert.deepEqual(applyOverlayLocalModelSelection("qwen2.5:1.5b"), []);
 });
+
+test("legacy commandModeAutoRunTrusted=false migrates to askBeforeEveryAction=true", async (t) => {
+  installBrowserGlobals(t, {
+    initialStorage: {
+      commandModeAutoRunTrusted: "false",
+    },
+  });
+  const vite = await createRendererServer(t, { cachePrefix: "overlay-autorun-migration-test-" });
+  const { useSettingsStore } = await vite.ssrLoadModule("/stores/settingsStore.ts");
+  const s = useSettingsStore.getState();
+  assert.equal(s.askBeforeEveryAction, true);
+  assert.equal(s.commandModeAutoRunTrusted, false);
+});
