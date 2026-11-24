@@ -214,9 +214,35 @@ function createCommandDispatcher(deps = {}) {
     focusApp, // (name) => Promise
     onProgress, // (phase) => void
     getAppSkill, // (appId) => skill
+    userDataDir,
+    getUserDataDir,
     sendKeys, // (combo) => Promise
     searchIndex, // ({ name, kind, roots }) => Promise<matches>
   } = deps;
+
+  function resolveUserDataDir(options = {}) {
+    if (options.userDataDir) return options.userDataDir;
+    if (typeof getUserDataDir === "function") return getUserDataDir();
+    return userDataDir;
+  }
+
+  function resolveTrustedAppActionStep(action, args) {
+    if (action !== "app_action" || typeof getAppSkill !== "function") {
+      return { action, args };
+    }
+    const skillForAction = getAppSkill(args.appId);
+    const skillAction =
+      skillForAction && (skillForAction.actions || []).find((item) => item.id === args.actionId);
+    if (!skillAction) {
+      return { action, args };
+    }
+    return {
+      action,
+      args,
+      risk: skillAction.risk === "confirm" ? "confirm" : "safe",
+      riskSource: "app_skill",
+    };
+  }
 
   async function launchDetached(file, args = []) {
     let spawnError = null;
@@ -272,15 +298,30 @@ function createCommandDispatcher(deps = {}) {
     }
     const autoRunTrusted = options.autoRunTrusted === true || getAutoRunTrusted() === true;
     const alreadyConfirmed = options.confirmed === true;
+    const policyUserDataDir = resolveUserDataDir(options);
     for (const step of validated) {
-      const risk = riskPolicy.classify(step, { askBeforeEveryAction: !autoRunTrusted });
+      const classifyStep = resolveTrustedAppActionStep(step.action, step.args);
+      const risk = riskPolicy.classify(classifyStep, {
+        askBeforeEveryAction: !autoRunTrusted,
+        userDataDir: policyUserDataDir,
+        permissions: options.permissions,
+      });
       if (risk === "block") {
         return { success: false, error: "That command is blocked because it looks destructive or unsafe", code: "BLOCKED" };
       }
     }
     const planIntent = { action: "plan", args: {}, steps: validated };
     const mustConfirm =
-      validated.some((step) => riskPolicy.classify(step, { askBeforeEveryAction: !autoRunTrusted }) === "confirm") && !alreadyConfirmed;
+      validated.some((step) => {
+        const classifyStep = resolveTrustedAppActionStep(step.action, step.args);
+        return (
+          riskPolicy.classify(classifyStep, {
+            askBeforeEveryAction: !autoRunTrusted,
+            userDataDir: policyUserDataDir,
+            permissions: options.permissions,
+          }) === "confirm"
+        );
+      }) && !alreadyConfirmed;
     if (mustConfirm) {
       const allowed =
         typeof confirm === "function" ? await confirm(formatIntentForConfirm(planIntent), { step: planIntent }) : false;
@@ -333,21 +374,20 @@ function createCommandDispatcher(deps = {}) {
     const { action, args } = check;
     const autoRunTrusted = options.autoRunTrusted === true || getAutoRunTrusted() === true;
     const alreadyConfirmed = options.confirmed === true;
-    const skillForAction =
-      action === "app_action" && typeof getAppSkill === "function" ? getAppSkill(args.appId) : null;
-    const skillAction =
-      skillForAction && (skillForAction.actions || []).find((item) => item.id === args.actionId);
-    const riskTier = riskPolicy.classify(
-      { action, args, risk: skillAction?.risk },
-      { askBeforeEveryAction: !autoRunTrusted }
-    );
+    const policyUserDataDir = resolveUserDataDir(options);
+    const classifyStep = resolveTrustedAppActionStep(action, args);
+    const riskTier = riskPolicy.classify(classifyStep, {
+      askBeforeEveryAction: !autoRunTrusted,
+      userDataDir: policyUserDataDir,
+      permissions: options.permissions,
+    });
     if (riskTier === "block") {
       return { success: false, error: "That command is blocked because it looks destructive or unsafe", code: "BLOCKED" };
     }
     if (riskTier === "confirm" && !alreadyConfirmed) {
       const allowed =
         typeof confirm === "function"
-          ? await confirm(confirmMessage(action, args), { step: { action, args, risk: skillAction?.risk } })
+          ? await confirm(confirmMessage(action, args), { step: classifyStep })
           : false;
       if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
     }

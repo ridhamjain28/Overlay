@@ -129,3 +129,18 @@ test("'Ask before every action' setting truly overrides auto for everything non-
     "block"
   );
 });
+
+test("Planner/LLM step.risk is stripped and delete/send/block checks run before risk==='safe'", () => {
+  assert.equal(
+    riskPolicy.classify({ action: "run_command", args: { command: "echo hi" }, risk: "safe", source: "planner" }),
+    "confirm"
+  );
+  assert.equal(
+    riskPolicy.classify({ action: "app_action", args: { appId: "notes", actionId: "delete_note" }, risk: "safe", riskSource: "app_skill" }),
+    "confirm"
+  );
+  assert.equal(
+    riskPolicy.classify({ action: "app_action", args: { appId: "mail", actionId: "send_mail" }, risk: "safe", riskSource: "app_skill" }),
+    "confirm"
+  );
+});

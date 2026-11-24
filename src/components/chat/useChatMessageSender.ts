@@ -93,10 +93,15 @@ export function useChatMessageSender({
               id: crypto.randomUUID(),
               role: "assistant",
               content: outcome.message,
+              ...(outcome.promptMessage ? { promptContent: outcome.promptMessage } : {}),
               isStreaming: false,
             };
             persistence.setMessages((messages) => [...messages, assistantMessage]);
-            await persistence.saveAssistantMessage(outcome.message);
+            await persistence.saveAssistantMessage(
+              outcome.message,
+              undefined,
+              outcome.promptMessage
+            );
             submitted = true;
             return;
           }

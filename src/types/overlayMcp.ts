@@ -60,6 +60,7 @@ export interface McpDiscoveredEnvDetail {
 }
 
 export interface McpDiscoveredServer {
+  id: string;
   source: string;
   sourceKey: string;
   filePath: string;
@@ -88,6 +89,7 @@ export interface McpConfigGetResult {
 
 export interface McpConfigSaveResult {
   ok: boolean;
+  cancelled?: boolean;
   errors: string[];
 }
 
@@ -114,7 +116,7 @@ export interface OverlayMcpApi {
   gallery: () => Promise<McpGalleryServer[]>;
   importDiscover: () => Promise<McpDiscoveredServer[]>;
   importServers: (
-    selected: Array<{ serverName: string; config: Record<string, unknown> }>,
+    selectedIds: string[],
     envImportChoices?: Record<string, Record<string, boolean>>,
     importEnvValues?: boolean
   ) => Promise<{ ok: boolean; imported: number; errors: string[] }>;

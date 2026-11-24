@@ -125,7 +125,8 @@ export function toHistoryMessages(
 ): HistoryMessage[] {
   const recent = Number.isFinite(limit) ? messages.slice(-limit) : messages.slice();
   return recent.map((m) => {
+    const body = m.promptContent ?? m.content;
     const trace = includeToolTrace && m.role === "assistant" ? toolTrace(m.toolCalls) : "";
-    return { role: m.role, content: trace ? `${trace}\n\n${m.content}` : m.content };
+    return { role: m.role, content: trace ? `${trace}\n\n${body}` : body };
   });
 }

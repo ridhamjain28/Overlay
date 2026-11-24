@@ -22,7 +22,11 @@ export interface ChatPersistence {
   /** Changes when the user leaves this conversation, including before a send starts. */
   getSessionVersion: () => number;
   saveUserMessage: (text: string) => Promise<void>;
-  saveAssistantMessage: (content: string, toolCalls?: ToolCallInfo[]) => Promise<void>;
+  saveAssistantMessage: (
+    content: string,
+    toolCalls?: ToolCallInfo[],
+    promptContent?: string
+  ) => Promise<void>;
   handleNewChat: () => void;
 }
 
@@ -94,10 +98,13 @@ export function useChatPersistence(options: UseChatPersistenceOptions = {}): Cha
       const loaded: Message[] = conv.messages.map((m) => {
         const parsed = m.metadata ? tryParseMetadata(m.metadata) : undefined;
         const toolCalls = parsed?.toolCalls as ToolCallInfo[] | undefined;
+        const promptContent =
+          typeof parsed?.promptContent === "string" ? parsed.promptContent : undefined;
         return {
           id: crypto.randomUUID(),
           role: m.role as Message["role"],
           content: m.content,
+          ...(promptContent ? { promptContent } : {}),
           isStreaming: false,
           ...(toolCalls ? { toolCalls } : {}),
         };
@@ -114,16 +121,26 @@ export function useChatPersistence(options: UseChatPersistenceOptions = {}): Cha
     }
   }, []);
 
-  const saveAssistantMessage = useCallback(async (content: string, toolCalls?: ToolCallInfo[]) => {
-    if (conversationIdRef.current) {
-      window.electronAPI?.addAgentMessage?.(
-        conversationIdRef.current,
-        "assistant",
-        content,
-        toolCalls?.length ? { toolCalls } : undefined
-      );
-    }
-  }, []);
+  const saveAssistantMessage = useCallback(
+    async (content: string, toolCalls?: ToolCallInfo[], promptContent?: string) => {
+      if (conversationIdRef.current) {
+        const metadata =
+          toolCalls?.length || promptContent
+            ? {
+                ...(toolCalls?.length ? { toolCalls } : {}),
+                ...(promptContent ? { promptContent } : {}),
+              }
+            : undefined;
+        window.electronAPI?.addAgentMessage?.(
+          conversationIdRef.current,
+          "assistant",
+          content,
+          metadata
+        );
+      }
+    },
+    []
+  );
 
   const handleNewChat = useCallback(() => {
     sessionVersionRef.current += 1;

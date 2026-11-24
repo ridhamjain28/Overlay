@@ -499,7 +499,10 @@ function normalizeParsedIntent(parsed, source) {
       : [];
     if (!steps.length) return { action: "none", args: {}, confidence: 0.2, source };
     if (steps.length === 1) {
-      return { ...steps[0], confidence: clampConfidence(parsed.confidence, steps[0].confidence), source };
+      const single = { ...steps[0], confidence: clampConfidence(parsed.confidence, steps[0].confidence), source };
+      delete single.risk;
+      delete single.riskSource;
+      return single;
     }
     return {
       action: "plan",
@@ -509,7 +512,10 @@ function normalizeParsedIntent(parsed, source) {
       source,
     };
   }
-  return normalizeSingleIntent(parsed, source);
+  const single = normalizeSingleIntent(parsed, source);
+  delete single.risk;
+  delete single.riskSource;
+  return single;
 }
 
 function intentStepsOf(intent) {

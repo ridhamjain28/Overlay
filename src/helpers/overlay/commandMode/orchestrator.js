@@ -6,6 +6,7 @@
 const { URL } = require("url");
 const { isMetaIntent, formatMetaExplanation } = require("./metaIntent");
 const { formatFindOutcome, isExecutablePath } = require("./findPath");
+const riskPolicy = require("./riskPolicy");
 
 const DEDUPE_MS = 2500;
 const DEFAULT_SUBMIT_TIMEOUT_MS = 12000;
@@ -32,35 +33,32 @@ function normalizeKey(text) {
 }
 
 function cloneSteps(steps) {
-  return (Array.isArray(steps) ? steps : []).map((step) => ({
-    action: String(step?.action || "").trim(),
-    type: step?.type,
-    server: step?.server,
-    tool: step?.tool,
-    args: { ...(step?.args || {}) },
-    source: step?.source,
-    postcheck: step?.postcheck,
-    annotations: step?.annotations,
-    inputSchema: step?.inputSchema,
-  }));
+  return (Array.isArray(steps) ? steps : []).map((step) => {
+    const clean = riskPolicy.stripUntrustedRisk(step);
+    const cloned = {
+      action: String(clean?.action || "").trim(),
+      type: clean?.type,
+      server: clean?.server,
+      tool: clean?.tool,
+      args: { ...(clean?.args || {}) },
+      source: clean?.source,
+      postcheck: clean?.postcheck,
+      annotations: clean?.annotations,
+      inputSchema: clean?.inputSchema,
+    };
+    if (riskPolicy.isTrustedAppSkillStep(clean) && clean.risk) {
+      cloned.risk = clean.risk;
+      cloned.riskSource = "app_skill";
+    }
+    return cloned;
+  });
 }
 
 function intentSteps(intent) {
   if (!intent) return [];
   if (Array.isArray(intent.steps) && intent.steps.length) return cloneSteps(intent.steps);
   if (intent.action && intent.action !== "none") {
-    return [
-      {
-        action: intent.action,
-        type: intent.type,
-        server: intent.server,
-        tool: intent.tool,
-        args: { ...(intent.args || {}) },
-        source: intent.source,
-        annotations: intent.annotations,
-        inputSchema: intent.inputSchema,
-      },
-    ];
+    return cloneSteps([intent]);
   }
   return [];
 }
@@ -326,6 +324,29 @@ function validateSchemaArgs(args = {}, schema = {}) {
   return null;
 }
 
+function wrapUntrustedMcpResult(server, tool, rawText) {
+  const safeServer = String(server || "unknown");
+  const safeTool = String(tool || "unknown");
+  const text = String(rawText ?? "");
+  return `=== UNTRUSTED MCP TOOL RESULT (${safeServer}.${safeTool}) ===\n${text}\n=== END UNTRUSTED MCP TOOL RESULT ===`;
+}
+
+function formatOutcomeForPrompt(text, steps, results) {
+  const mcpRows = (Array.isArray(results) ? results : []).filter(
+    (row) => row && (row.action === "mcp" || row.type === "mcp") && (row.message || row.rawMessage)
+  );
+  if (mcpRows.length) {
+    return mcpRows
+      .map((row) => {
+        const msg = String(row.message || "");
+        if (msg.includes("=== UNTRUSTED MCP TOOL RESULT")) return msg;
+        return wrapUntrustedMcpResult(row.server, row.tool, row.rawMessage || msg);
+      })
+      .join("\n\n");
+  }
+  return formatOutcome(text, steps, results);
+}
+
 function formatOutcome(text, steps, results) {
   const ok = !results.some((row) => row && row.success === false);
   const mcpRow = results.find((row) => row && (row.action === "mcp" || row.type === "mcp") && row.message);
@@ -381,6 +402,9 @@ function createOrchestrator(deps = {}) {
   const listWindows = deps.listWindows;
   const focusWindow = deps.focusWindow;
   const sendKeys = deps.sendKeys;
+  const userDataDir = deps.userDataDir;
+  const getUserDataDir = deps.getUserDataDir;
+  const getPermissions = deps.getPermissions;
   const sleep = deps.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const now = deps.now || (() => Date.now());
 
@@ -498,13 +522,23 @@ function createOrchestrator(deps = {}) {
   let lastOutcome = null;
 
   async function executeMcpStep(step, callOptions = {}) {
-    const riskPolicy = deps.riskPolicy || require("./riskPolicy");
-    const risk = riskPolicy.classify(step, { askBeforeEveryAction: callOptions.askBeforeEveryAction });
+    const activeRiskPolicy = deps.riskPolicy || riskPolicy;
+    const resolvedUserDataDir =
+      callOptions.userDataDir ||
+      (typeof getUserDataDir === "function" ? getUserDataDir() : userDataDir);
+    const resolvedPermissions =
+      callOptions.permissions ||
+      (typeof getPermissions === "function" ? getPermissions() : deps.permissions);
+    const risk = activeRiskPolicy.classify(step, {
+      askBeforeEveryAction: callOptions.askBeforeEveryAction,
+      userDataDir: resolvedUserDataDir,
+      permissions: resolvedPermissions,
+    });
     if (risk === "block") {
       return { success: false, action: "mcp", error: "That MCP action is blocked for security", code: "BLOCKED" };
     }
     if (risk === "confirm" && !callOptions.confirmed) {
-      const detail = riskPolicy.formatRiskConfirmDetail(step);
+      const detail = activeRiskPolicy.formatRiskConfirmDetail(step);
       const allowed = typeof deps.confirm === "function" ? await deps.confirm(detail, { step }) : false;
       if (!allowed) {
         return { success: false, action: "mcp", error: "You cancelled this command", code: "CANCELLED" };
@@ -542,7 +576,7 @@ function createOrchestrator(deps = {}) {
       if (rawSummary.length > MAX_MCP_RESULT_LENGTH) {
         rawSummary = rawSummary.slice(0, MAX_MCP_RESULT_LENGTH) + "\n...[TRUNCATED]";
       }
-      const wrappedMessage = `=== UNTRUSTED MCP TOOL RESULT (${step.server}.${step.tool}) ===\n${rawSummary}\n=== END UNTRUSTED MCP TOOL RESULT ===`;
+      const wrappedMessage = wrapUntrustedMcpResult(step.server, step.tool, rawSummary);
       return {
         success: !toolRes?.isError,
         action: "mcp",
@@ -691,9 +725,18 @@ function createOrchestrator(deps = {}) {
         } else if (step.type === "mcp" || step.action === "mcp") {
           result = await executeMcpStep(step, options);
         } else if (typeof perform === "function") {
+          const resolvedUserDataDir =
+            options.userDataDir || (typeof getUserDataDir === "function" ? getUserDataDir() : userDataDir);
+          const resolvedPermissions =
+            options.permissions || (typeof getPermissions === "function" ? getPermissions() : deps.permissions);
           result = await perform(
             { action: step.action, args: step.args, utterance: text },
-            { autoRunTrusted: options.autoRunTrusted !== false, confirmed: options.confirmed }
+            {
+              autoRunTrusted: options.autoRunTrusted !== false,
+              confirmed: options.confirmed,
+              userDataDir: resolvedUserDataDir,
+              permissions: resolvedPermissions,
+            }
           );
         } else {
           result = { success: false, error: "No executor is available", action: step.action };
@@ -701,13 +744,15 @@ function createOrchestrator(deps = {}) {
         result = { action: step.action, ...result };
         const verified = await verifyStep(step, result);
         if (!verified.ok) {
-          const message = verified.message || result.message || result.error || "The command failed.";
+          const message = verified.message || result.rawMessage || result.message || result.error || "The command failed.";
+          const promptMessage = formatOutcomeForPrompt(text, planned.steps, results.concat(result));
           return storeLast({
             handled: true,
             success: false,
             steps: planned.steps,
             results: results.concat(result),
             message,
+            ...(promptMessage && promptMessage !== message ? { promptMessage } : {}),
             source: planned.source,
             ...routeMeta,
           });
@@ -740,12 +785,15 @@ function createOrchestrator(deps = {}) {
         }
       }
       remember(key);
+      const message = formatOutcome(text, planned.steps, results);
+      const promptMessage = formatOutcomeForPrompt(text, planned.steps, results);
       return storeLast({
         handled: true,
         success: results.every((row) => row.success !== false),
         steps: planned.steps,
         results,
-        message: formatOutcome(text, planned.steps, results),
+        message,
+        ...(promptMessage && promptMessage !== message ? { promptMessage } : {}),
         source: planned.source,
         ...routeMeta,
       });
@@ -772,6 +820,8 @@ function createOrchestrator(deps = {}) {
     sanitizePlan,
     attachFinishSteps,
     formatOutcome,
+    formatOutcomeForPrompt,
+    wrapUntrustedMcpResult,
     isRawUtteranceSearch,
     isCalendarPrefillStep,
   };
@@ -782,6 +832,8 @@ module.exports = {
   sanitizePlan,
   attachFinishSteps,
   formatOutcome,
+  formatOutcomeForPrompt,
+  wrapUntrustedMcpResult,
   formatCalendarOutcome,
   isRawUtteranceSearch,
   isCalendarPrefillStep,

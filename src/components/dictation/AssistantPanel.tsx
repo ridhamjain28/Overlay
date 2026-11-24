@@ -1,4 +1,4 @@
-﻿import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Plus, X } from "../icons";
 import { BrandMarkIcon } from "./BrandMarkIcon";
@@ -181,7 +181,7 @@ export function AssistantPanel({
     ]
   );
   const recordCommandTurn = useCallback(
-    async (text: string, message: string) => {
+    async (text: string, message: string, promptMessage?: string) => {
       if (persistence.conversationId == null) await createConversation(text);
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -193,11 +193,12 @@ export function AssistantPanel({
         id: crypto.randomUUID(),
         role: "assistant",
         content: message,
+        ...(promptMessage ? { promptContent: promptMessage } : {}),
         isStreaming: false,
       };
       persistence.setMessages((messages) => [...messages, userMessage, assistantMessage]);
       await persistence.saveUserMessage(text);
-      await persistence.saveAssistantMessage(message);
+      await persistence.saveAssistantMessage(message, undefined, promptMessage);
       touchAssistantChatActivity();
     },
     [createConversation, persistence]
@@ -221,7 +222,7 @@ export function AssistantPanel({
       try {
         const outcome = await runCommandOrchestrator(text, commandSettings);
         if (!outcome.handled) return false;
-        await recordCommandTurn(text, outcome.message);
+        await recordCommandTurn(text, outcome.message, outcome.promptMessage);
         return true;
       } finally {
         setCommandWriting(false);

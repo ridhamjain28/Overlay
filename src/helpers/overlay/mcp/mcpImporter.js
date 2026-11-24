@@ -2,10 +2,23 @@
 // - Claude Desktop (%APPDATA%\Claude\claude_desktop_config.json)
 // - Cursor (%USERPROFILE%\.cursor\mcp.json, %APPDATA%\Cursor\User\globalStorage\mcp.json)
 // - Antigravity (%USERPROFILE%\.gemini\antigravity\mcp_config.json)
-// INVARIANT: Never log secrets, always mask values in renderer.
+// INVARIANT: Raw env values NEVER leave the main process (no _rawEnv sent to renderer).
+// INVARIANT: Secrets are encrypted via safeStorage (authStore), never written plaintext to mcp.json.
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const { ENV_SECRET_REF, MASKED_ENV_VALUE } = require("./mcpAuth");
+
+const defaultDiscoveredRegistry = new Map();
+
+function makeOpaqueDiscoveryId(sourceKey, serverName) {
+  return crypto
+    .createHash("sha256")
+    .update(`${String(sourceKey || "")}\0${String(serverName || "")}`)
+    .digest("hex")
+    .slice(0, 24);
+}
 
 function getCandidatePaths() {
   const appData = process.env.APPDATA || "";
@@ -49,6 +62,9 @@ function hasSecretKeyNames(envObj) {
 function discoverExternalConfigs(options = {}) {
   const fsImpl = options.fsImpl || fs;
   const candidates = options.candidates || getCandidatePaths();
+  const registry = options.discoveredStore || defaultDiscoveredRegistry;
+  registry.clear();
+
   const discovered = [];
 
   for (const candidate of candidates) {
@@ -61,35 +77,51 @@ function discoverExternalConfigs(options = {}) {
 
       for (const [name, serverCfg] of Object.entries(mcpServers)) {
         if (!serverCfg || typeof serverCfg !== "object") continue;
-        const env = serverCfg.env || {};
+        const env = serverCfg.env && typeof serverCfg.env === "object" ? { ...serverCfg.env } : {};
         const envKeys = Object.keys(env);
-        const hasSecrets = hasSecretKeyNames(env);
+        const hasSecrets = hasSecretKeyNames(env) || envKeys.some((k) => Boolean(env[k]));
+        const id = makeOpaqueDiscoveryId(candidate.sourceKey, name);
 
-        // Env details with masked values (never plaintext secrets)
         const envDetails = envKeys.map((k) => ({
           key: k,
-          maskedValue: env[k] ? "••••••••" : "",
+          maskedValue: env[k] ? MASKED_ENV_VALUE : "",
           isSecret: /token|key|secret|password|auth|credential/i.test(k),
           hasValue: Boolean(env[k]),
         }));
 
-        // Mask config for display
         const safeConfig = { ...serverCfg };
         if (safeConfig.env) {
           const maskedEnv = {};
           for (const k of envKeys) {
-            maskedEnv[k] = safeConfig.env[k] ? "••••••••" : "";
+            maskedEnv[k] = safeConfig.env[k] ? MASKED_ENV_VALUE : "";
           }
           safeConfig.env = maskedEnv;
         }
 
+        const configBase = { ...serverCfg };
+        if (configBase.env) {
+          delete configBase.env;
+        }
+
+        // Keep raw env and trusted config strictly in main-process Map
+        registry.set(id, {
+          id,
+          source: candidate.source,
+          sourceKey: candidate.sourceKey,
+          filePath: candidate.filePath,
+          serverName: name,
+          configBase,
+          rawEnv: env,
+        });
+
+        // Never return _rawEnv or plaintext secret values to renderer
         discovered.push({
+          id,
           source: candidate.source,
           sourceKey: candidate.sourceKey,
           filePath: candidate.filePath,
           serverName: name,
           config: safeConfig,
-          _rawEnv: env, // Kept internal for import, never sent to renderer
           hasEnvSecrets: hasSecrets,
           envKeys,
           envDetails,
@@ -103,46 +135,86 @@ function discoverExternalConfigs(options = {}) {
   return discovered;
 }
 
-function importSelectedServers(selectedList = [], { mcpConfigStore, envImportChoices = {}, importEnvValues = false }) {
-  if (!mcpConfigStore || !Array.isArray(selectedList)) {
+function importSelectedServers(
+  selectedIdsOrItems = [],
+  { mcpConfigStore, authStore, envImportChoices = {}, importEnvValues = false, discoveredStore } = {}
+) {
+  if (!mcpConfigStore || !Array.isArray(selectedIdsOrItems)) {
     return { ok: false, imported: 0, errors: ["Invalid arguments"] };
   }
 
+  const registry = discoveredStore || defaultDiscoveredRegistry;
   const current = mcpConfigStore.read();
   const servers = { ...(current.servers || {}) };
   let importedCount = 0;
 
-  for (const item of selectedList) {
-    const name = item.serverName || item.name;
-    const cfg = item.config;
-    if (!name || !cfg) continue;
+  for (const item of selectedIdsOrItems) {
+    // Only trust opaque id from renderer; completely ignore any renderer-supplied config or _rawEnv
+    const id = typeof item === "string" ? item : item?.id;
+    if (!id || typeof id !== "string") continue;
 
-    const newCfg = { ...cfg };
-    const rawEnv = item._rawEnv || cfg.env || {};
-    const serverChoices = envImportChoices[name] || {};
+    const entry = registry.get(id);
+    if (!entry) continue;
 
-    if (newCfg.env || item._rawEnv) {
-      const newEnv = {};
-      const keys = Object.keys(rawEnv);
+    const name = entry.serverName;
+    const newCfg = { ...entry.configBase };
+    const rawEnv = entry.rawEnv || {};
+    const keys = Object.keys(rawEnv);
+    const serverChoices = envImportChoices[id] || envImportChoices[name] || {};
+
+    if (keys.length > 0) {
+      const newEnvRefs = {};
+      const secretsToEncrypt = {};
+
       for (const k of keys) {
-        // Copy secret/value only if explicitly allowed per key or blanket importEnvValues
-        if (serverChoices[k] === true || (importEnvValues && serverChoices[k] !== false)) {
-          newEnv[k] = rawEnv[k] || "";
+        const val = rawEnv[k];
+        const approved =
+          serverChoices[k] === true || (importEnvValues && serverChoices[k] !== false);
+        if (approved && val !== undefined && val !== null && String(val) !== "") {
+          secretsToEncrypt[k] = String(val);
+          newEnvRefs[k] = ENV_SECRET_REF;
         } else {
-          newEnv[k] = ""; // Keep placeholder key without value
+          newEnvRefs[k] = "";
         }
       }
-      newCfg.env = newEnv;
+
+      if (Object.keys(secretsToEncrypt).length > 0) {
+        if (!authStore || typeof authStore.saveEnvSecrets !== "function") {
+          return {
+            ok: false,
+            imported: 0,
+            errors: ["Electron safeStorage is unavailable; credentials cannot be securely saved."],
+          };
+        }
+        try {
+          authStore.saveEnvSecrets(name, secretsToEncrypt);
+        } catch (err) {
+          return {
+            ok: false,
+            imported: 0,
+            errors: [
+              err?.message ||
+                "Electron safeStorage is unavailable; credentials cannot be securely saved.",
+            ],
+          };
+        }
+      }
+
+      newCfg.env = newEnvRefs;
     }
 
     servers[name] = newCfg;
     importedCount++;
   }
 
+  if (importedCount === 0 && selectedIdsOrItems.length > 0) {
+    return { ok: false, imported: 0, errors: ["No matching discovered servers found to import"] };
+  }
+
   const saveRes = mcpConfigStore.save({ mcpServers: servers });
   return {
     ok: saveRes.ok,
-    imported: importedCount,
+    imported: saveRes.ok ? importedCount : 0,
     errors: saveRes.errors || [],
   };
 }
@@ -152,4 +224,5 @@ module.exports = {
   discoverExternalConfigs,
   importSelectedServers,
   hasSecretKeyNames,
+  makeOpaqueDiscoveryId,
 };
