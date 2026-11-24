@@ -15,7 +15,7 @@ const path = require("path");
 const fs = require("fs");
 const childProcess = require("child_process");
 
-const DEFAULT_ANSWER_MODEL = "qwen3.5:4b-q4_K_M";
+const DEFAULT_ANSWER_MODEL = "qwen3:8b";
 const HINGLISH_MODEL_REPO = "MSpider3/whisper-hindi2hinglish-swift-ct2";
 const HINGLISH_IMPORTS = ["faster_whisper", "fastapi", "uvicorn", "multipart"];
 const OLLAMA_URL = "http://127.0.0.1:11434";

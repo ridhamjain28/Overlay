@@ -695,7 +695,14 @@ function registerOverlayIpc({
     } catch {}
   });
 
+  const { createDecisionRouter } = require("./commandMode/decisionRouter");
+  const decisionRouter = createDecisionRouter();
+
   const commandOrchestrator = createOrchestrator({
+    decideRoute: (utterance, routeOpts = {}) => {
+      const mcpTools = routeOpts?.mcpTools || mcpManager.pickTopKTools(utterance, 8);
+      return decisionRouter.decideRoute(utterance, { ...routeOpts, mcpTools });
+    },
     parseIntent: async (text, options = {}) => {
       const completer = createIntentCompleter({
         parser: options?.parser === "cloud" ? "cloud" : "local",
@@ -705,8 +712,14 @@ function registerOverlayIpc({
       });
       const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
       const learned = searchExamples(skillsDir, text, { k: 3 });
-      const mcpTools = mcpManager.pickTopKTools(text, 8);
-      return parseIntent(text, { llmComplete: completer, skills, learned, mcpTools });
+      const mcpTools = options?.mcpTools || mcpManager.pickTopKTools(text, 8);
+      return parseIntent(text, {
+        llmComplete: completer,
+        forceLlm: options?.forceLlm === true,
+        skills,
+        learned,
+        mcpTools,
+      });
     },
     perform: (request, options = {}) =>
       commandDispatcher.perform(request, { ...options, allowWhenDisabled: true }),

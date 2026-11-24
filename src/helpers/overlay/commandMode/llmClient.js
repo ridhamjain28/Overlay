@@ -6,7 +6,7 @@ const { INTENT_JSON_SCHEMA, commandSkillSystemPrompt } = require("./skillLoader"
 
 const DEFAULT_LOCAL_BASE = "http://127.0.0.1:11434/v1";
 const DEFAULT_LOCAL_NATIVE_BASE = "http://127.0.0.1:11434";
-const DEFAULT_LOCAL_MODEL = "qwen3.5:4b-q4_K_M";
+const DEFAULT_LOCAL_MODEL = "qwen3:8b";
 const PREFERRED_LOCAL_PARSE_MODEL = "qwen3:4b-instruct";
 const TIMEOUT_MS = 20000;
 const LOCAL_TIMEOUT_MS = 45000;
@@ -55,6 +55,7 @@ function isThinkingModel(name) {
   if (!n) return false;
   if (/\binstruct\b/.test(n) || n.includes("instruct")) return false;
   if (/qwen3\.5/.test(n)) return true;
+  if (/qwen3:8b/.test(n)) return true;
   if (/thinking|reason/.test(n)) return true;
   return false;
 }

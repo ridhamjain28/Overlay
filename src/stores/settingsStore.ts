@@ -85,7 +85,7 @@ export type ChatContextLength = (typeof CHAT_CONTEXT_LENGTHS)[number];
 
 // Overlay defaults: a local Ollama server and a small tool-capable model.
 export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
-export const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
+export const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
 // Used instead when the default isn't pulled in Ollama but this one is.
 export const OVERLAY_FALLBACK_MODEL = "qwen3:4b-instruct";
 

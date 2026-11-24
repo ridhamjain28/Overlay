@@ -4,6 +4,7 @@ const guideLocator = require("./guideLocator");
 const llmClient = require("./llmClient");
 const composeClient = require("./composeClient");
 const orchestrator = require("./orchestrator");
+const decisionRouter = require("./decisionRouter");
 
 module.exports = {
   ...intentParser,
@@ -12,4 +13,5 @@ module.exports = {
   ...llmClient,
   ...composeClient,
   ...orchestrator,
+  ...decisionRouter,
 };

@@ -23,7 +23,7 @@ test("a fresh Overlay profile starts on local Whisper and local Ollama", async (
   ]) {
     assert.equal(s[`${prefix}Mode`], "self-hosted", prefix);
     assert.equal(s[`${prefix}RemoteUrl`], "http://localhost:11434/v1", prefix);
-    assert.equal(s[`${prefix}Model`], "qwen3.5:4b-q4_K_M", prefix);
+    assert.equal(s[`${prefix}Model`], "qwen3:8b", prefix);
   }
   assert.equal(s.answerSource, "auto");
   assert.equal(s.overlayModelAutoSelect, true);
@@ -57,10 +57,10 @@ test("the fallback model is used only when the default is missing from Ollama", 
 
   // Ollama not running, or the default is installed: nothing changes.
   assert.deepEqual(applyOverlayModelFallback(null), []);
-  assert.deepEqual(applyOverlayModelFallback(["qwen3.5:4b-q4_K_M", "qwen3:4b-instruct"]), []);
+  assert.deepEqual(applyOverlayModelFallback(["qwen3:8b", "qwen3:4b-instruct"]), []);
   // Neither model installed: nothing to switch to.
   assert.deepEqual(applyOverlayModelFallback(["qwen2.5:7b"]), []);
-  assert.equal(useSettingsStore.getState().chatAgentModel, "qwen3.5:4b-q4_K_M");
+  assert.equal(useSettingsStore.getState().chatAgentModel, "qwen3:8b");
 
   // Only the fallback is installed: every default-model scope switches.
   const switched = applyOverlayModelFallback(["qwen3:4b-instruct"]);

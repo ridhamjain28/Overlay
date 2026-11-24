@@ -7,23 +7,29 @@ const {
   PREFERRED_LOCAL_PARSE_MODEL,
 } = require("../../src/helpers/overlay/commandMode/llmClient");
 
-test("qwen3.5 is treated as thinking; qwen3 instruct is not", () => {
+test("qwen3.5 and qwen3:8b are treated as thinking; qwen3 instruct is not", () => {
   assert.equal(isThinkingModel("qwen3.5:4b-q4_K_M"), true);
+  assert.equal(isThinkingModel("qwen3:8b"), true);
   assert.equal(isThinkingModel("qwen3:4b-instruct"), false);
+  assert.equal(isThinkingModel("qwen3:8b-instruct"), false);
 });
 
 test("pickLocalParseModel prefers installed instruct when the chat model is thinking", () => {
+  assert.equal(
+    pickLocalParseModel("qwen3:8b", ["qwen3:4b-instruct", "qwen3:8b"]),
+    "qwen3:4b-instruct"
+  );
   assert.equal(
     pickLocalParseModel("qwen3.5:4b-q4_K_M", ["qwen3:4b-instruct", "qwen3.5:4b-q4_K_M"]),
     "qwen3:4b-instruct"
   );
   assert.equal(
-    pickLocalParseModel("qwen3:4b-instruct", ["qwen3:4b-instruct", "qwen3.5:4b-q4_K_M"]),
+    pickLocalParseModel("qwen3:4b-instruct", ["qwen3:4b-instruct", "qwen3:8b"]),
     "qwen3:4b-instruct"
   );
   assert.equal(
-    pickLocalParseModel("qwen3.5:4b-q4_K_M", ["qwen3.5:4b-q4_K_M"]),
-    "qwen3.5:4b-q4_K_M"
+    pickLocalParseModel("qwen3:8b", ["qwen3:8b"]),
+    "qwen3:8b"
   );
   assert.equal(PREFERRED_LOCAL_PARSE_MODEL, "qwen3:4b-instruct");
 });
@@ -33,14 +39,14 @@ test("local completer uses native /api/chat with think false, ctx 8192, skill pr
   const complete = createIntentCompleter({
     parser: "local",
     localBaseUrl: "http://localhost:11434/v1",
-    model: "qwen3.5:4b-q4_K_M",
+    model: "qwen3:8b",
     fetchImpl: async (url, init) => {
       seen.push({ url, method: init?.method, body: init?.body ? JSON.parse(init.body) : null });
       if (String(url).endsWith("/api/tags")) {
         return {
           ok: true,
           json: async () => ({
-            models: [{ name: "qwen3:4b-instruct" }, { name: "qwen3.5:4b-q4_K_M" }],
+            models: [{ name: "qwen3:4b-instruct" }, { name: "qwen3:8b" }],
           }),
         };
       }

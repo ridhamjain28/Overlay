@@ -28,9 +28,9 @@ function usableMemoryBytes(hardware) {
   return Math.floor(ram * 0.5);
 }
 
-const OVERLAY_DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
+const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
 const OVERLAY_FALLBACK_MODEL = "qwen3:4b-instruct";
-const OVERLAY_TINY_MODEL = "qwen2.5:1.5b";
+const OVERLAY_TINY_MODEL = "qwen3:4b-instruct";
 
 // The models Overlay is willing to recommend pulling, smallest first.
 const PULL_CATALOG = Object.freeze([

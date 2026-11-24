@@ -281,12 +281,74 @@ function buildLaunchIndex(options = {}) {
 }
 
 /**
+ * Computes the Optimal String Alignment (restricted Damerau-Levenshtein)
+ * edit distance between two strings, treating adjacent transpositions as 1 edit.
+ */
+function editDistance(a, b) {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  let prev2 = new Int32Array(n + 1);
+  let prev1 = new Int32Array(n + 1);
+  let curr = new Int32Array(n + 1);
+
+  for (let j = 0; j <= n; j++) prev1[j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    const ai = a.charCodeAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
+      let val = Math.min(
+        prev1[j] + 1,
+        curr[j - 1] + 1,
+        prev1[j - 1] + cost
+      );
+      if (
+        i > 1 &&
+        j > 1 &&
+        ai === b.charCodeAt(j - 2) &&
+        a.charCodeAt(i - 2) === b.charCodeAt(j - 1)
+      ) {
+        val = Math.min(val, prev2[j - 2] + 1);
+      }
+      curr[j] = val;
+    }
+    const tmp = prev2;
+    prev2 = prev1;
+    prev1 = curr;
+    curr = tmp;
+  }
+
+  return prev1[n];
+}
+
+function fuzzyEditScore(query, candidate) {
+  if (!query || !candidate || query.length < 3 || candidate.length < 3) return 0;
+  const maxLen = Math.max(query.length, candidate.length);
+  if (maxLen < 4) return 0;
+
+  const maxEdits = maxLen <= 6 ? 1 : Math.min(3, Math.max(2, Math.floor(maxLen * 0.3)));
+  if (Math.abs(query.length - candidate.length) > maxEdits) return 0;
+
+  const dist = editDistance(query, candidate);
+  if (dist > maxEdits) return 0;
+
+  const similarity = 1 - dist / maxLen;
+  const normalized = Math.max(0, Math.min(1, (similarity - 0.5) / 0.5));
+  return 0.55 + normalized * 0.19;
+}
+
+/**
  * Calculates a match score between query and a candidate entry.
  * Returns a number between 0 and 1.
  */
 function scoreMatch(query, entry) {
   const q = normalizeName(query);
-  if (!q) return 0;
+  if (!q || isBlockedApp(q)) return 0;
 
   const targetName = entry.normalizedName;
   const canonicalQ = canonicalAppName(q);
@@ -334,16 +396,43 @@ function scoreMatch(query, entry) {
     return 0.75;
   }
 
-  // Fuzzy subsequence / char overlap
+  // Fuzzy subsequence / char overlap and Damerau-Levenshtein edit-distance
+  if (q.length < 3) return 0;
+
+  let bestFuzzy = 0;
+
+  // Check edit-distance against full targetName and each alias
+  bestFuzzy = Math.max(bestFuzzy, fuzzyEditScore(q, targetName));
+  for (const alias of entry.aliases) {
+    bestFuzzy = Math.max(bestFuzzy, fuzzyEditScore(q, alias));
+  }
+
+  // Check edit-distance against individual words in multi-word names/aliases
+  if (qWords.length === 1) {
+    const candidateWords = new Set(nameWords);
+    for (const alias of entry.aliases) {
+      for (const w of alias.split(/\s+/)) {
+        if (w) candidateWords.add(w);
+      }
+    }
+    for (const word of candidateWords) {
+      const wordScore = fuzzyEditScore(q, word);
+      if (wordScore > 0) {
+        bestFuzzy = Math.max(bestFuzzy, Math.max(0.55, wordScore - 0.03));
+      }
+    }
+  }
+
+  // Strict in-order subsequence fallback
   let qIdx = 0;
   for (let i = 0; i < targetName.length && qIdx < q.length; i++) {
     if (targetName[i] === q[qIdx]) qIdx++;
   }
-  if (qIdx === q.length && q.length >= 3) {
-    return 0.6;
+  if (qIdx === q.length) {
+    bestFuzzy = Math.max(bestFuzzy, 0.6);
   }
 
-  return 0;
+  return bestFuzzy;
 }
 
 /**
@@ -457,5 +546,6 @@ module.exports = {
   resolveApp,
   launchApp,
   scoreMatch,
+  editDistance,
   createLaunchDescriptor,
 };

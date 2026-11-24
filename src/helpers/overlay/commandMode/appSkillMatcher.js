@@ -126,10 +126,44 @@ function selectSkillsForPrompt(skills, text, limit = 2) {
     });
 }
 
-function buildDynamicIntentContext({ skills, learned, text } = {}) {
+function formatMcpToolParams(inputSchema) {
+  const props = inputSchema && typeof inputSchema === "object" ? inputSchema.properties : null;
+  if (!props || typeof props !== "object") return "()";
+  const required = new Set(Array.isArray(inputSchema.required) ? inputSchema.required : []);
+  const entries = Object.entries(props)
+    .slice(0, 12)
+    .map(([key, spec]) => {
+      const type = spec && typeof spec === "object" && spec.type ? spec.type : "any";
+      return `${key}${required.has(key) ? "*" : ""}: ${type}`;
+    });
+  return `(${entries.join(", ")})`;
+}
+
+function formatMcpToolsForPrompt(mcpTools, limit = 8) {
+  if (!Array.isArray(mcpTools) || !mcpTools.length) return "";
+  const tools = mcpTools
+    .filter((t) => t && t.server && (t.name || t.tool))
+    .slice(0, Math.min(8, limit));
+  if (!tools.length) return "";
+  const lines = [
+    'Available MCP Tools (when an MCP tool fits, emit { "action": "mcp", "server": "...", "tool": "...", "args": {...} }):',
+  ];
+  for (const tool of tools) {
+    const toolName = tool.name || tool.tool;
+    const params = formatMcpToolParams(tool.inputSchema);
+    const desc = tool.description
+      ? ` — ${String(tool.description).replace(/\s+/g, " ").trim().slice(0, 140)}`
+      : "";
+    lines.push(`- ${tool.server}.${toolName}${params}${desc}`);
+  }
+  return lines.join("\n");
+}
+
+function buildDynamicIntentContext({ skills, learned, text, mcpTools } = {}) {
   const selected = selectSkillsForPrompt(skills, text, 2);
   const examples = Array.isArray(learned) ? learned.slice(0, 3) : [];
-  if (!selected.length && !examples.length) return "";
+  const mcpBlock = formatMcpToolsForPrompt(mcpTools, 8);
+  if (!selected.length && !examples.length && !mcpBlock) return "";
   const parts = [];
   if (selected.length) {
     parts.push("Available App Actions for this query:");
@@ -139,6 +173,9 @@ function buildDynamicIntentContext({ skills, learned, text } = {}) {
     parts.push("Relevant Past Learned Examples:");
     parts.push(JSON.stringify(examples));
   }
+  if (mcpBlock) {
+    parts.push(mcpBlock);
+  }
   return parts.join("\n");
 }
 
@@ -146,5 +183,6 @@ module.exports = {
   normalizeUtterance,
   parseAppSkillIntent,
   selectSkillsForPrompt,
+  formatMcpToolsForPrompt,
   buildDynamicIntentContext,
 };
