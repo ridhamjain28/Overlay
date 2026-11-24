@@ -295,3 +295,18 @@ test("historical built-in help remains readable without inventing a model tool",
     [{ role: "assistant", content: "Earlier guidance." }]
   );
 });
+
+test("toHistoryMessages uses fenced promptContent for model follow-ups while keeping display content raw", async () => {
+  const { toHistoryMessages } = await load();
+  const fenced =
+    "=== UNTRUSTED MCP TOOL RESULT (fs.read_file) ===\nhello world\n=== END UNTRUSTED MCP TOOL RESULT ===";
+  const msg = {
+    id: "a-mcp",
+    role: "assistant",
+    content: "hello world",
+    promptContent: fenced,
+    isStreaming: false,
+  };
+  const history = toHistoryMessages([user("read file"), msg], { includeToolTrace: true });
+  assert.equal(history[1].content, fenced);
+});

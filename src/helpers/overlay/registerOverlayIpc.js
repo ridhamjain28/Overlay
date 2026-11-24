@@ -25,8 +25,17 @@
 
 const path = require("path");
 const fs = require("fs");
+const { URL, fileURLToPath } = require("url");
 const { execFile } = require("child_process");
-const { safeStorage, clipboard } = require("electron");
+let electronSafeStorage;
+let electronClipboard;
+try {
+  ({ safeStorage: electronSafeStorage, clipboard: electronClipboard } = require("electron"));
+} catch {
+  electronSafeStorage = undefined;
+  electronClipboard = undefined;
+}
+const { DEV_SERVER_URL } = require("../devServerManager");
 const {
   streamOpenClaw,
   streamGemini,
@@ -166,6 +175,101 @@ function showGuideHighlight(BrowserWindow, bounds) {
   }, 4000);
 }
 
+function normalizeFsPath(filePath) {
+  const resolved = path.resolve(String(filePath || ""));
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+function createAssertTrustedSender({
+  app,
+  windowManager,
+  devServerUrl = DEV_SERVER_URL,
+  nodeEnv,
+} = {}) {
+  let devOrigin = "";
+  let devAltOrigin = "";
+  try {
+    const u = new URL(devServerUrl);
+    devOrigin = u.origin;
+    if (u.hostname === "localhost") {
+      devAltOrigin = `${u.protocol}//127.0.0.1${u.port ? `:${u.port}` : ""}`;
+    } else if (u.hostname === "127.0.0.1") {
+      devAltOrigin = `${u.protocol}//localhost${u.port ? `:${u.port}` : ""}`;
+    }
+  } catch {
+    devOrigin = "";
+  }
+
+  return function assertTrustedSender(event) {
+    if (!event || !event.sender || !event.senderFrame) {
+      throw new Error("Untrusted IPC sender: missing sender or senderFrame");
+    }
+
+    const frameUrl = String(event.senderFrame.url || "").trim();
+    if (!frameUrl) {
+      throw new Error("Untrusted IPC sender: missing senderFrame URL");
+    }
+
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(frameUrl);
+    } catch {
+      throw new Error("Untrusted IPC sender: invalid senderFrame URL");
+    }
+
+    const isDev = (nodeEnv ?? process.env.NODE_ENV) === "development";
+    let originTrusted = false;
+
+    if (parsedUrl.protocol === "file:") {
+      const appPath = typeof app?.getAppPath === "function" ? app.getAppPath() : "";
+      if (appPath) {
+        const expectedHtmlPath = normalizeFsPath(path.join(appPath, "src", "dist", "index.html"));
+        let actualHtmlPath = "";
+        try {
+          const baseFileUrl = new URL(parsedUrl.href);
+          baseFileUrl.search = "";
+          baseFileUrl.hash = "";
+          actualHtmlPath = normalizeFsPath(fileURLToPath(baseFileUrl));
+        } catch {
+          actualHtmlPath = "";
+        }
+        if (actualHtmlPath && actualHtmlPath === expectedHtmlPath) {
+          originTrusted = true;
+        }
+      }
+    } else if (
+      isDev &&
+      (parsedUrl.origin === devOrigin || (devAltOrigin && parsedUrl.origin === devAltOrigin))
+    ) {
+      originTrusted = true;
+    }
+
+    if (!originTrusted) {
+      throw new Error(`Untrusted IPC sender origin: ${parsedUrl.origin || parsedUrl.protocol}`);
+    }
+
+    const senderId = event.sender.id;
+    const candidateWindows = [
+      windowManager?.mainWindow,
+      windowManager?.controlPanelWindow,
+      windowManager?.settingsWindow,
+    ];
+    const trustedIds = new Set();
+    for (const win of candidateWindows) {
+      if (!win) continue;
+      if (typeof win.isDestroyed === "function" && win.isDestroyed()) continue;
+      const wcId = win.webContents?.id;
+      if (wcId !== undefined && wcId !== null) {
+        trustedIds.add(wcId);
+      }
+    }
+
+    if (!trustedIds.has(senderId)) {
+      throw new Error("Untrusted IPC sender window");
+    }
+  };
+}
+
 function registerOverlayIpc({
   ipcMain,
   shell,
@@ -179,7 +283,21 @@ function registerOverlayIpc({
   microsoftCalendarManager,
   databaseManager,
   clipboardManager,
+  safeStorage: injectedSafeStorage,
+  clipboard: injectedClipboard,
+  devServerUrl,
+  nodeEnv,
 }) {
+  const activeSafeStorage =
+    injectedSafeStorage !== undefined ? injectedSafeStorage : electronSafeStorage;
+  const activeClipboard =
+    injectedClipboard !== undefined ? injectedClipboard : electronClipboard;
+  const assertTrustedSender = createAssertTrustedSender({
+    app,
+    windowManager,
+    devServerUrl,
+    nodeEnv,
+  });
   let commandModePrefs = { enabled: false, autoRunTrusted: false, autoSaveCreatedItems: true };
   const skillsDir = appSkills.skillsDirFor(app);
   const activeStreams = new Map(); // `${senderId}:${requestId}` -> AbortController
@@ -663,6 +781,7 @@ function registerOverlayIpc({
       }
     },
     getAppSkill: (appId) => readSkill(skillsDir, appId),
+    userDataDir: app.getPath("userData"),
     openExternal: (url) => openExternalSoon(url),
     searchIndex:
       process.platform === "win32"
@@ -671,6 +790,7 @@ function registerOverlayIpc({
   });
 
   const { McpManager } = require("./mcp/mcpManager");
+  const { validateConfig, hasStdioConfigChanged } = require("./mcp/mcpConfig");
   const { discoverExternalConfigs, importSelectedServers } = require("./mcp/mcpImporter");
   const galleryServers = require("./mcp/gallery.json");
   const { performOAuthFlow } = require("./mcp/mcpAuth");
@@ -679,7 +799,7 @@ function registerOverlayIpc({
     appDataDir: app.getPath("appData"),
     userDataDir: app.getPath("userData"),
     openBrowser: (url) => openExternalSoon(url),
-    safeStorage,
+    safeStorage: activeSafeStorage,
   });
   mcpManager.init().catch((err) => {
     debugLogger?.warn?.("MCP manager init failed", { error: err?.message });
@@ -700,6 +820,7 @@ function registerOverlayIpc({
   const decisionRouter = createDecisionRouter();
 
   const commandOrchestrator = createOrchestrator({
+    userDataDir: app.getPath("userData"),
     parseHeuristic: (utterance) => {
       const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
       const learned = searchExamples(skillsDir, utterance, { k: 3 });
@@ -1117,20 +1238,26 @@ function registerOverlayIpc({
   });
 
   // MCP Connectors IPC
-  ipcMain.handle("overlay-mcp-list", async () => {
+  ipcMain.handle("overlay-mcp-list", async (event) => {
+    assertTrustedSender(event);
     return mcpManager.listServers();
   });
 
-  ipcMain.handle("overlay-mcp-add", async (_event, { name, cfg }) => {
-    return mcpManager.configStore.addServer(name, cfg);
+  ipcMain.handle("overlay-mcp-add", async (event, { name, cfg } = {}) => {
+    assertTrustedSender(event);
+    return mcpManager.configStore.addServer(name, cfg, { authStore: mcpManager.authStore });
   });
 
-  ipcMain.handle("overlay-mcp-remove", async (_event, { name }) => {
+  ipcMain.handle("overlay-mcp-remove", async (event, { name } = {}) => {
+    assertTrustedSender(event);
     await mcpManager.disconnect(name).catch(() => {});
+    mcpManager.authStore?.removeTokens?.(name);
+    mcpManager.authStore?.removeEnvSecrets?.(name);
     return mcpManager.configStore.removeServer(name);
   });
 
-  ipcMain.handle("overlay-mcp-connect", async (_event, { name }) => {
+  ipcMain.handle("overlay-mcp-connect", async (event, { name } = {}) => {
+    assertTrustedSender(event);
     try {
       await mcpManager.connect(name);
       return { ok: true };
@@ -1139,12 +1266,14 @@ function registerOverlayIpc({
     }
   });
 
-  ipcMain.handle("overlay-mcp-disconnect", async (_event, { name }) => {
+  ipcMain.handle("overlay-mcp-disconnect", async (event, { name } = {}) => {
+    assertTrustedSender(event);
     await mcpManager.disconnect(name);
     return { ok: true };
   });
 
-  ipcMain.handle("overlay-mcp-auth", async (_event, { name }) => {
+  ipcMain.handle("overlay-mcp-auth", async (event, { name } = {}) => {
+    assertTrustedSender(event);
     const config = mcpManager.configStore.read();
     const serverCfg = config.servers?.[name];
     if (!serverCfg || !serverCfg.url) {
@@ -1162,7 +1291,8 @@ function registerOverlayIpc({
     }
   });
 
-  ipcMain.handle("overlay-mcp-tools", async (_event, { name }) => {
+  ipcMain.handle("overlay-mcp-tools", async (event, { name } = {}) => {
+    assertTrustedSender(event);
     const tools = await mcpManager.listToolsForServer(name);
     return tools.map((t) => ({
       ...t,
@@ -1170,20 +1300,60 @@ function registerOverlayIpc({
     }));
   });
 
-  ipcMain.handle("overlay-mcp-set-tool-enabled", async (_event, { name, tool, on }) => {
+  ipcMain.handle("overlay-mcp-set-tool-enabled", async (event, { name, tool, on } = {}) => {
+    assertTrustedSender(event);
     mcpManager.setToolEnabled(name, tool, on === true);
     return { ok: true };
   });
 
-  ipcMain.handle("overlay-mcp-config-get", async () => {
-    return mcpManager.configStore.read();
+  ipcMain.handle("overlay-mcp-config-get", async (event) => {
+    assertTrustedSender(event);
+    return mcpManager.configStore.readMasked();
   });
 
-  ipcMain.handle("overlay-mcp-config-save", async (_event, { text }) => {
-    return mcpManager.configStore.save(text);
+  ipcMain.handle("overlay-mcp-config-save", async (event, { text } = {}) => {
+    assertTrustedSender(event);
+    const validation = validateConfig(text);
+    if (!validation.ok) {
+      return { ok: false, errors: validation.errors };
+    }
+    const current = mcpManager.configStore.read();
+    const diff = hasStdioConfigChanged(current.servers, validation.servers);
+    if (diff.changed) {
+      if (!dialog || typeof dialog.showMessageBox !== "function") {
+        return { ok: false, errors: ["Confirmation dialog is unavailable"] };
+      }
+      const parent =
+        BrowserWindow?.getFocusedWindow?.() ||
+        windowManager?.controlPanelWindow ||
+        windowManager?.mainWindow ||
+        undefined;
+      const dialogParent =
+        parent && (typeof parent.isDestroyed !== "function" || !parent.isDestroyed())
+          ? parent
+          : undefined;
+      const boxOptions = {
+        type: "warning",
+        buttons: ["Cancel", "Save Changes"],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+        title: "Confirm MCP Configuration Change",
+        message: `Save MCP changes for "${diff.serverName}"?`,
+        detail: `The stdio ${diff.reason || "configuration"} (command, args, or env) was modified. Changes affect what local commands Overlay launches.`,
+      };
+      const boxRes = dialogParent
+        ? await dialog.showMessageBox(dialogParent, boxOptions)
+        : await dialog.showMessageBox(boxOptions);
+      if (boxRes?.response !== 1) {
+        return { ok: false, cancelled: true, errors: ["Save cancelled by user"] };
+      }
+    }
+    return mcpManager.configStore.saveWithSecrets(text, mcpManager.authStore);
   });
 
-  ipcMain.handle("overlay-mcp-test", async (_event, { name }) => {
+  ipcMain.handle("overlay-mcp-test", async (event, { name } = {}) => {
+    assertTrustedSender(event);
     try {
       await mcpManager.connect(name);
       const tools = await mcpManager.listToolsForServer(name);
@@ -1199,32 +1369,40 @@ function registerOverlayIpc({
     }
   });
 
-  ipcMain.handle("overlay-mcp-gallery", async () => {
+  ipcMain.handle("overlay-mcp-gallery", async (event) => {
+    assertTrustedSender(event);
     return galleryServers;
   });
 
-  ipcMain.handle("overlay-mcp-import-discover", async () => {
+  ipcMain.handle("overlay-mcp-import-discover", async (event) => {
+    assertTrustedSender(event);
     return discoverExternalConfigs();
   });
 
-  ipcMain.handle("overlay-mcp-import-servers", async (_event, { selected, envImportChoices, importEnvValues }) => {
-    return importSelectedServers(selected, {
+  ipcMain.handle("overlay-mcp-import-servers", async (event, payload = {}) => {
+    assertTrustedSender(event);
+    const selectedIds = payload?.selectedIds ?? payload?.selected ?? [];
+    return importSelectedServers(selectedIds, {
       mcpConfigStore: mcpManager.configStore,
-      envImportChoices: envImportChoices || {},
-      importEnvValues: importEnvValues === true,
+      authStore: mcpManager.authStore,
+      envImportChoices: payload?.envImportChoices || {},
+      importEnvValues: payload?.importEnvValues === true,
     });
   });
 
-  ipcMain.handle("overlay-mcp-permissions-list", async () => {
+  ipcMain.handle("overlay-mcp-permissions-list", async (event) => {
+    assertTrustedSender(event);
     return mcpManager.listPermissions();
   });
 
-  ipcMain.handle("overlay-mcp-permissions-revoke", async (_event, { key }) => {
+  ipcMain.handle("overlay-mcp-permissions-revoke", async (event, { key } = {}) => {
+    assertTrustedSender(event);
     return { ok: mcpManager.revokePermission(key) };
   });
 
   // System Diagnostics IPC
-  ipcMain.handle("overlay-diagnostics-get", async () => {
+  ipcMain.handle("overlay-diagnostics-get", async (event) => {
+    assertTrustedSender(event);
     return generateDiagnosticReport({
       mcpManager,
       debugLogger,
@@ -1232,15 +1410,16 @@ function registerOverlayIpc({
     });
   });
 
-  ipcMain.handle("overlay-diagnostics-copy", async () => {
+  ipcMain.handle("overlay-diagnostics-copy", async (event) => {
+    assertTrustedSender(event);
     try {
       const report = await generateDiagnosticReport({
         mcpManager,
         debugLogger,
         app,
       });
-      if (clipboard && typeof clipboard.writeText === "function") {
-        clipboard.writeText(report);
+      if (activeClipboard && typeof activeClipboard.writeText === "function") {
+        activeClipboard.writeText(report);
       }
       return { ok: true, report };
     } catch (err) {
@@ -1248,7 +1427,7 @@ function registerOverlayIpc({
     }
   });
 
-
+  return { assertTrustedSender, mcpManager };
 }
 
-module.exports = { registerOverlayIpc };
+module.exports = { registerOverlayIpc, createAssertTrustedSender };

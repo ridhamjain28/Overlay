@@ -20,6 +20,8 @@ export interface Message {
   id: string;
   role: "user" | "assistant" | "tool";
   content: string;
+  /** Prompt-safe text sent to the model on follow-ups (e.g. fenced untrusted MCP results). */
+  promptContent?: string;
   isStreaming: boolean;
   toolCalls?: ToolCallInfo[];
   /** Set on a failed reply; transient (not part of the saved conversation). */

@@ -250,11 +250,50 @@ function isBlocked(step) {
   return false;
 }
 
+function isTrustedAppSkillStep(step) {
+  if (!step || typeof step !== "object") return false;
+  const action = String(step.action || step.type || "").trim().toLowerCase();
+  if (action !== "app_action") return false;
+  const source = String(step.source || "").trim().toLowerCase();
+  if (
+    source === "llm" ||
+    source === "planner" ||
+    source === "decision-router" ||
+    step.fromPlanner === true ||
+    step.type === "plan"
+  ) {
+    return false;
+  }
+  if (step.riskSource != null) {
+    return step.riskSource === "app_skill";
+  }
+  return (
+    source === "" ||
+    source === "heuristic" ||
+    source === "app_skill" ||
+    source === "app_db" ||
+    source === "custom_skill"
+  );
+}
+
+function stripUntrustedRisk(step) {
+  if (!step || typeof step !== "object") return step;
+  if (isTrustedAppSkillStep(step)) return step;
+  if (!("risk" in step) && !("riskSource" in step)) return step;
+  const copy = { ...step };
+  delete copy.risk;
+  delete copy.riskSource;
+  return copy;
+}
+
 function classify(step, options = {}) {
   if (!step || typeof step !== "object") return "auto";
 
+  const sanitizedStep = stripUntrustedRisk(step);
+  const trustedRisk = isTrustedAppSkillStep(sanitizedStep) ? sanitizedStep.risk : undefined;
+
   // 1. Check BLOCK tier - NEVER bypassed
-  if (isBlocked(step)) {
+  if (isBlocked(sanitizedStep)) {
     return "block";
   }
 
@@ -266,26 +305,23 @@ function classify(step, options = {}) {
   // 3. Check permissions / always allow
   const permissions =
     options.permissions || (options.userDataDir ? loadPermissions(options.userDataDir, options.fsImpl) : null);
-  if (isAlwaysAllowed(step, permissions, { userDataDir: options.userDataDir, fsImpl: options.fsImpl })) {
+  if (isAlwaysAllowed(sanitizedStep, permissions, { userDataDir: options.userDataDir, fsImpl: options.fsImpl })) {
     return "auto";
   }
 
-  const action = String(step.action || step.type || "").trim().toLowerCase();
-  const args = step.args || step.params || {};
+  const action = String(sanitizedStep.action || sanitizedStep.type || "").trim().toLowerCase();
+  const args = sanitizedStep.args || sanitizedStep.params || {};
 
-  // 4. Database actions with explicit risk
-  if (step.risk === "confirm") return "confirm";
-  if (step.risk === "safe") return "auto";
-
-  // 5. MCP tools:
+  // 4. MCP tools:
   // Rule: first use of ANY MCP tool asks; user can then "Always allow" it.
   // Hints like readOnlyHint are untrusted server metadata and NEVER bypass confirmation.
   // Only built-in Overlay actions use the auto tier.
-  if (step.type === "mcp" || action === "mcp") {
+  if (sanitizedStep.type === "mcp" || action === "mcp") {
     return "confirm";
   }
 
-  // 6. CONFIRM tier actions (built-in destructive or stateful actions)
+  // 5. CONFIRM tier actions (built-in destructive or stateful actions)
+  // Run delete/send/confirm checks BEFORE honoring app-skill risk === "safe".
   // - Send message / email (real send, not prefill)
   if (
     action === "send_message" ||
@@ -359,6 +395,10 @@ function classify(step, options = {}) {
   if (cmd && CONFIRM_COMMAND_PATTERNS.some((pattern) => pattern.test(cmd))) {
     return "confirm";
   }
+
+  // 6. Trusted app-DB / custom-skill explicit risk (after destructive/send/block checks)
+  if (trustedRisk === "confirm") return "confirm";
+  if (trustedRisk === "safe") return "auto";
 
   // 7. AUTO tier actions (Built-in Overlay actions only)
   // - Brightness
@@ -437,12 +477,13 @@ function classify(step, options = {}) {
     return "auto";
   }
 
-  // - App action default: if launch/open/show, auto
+  // - App action default: if launch/open/show, auto; unverified/stripped app_action confirms
   if (action === "app_action") {
     const actionId = String(args.actionId || "").toLowerCase();
     if (actionId === "launch" || actionId === "open" || actionId === "show") {
       return "auto";
     }
+    return "confirm";
   }
 
   // Default fallback for safe desktop assistance
@@ -496,6 +537,8 @@ module.exports = {
   classify,
   stepKey,
   computeToolSchemaHash,
+  isTrustedAppSkillStep,
+  stripUntrustedRisk,
   isAlwaysAllowed,
   allowAction,
   revokePermission,

@@ -3456,6 +3456,7 @@ declare global {
         success: boolean;
         deduped?: boolean;
         message?: string;
+        promptMessage?: string;
         source?: string;
         steps?: Array<{ action: string; args: Record<string, string> }>;
       }>;

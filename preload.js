@@ -1222,14 +1222,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   overlaySystemAction: (request) => ipcRenderer.invoke("overlay-system-action", request),
   overlayCommandParse: (payload) => ipcRenderer.invoke("overlay-command-parse", payload),
   overlayCommandExecute: (payload) => ipcRenderer.invoke("overlay-command-execute", payload),
-  overlayCommandOrchestrate: (payload) => ipcRenderer.invoke("overlay-command-orchestrate", payload),
+  overlayCommandOrchestrate: (payload) =>
+    ipcRenderer.invoke("overlay-command-orchestrate", payload),
   overlayCommandCancel: () => ipcRenderer.invoke("overlay-command-cancel"),
   onOverlayCommandProgress: registerListener(
     "overlay-command-progress",
     (callback) => (_event, payload) => callback(payload)
   ),
-  overlaySetCommandModePrefs: (prefs) =>
-    ipcRenderer.send("overlay-set-command-mode-prefs", prefs),
+  overlaySetCommandModePrefs: (prefs) => ipcRenderer.send("overlay-set-command-mode-prefs", prefs),
   overlayRequirementsCheck: (opts) => ipcRenderer.invoke("overlay-requirements-check", opts),
   overlayRequirementsInstall: (id, opts) =>
     ipcRenderer.invoke("overlay-requirements-install", id, opts),
@@ -1291,8 +1291,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     test: (name) => ipcRenderer.invoke("overlay-mcp-test", { name }),
     gallery: () => ipcRenderer.invoke("overlay-mcp-gallery"),
     importDiscover: () => ipcRenderer.invoke("overlay-mcp-import-discover"),
-    importServers: (selected, envImportChoices, importEnvValues) =>
-      ipcRenderer.invoke("overlay-mcp-import-servers", { selected, envImportChoices, importEnvValues }),
+    importServers: (selectedIds, envImportChoices, importEnvValues) =>
+      ipcRenderer.invoke("overlay-mcp-import-servers", {
+        selectedIds,
+        envImportChoices,
+        importEnvValues,
+      }),
     permissionsList: () => ipcRenderer.invoke("overlay-mcp-permissions-list"),
     permissionsRevoke: (key) => ipcRenderer.invoke("overlay-mcp-permissions-revoke", { key }),
     onStatus: registerListener(

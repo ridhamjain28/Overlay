@@ -21,6 +21,7 @@ export interface CommandOrchestratorResult {
   cancelled?: boolean;
   deduped?: boolean;
   message?: string;
+  promptMessage?: string;
   source?: string;
   steps?: Array<{ action: string; args: Record<string, string> }>;
 }
@@ -42,6 +43,7 @@ export type CommandModeOutcome =
       success: boolean;
       cancelled?: boolean;
       message: string;
+      promptMessage?: string;
       intent: CommandIntent;
     };
 
@@ -117,6 +119,7 @@ export async function runCommandOrchestrator(
       success: result.success !== false,
       cancelled: false,
       message: result.message || (result.success === false ? "The command failed." : "Done"),
+      ...(result.promptMessage ? { promptMessage: result.promptMessage } : {}),
       intent: {
         action: (result.steps && result.steps[0]?.action) || "plan",
         args: (result.steps && result.steps[0]?.args) || {},

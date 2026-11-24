@@ -258,23 +258,22 @@ export default function ConnectorsSettings() {
     const discovered = await api.importDiscover();
     setDiscoveredServers(discovered || []);
     const initialSelect: Record<string, boolean> = {};
-    discovered.forEach((d) => {
-      initialSelect[`${d.sourceKey}:${d.serverName}`] = true;
+    (discovered || []).forEach((d) => {
+      initialSelect[d.id] = true;
     });
     setSelectedImports(initialSelect);
+    setEnvKeyChoices({});
   };
 
   const executeImport = async () => {
     if (!api) return;
-    const selected = discoveredServers.filter(
-      (d) => selectedImports[`${d.sourceKey}:${d.serverName}`]
-    );
+    const selected = discoveredServers.filter((d) => selectedImports[d.id]);
     if (selected.length === 0) {
       setImportFeedback(t("mcp.noServersSelected"));
       return;
     }
     const res = await api.importServers(
-      selected.map((s) => ({ serverName: s.serverName, config: s.config })),
+      selected.map((s) => s.id),
       envKeyChoices,
       importEnvValues
     );
@@ -906,7 +905,7 @@ export default function ConnectorsSettings() {
                 </p>
               ) : (
                 discoveredServers.map((s) => {
-                  const key = `${s.sourceKey}:${s.serverName}`;
+                  const key = s.id;
                   const isChecked = selectedImports[key] !== false;
                   return (
                     <div
@@ -932,7 +931,7 @@ export default function ConnectorsSettings() {
                               {t("mcp.envVariables", { defaultValue: "Environment variables (select keys to import values)" })}:
                             </p>
                             {s.envDetails.map((envItem) => {
-                              const isKeyChecked = envKeyChoices[s.serverName]?.[envItem.key] === true;
+                              const isKeyChecked = envKeyChoices[s.id]?.[envItem.key] === true;
                               return (
                                 <label
                                   key={envItem.key}
@@ -951,8 +950,8 @@ export default function ConnectorsSettings() {
                                       const checked = e.target.checked;
                                       setEnvKeyChoices((prev) => ({
                                         ...prev,
-                                        [s.serverName]: {
-                                          ...(prev[s.serverName] || {}),
+                                        [s.id]: {
+                                          ...(prev[s.id] || {}),
                                           [envItem.key]: checked,
                                         },
                                       }));

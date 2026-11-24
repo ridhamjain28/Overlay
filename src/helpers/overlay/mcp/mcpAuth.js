@@ -11,9 +11,16 @@ const fs = require("fs");
 const path = require("path");
 
 const TOKENS_FILE = "mcp-tokens.enc";
+const ENV_SECRETS_FILE = "mcp-env.enc";
+const ENV_SECRET_REF = "__OVERLAY_SECRET_REF__";
+const MASKED_ENV_VALUE = "••••••••";
 
 function getTokensPath(userDataDir) {
   return path.join(userDataDir || ".", TOKENS_FILE);
+}
+
+function getEnvSecretsPath(userDataDir) {
+  return path.join(userDataDir || ".", ENV_SECRETS_FILE);
 }
 
 // Encryption helpers strictly using Electron safeStorage (DPAPI) or mock safeStorage in tests.
@@ -52,6 +59,52 @@ class McpAuthStore {
     this.safeStorage = options.safeStorage;
     this.fsImpl = options.fsImpl || fs;
     this.filePath = getTokensPath(this.userDataDir);
+    this.envFilePath = getEnvSecretsPath(this.userDataDir);
+  }
+
+  getEnvSecrets(serverName) {
+    const all = this.loadAllEnv();
+    return all[serverName] ? { ...all[serverName] } : {};
+  }
+
+  saveEnvSecrets(serverName, envObj) {
+    if (!serverName) return;
+    const all = this.loadAllEnv();
+    const cleaned = {};
+    for (const [k, v] of Object.entries(envObj || {})) {
+      if (v !== undefined && v !== null && String(v) !== "" && String(v) !== ENV_SECRET_REF && String(v) !== MASKED_ENV_VALUE) {
+        cleaned[k] = String(v);
+      }
+    }
+    if (Object.keys(cleaned).length > 0) {
+      all[serverName] = { ...(all[serverName] || {}), ...cleaned };
+    }
+    this.persistAllEnv(all);
+  }
+
+  removeEnvSecrets(serverName) {
+    if (!this.fsImpl.existsSync(this.envFilePath)) return;
+    const all = this.loadAllEnv();
+    if (Object.prototype.hasOwnProperty.call(all, serverName)) {
+      delete all[serverName];
+      this.persistAllEnv(all);
+    }
+  }
+
+  loadAllEnv() {
+    try {
+      if (!this.fsImpl.existsSync(this.envFilePath)) return {};
+      const buf = this.fsImpl.readFileSync(this.envFilePath);
+      return decryptTokens(buf, this.safeStorage);
+    } catch {
+      return {};
+    }
+  }
+
+  persistAllEnv(allEnv) {
+    const encrypted = encryptTokens(allEnv, this.safeStorage);
+    this.fsImpl.mkdirSync(path.dirname(this.envFilePath), { recursive: true });
+    this.fsImpl.writeFileSync(this.envFilePath, encrypted);
   }
 
   getTokens(serverName) {
@@ -230,6 +283,8 @@ async function performOAuthFlow(serverName, serverUrl, { authStore, openBrowser 
 
 module.exports = {
   McpAuthStore,
+  ENV_SECRET_REF,
+  MASKED_ENV_VALUE,
   generatePkce,
   startLoopbackServer,
   performOAuthFlow,

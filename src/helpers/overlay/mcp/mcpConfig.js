@@ -8,6 +8,62 @@
 
 const fs = require("fs");
 const path = require("path");
+const { ENV_SECRET_REF, MASKED_ENV_VALUE } = require("./mcpAuth");
+
+function maskEnvObject(envObj) {
+  if (!envObj || typeof envObj !== "object" || Array.isArray(envObj)) return undefined;
+  const masked = {};
+  for (const [k, v] of Object.entries(envObj)) {
+    masked[k] = v ? MASKED_ENV_VALUE : "";
+  }
+  return masked;
+}
+
+function maskServersMap(servers) {
+  const out = {};
+  for (const [name, cfg] of Object.entries(servers || {})) {
+    if (!cfg || typeof cfg !== "object") continue;
+    const copy = { ...cfg };
+    if (copy.env) {
+      copy.env = maskEnvObject(copy.env);
+    }
+    out[name] = copy;
+  }
+  return out;
+}
+
+function hasStdioConfigChanged(prevServers = {}, nextServers = {}) {
+  for (const [name, nextCfg] of Object.entries(nextServers || {})) {
+    if (!nextCfg || !nextCfg.command) continue;
+    const prevCfg = prevServers[name];
+    if (!prevCfg || !prevCfg.command) {
+      return { changed: true, serverName: name, reason: "added" };
+    }
+    if (prevCfg.command !== nextCfg.command) {
+      return { changed: true, serverName: name, reason: "command" };
+    }
+    if (JSON.stringify(prevCfg.args || []) !== JSON.stringify(nextCfg.args || [])) {
+      return { changed: true, serverName: name, reason: "args" };
+    }
+    const prevEnv = prevCfg.env || {};
+    const nextEnv = nextCfg.env || {};
+    const prevKeys = Object.keys(prevEnv).sort();
+    const nextKeys = Object.keys(nextEnv).sort();
+    if (JSON.stringify(prevKeys) !== JSON.stringify(nextKeys)) {
+      return { changed: true, serverName: name, reason: "env" };
+    }
+    for (const k of nextKeys) {
+      const nv = String(nextEnv[k] ?? "");
+      const pv = String(prevEnv[k] ?? "");
+      // Masked placeholder preserves existing ref/value without triggering value change
+      if (nv === MASKED_ENV_VALUE && pv) continue;
+      if (nv !== pv) {
+        return { changed: true, serverName: name, reason: "env" };
+      }
+    }
+  }
+  return { changed: false };
+}
 
 function getMcpConfigDir(appDataDir) {
   if (appDataDir) return path.join(appDataDir, "Overlay");
@@ -161,6 +217,64 @@ class McpConfigStore {
     }
   }
 
+  readMasked() {
+    const raw = this.read();
+    const maskedServers = maskServersMap(raw.servers);
+    return {
+      text: JSON.stringify({ mcpServers: maskedServers }, null, 2),
+      path: raw.path,
+      servers: maskedServers,
+      errors: raw.errors,
+    };
+  }
+
+  saveWithSecrets(textOrObj, authStore) {
+    const text = typeof textOrObj === "string" ? textOrObj : JSON.stringify(textOrObj, null, 2);
+    const validation = validateConfig(text);
+    if (!validation.ok) {
+      return { ok: false, errors: validation.errors };
+    }
+    const current = this.read();
+    const sanitizedServers = {};
+    for (const [name, cfg] of Object.entries(validation.servers || {})) {
+      const copy = { ...cfg };
+      if (cfg.env && typeof cfg.env === "object") {
+        const nextEnv = {};
+        const newSecrets = {};
+        const prevEnv = current.servers?.[name]?.env || {};
+        for (const [k, rawVal] of Object.entries(cfg.env)) {
+          const valStr = String(rawVal ?? "");
+          if (valStr === MASKED_ENV_VALUE) {
+            nextEnv[k] = prevEnv[k] ? ENV_SECRET_REF : "";
+          } else if (valStr === ENV_SECRET_REF) {
+            nextEnv[k] = ENV_SECRET_REF;
+          } else if (valStr !== "") {
+            newSecrets[k] = valStr;
+            nextEnv[k] = ENV_SECRET_REF;
+          } else {
+            nextEnv[k] = "";
+          }
+        }
+        if (Object.keys(newSecrets).length > 0) {
+          if (!authStore || typeof authStore.saveEnvSecrets !== "function") {
+            return {
+              ok: false,
+              errors: ["Electron safeStorage is unavailable; credentials cannot be securely saved."],
+            };
+          }
+          try {
+            authStore.saveEnvSecrets(name, newSecrets);
+          } catch (err) {
+            return { ok: false, errors: [err?.message || "Failed to encrypt MCP secrets"] };
+          }
+        }
+        copy.env = nextEnv;
+      }
+      sanitizedServers[name] = copy;
+    }
+    return this.save({ mcpServers: sanitizedServers });
+  }
+
   save(textOrObj) {
     const text = typeof textOrObj === "string" ? textOrObj : JSON.stringify(textOrObj, null, 2);
     const validation = validateConfig(text);
@@ -177,7 +291,7 @@ class McpConfigStore {
     }
   }
 
-  addServer(name, serverConfig) {
+  addServer(name, serverConfig, options = {}) {
     const current = this.read();
     const updated = {
       mcpServers: {
@@ -185,6 +299,9 @@ class McpConfigStore {
         [name]: serverConfig,
       },
     };
+    if (options.authStore) {
+      return this.saveWithSecrets(updated, options.authStore);
+    }
     return this.save(updated);
   }
 
@@ -243,4 +360,9 @@ module.exports = {
   getMcpConfigPath,
   validateConfig,
   McpConfigStore,
+  maskEnvObject,
+  maskServersMap,
+  hasStdioConfigChanged,
+  ENV_SECRET_REF,
+  MASKED_ENV_VALUE,
 };

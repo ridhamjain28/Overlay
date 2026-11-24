@@ -165,6 +165,10 @@ class McpManager {
           const riskPolicy = require("../commandMode/riskPolicy");
           riskPolicy.revokeServerPermissions(this.userDataDir, name, this.fsImpl);
         } catch {}
+        try {
+          this.authStore.removeTokens(name);
+          this.authStore.removeEnvSecrets(name);
+        } catch {}
       }
     }
     this.refreshIndexFromDisk();
@@ -207,10 +211,25 @@ class McpManager {
 
     try {
       if (serverCfg.command) {
-        // stdio server: spawn with no shell, env merged
+        // stdio server: spawn with no shell, merge non-secret env + decrypted safeStorage secrets
+        const storedSecrets =
+          typeof this.authStore?.getEnvSecrets === "function"
+            ? this.authStore.getEnvSecrets(serverName)
+            : {};
+        const configEnv = {};
+        for (const [k, v] of Object.entries(serverCfg.env || {})) {
+          if (v === "__OVERLAY_SECRET_REF__" || v === "••••••••") {
+            if (Object.prototype.hasOwnProperty.call(storedSecrets, k)) {
+              configEnv[k] = storedSecrets[k];
+            }
+          } else {
+            configEnv[k] = v;
+          }
+        }
         const mergedEnv = {
           ...process.env,
-          ...(serverCfg.env || {}),
+          ...storedSecrets,
+          ...configEnv,
         };
         // Clean out sensitive parent env variables if needed, never log them
         transport = new StdioClientTransport({

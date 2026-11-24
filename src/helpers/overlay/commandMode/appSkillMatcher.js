@@ -36,6 +36,8 @@ function matchPatternedSkillAction(skill, needle) {
           action: "app_action",
           args: { appId: skill.appId, actionId: action.id, params: { [paramName]: match[1].trim() } },
           confidence: 0.92,
+          risk: action.risk === "confirm" ? "confirm" : "safe",
+          riskSource: "app_skill",
         };
       }
     }
@@ -59,6 +61,8 @@ function parseAppSkillIntent(text, { skills } = {}) {
               params: example.params && typeof example.params === "object" ? { ...example.params } : {},
             },
             confidence: 1,
+            risk: action.risk === "confirm" ? "confirm" : "safe",
+            riskSource: "app_skill",
           };
         }
       }
@@ -75,6 +79,8 @@ function parseAppSkillIntent(text, { skills } = {}) {
             action: "app_action",
             args: { appId: skill.appId, actionId: launchAction.id, params: {} },
             confidence: 0.95,
+            risk: launchAction.risk === "confirm" ? "confirm" : "safe",
+            riskSource: "app_skill",
           };
         }
       }
