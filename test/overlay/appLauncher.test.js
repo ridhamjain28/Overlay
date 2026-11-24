@@ -5,6 +5,7 @@ const {
   resolveApp,
   launchApp,
   scoreMatch,
+  editDistance,
 } = require("../../src/helpers/overlay/appLauncher");
 
 // Realistic fixture data representing the 4 Windows app discovery sources
@@ -245,4 +246,66 @@ test("launchApp invokes execFile for normal exes", async () => {
   assert.deepEqual(result, { ok: true });
   assert.equal(executed.length, 1);
   assert.equal(executed[0].file, "notepad.exe");
+});
+
+test("editDistance computes Optimal String Alignment (Damerau-Levenshtein) distances", () => {
+  assert.equal(editDistance("whatsapp", "whatsapp"), 0);
+  assert.equal(editDistance("whastapp", "whatsapp"), 1); // adjacent transposition
+  assert.equal(editDistance("whatspp", "whatsapp"), 1);  // deletion
+  assert.equal(editDistance("watsap", "whatsapp"), 2);   // two deletions
+  assert.equal(editDistance("spotfy", "spotify"), 1);
+  assert.equal(editDistance("cantva", "canva"), 1);
+  assert.equal(editDistance("nordpad", "notepad"), 2);
+});
+
+test("resolveApp handles typos and transpositions via edit-distance fuzzy matching", () => {
+  const index = buildLaunchIndex({
+    shortcuts: [
+      ...FIXTURE_SHORTCUTS,
+      { name: "Canva", path: "C:\\Users\\User\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Canva.lnk" },
+    ],
+    appPaths: FIXTURE_APP_PATHS,
+    startApps: [
+      ...FIXTURE_START_APPS,
+      { Name: "WhatsApp", AppID: "5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App" },
+    ],
+    protocols: FIXTURE_PROTOCOLS,
+  });
+
+  for (const typo of ["whastapp", "whatspp", "watsap"]) {
+    const res = resolveApp(typo, { index });
+    assert.ok(res, `Expected '${typo}' to resolve to WhatsApp`);
+    assert.equal(res.name, "WhatsApp");
+    assert.ok(res.score >= 0.55 && res.score <= 0.74, `Expected fuzzy score in [0.55, 0.74], got ${res.score}`);
+  }
+
+  const spotfy = resolveApp("spotfy", { index });
+  assert.ok(spotfy, "Expected 'spotfy' to resolve to Spotify");
+  assert.equal(spotfy.name, "Spotify");
+  assert.ok(spotfy.score >= 0.55 && spotfy.score <= 0.74, `Score was ${spotfy.score}`);
+
+  const cantva = resolveApp("cantva", { index });
+  assert.ok(cantva, "Expected 'cantva' to resolve to Canva");
+  assert.equal(cantva.name, "Canva");
+  assert.ok(cantva.score >= 0.55 && cantva.score <= 0.74, `Score was ${cantva.score}`);
+
+  const nordpad = resolveApp("nordpad", { index });
+  assert.ok(nordpad, "Expected 'nordpad' to resolve to Notepad");
+  assert.equal(nordpad.name, "Notepad");
+
+  // Multi-word app single-word typo
+  const vantge = resolveApp("vantge", { index });
+  assert.ok(vantge, "Expected 'vantge' to resolve to Lenovo Vantage");
+  assert.equal(vantge.name, "Lenovo Vantage");
+
+  // Random unrelated string must not match
+  assert.equal(resolveApp("zzzzqqq", { index }), null);
+
+  // Blocked queries and 1-2 char queries must not fuzzy-match
+  assert.equal(resolveApp("powershell", { index }), null);
+  assert.equal(resolveApp("zz", { index }), null);
+  assert.equal(scoreMatch("wp", { appId: "whatsapp", normalizedName: "whatsapp", aliases: ["whatsapp"] }), 0);
+  assert.equal(scoreMatch("w", { appId: "whatsapp", normalizedName: "whatsapp", aliases: ["whatsapp"] }), 0.85); // prefix only, never fuzzy
+  assert.equal(scoreMatch("p", { appId: "notepad", normalizedName: "notepad", aliases: ["notepad"] }), 0.75); // substring only, never fuzzy
+  assert.equal(scoreMatch("q", { appId: "notepad", normalizedName: "notepad", aliases: ["notepad"] }), 0);
 });

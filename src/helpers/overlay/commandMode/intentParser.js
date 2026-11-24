@@ -322,8 +322,33 @@ function parseIntentHeuristic(text, options = {}) {
   return { action: "none", args: {}, confidence: 0.35, source: "heuristic" };
 }
 
-function shouldUseLlm(heuristic) {
+const MCP_TASK_VERB_RE =
+  /\b(create|make|new|design|generate|build|search|find|fetch|get|list|show|read|write|edit|update|delete|remove|add|insert|append|send|post|reply|comment|assign|close|export|resize|upload|download|call|book|schedule|draft|check|lookup|look up|query)\b/i;
+
+function utteranceMatchesMcpToolKeywords(text, mcpTools) {
+  const hay = trimText(text).toLowerCase();
+  if (!hay || !Array.isArray(mcpTools) || !mcpTools.length) return false;
+  for (const tool of mcpTools) {
+    if (!tool) continue;
+    const rawName = String(tool.name || tool.tool || "").toLowerCase();
+    const tokens = rawName.split(/[._/-]+/).filter((t) => t.length >= 3);
+    if (tokens.some((tok) => hay.includes(tok))) return true;
+  }
+  return false;
+}
+
+function shouldConsultLlmForMcp(heuristic, { text, mcpTools } = {}) {
+  if (!Array.isArray(mcpTools) || !mcpTools.length) return false;
+  if (heuristic?.metaIntent) return false;
+  const utterance = trimText(text);
+  if (!utterance) return false;
+  if (MCP_TASK_VERB_RE.test(utterance)) return true;
+  return utteranceMatchesMcpToolKeywords(utterance, mcpTools);
+}
+
+function shouldUseLlm(heuristic, { text, mcpTools } = {}) {
   if (!heuristic) return true;
+  if (shouldConsultLlmForMcp(heuristic, { text, mcpTools })) return true;
   if (heuristic.action !== "none" && heuristic.confidence >= 0.7) return false;
   return heuristic.confidence < 0.7;
 }
@@ -334,6 +359,7 @@ function buildIntentUserMessage(text, options = {}) {
     skills: options.skills,
     learned: options.learned,
     text,
+    mcpTools: options.mcpTools,
   });
   return extra ? base + "\n\n" + extra : base;
 }
@@ -431,6 +457,31 @@ function normalizeSingleIntent(parsed, source) {
     if (parsed.location || args.location) args.location = trimText(parsed.location || args.location);
     if (parsed.run || args.run) args.run = true;
     if (!args.path && !args.searchMs) return { action: "none", args: {}, confidence: 0.2, source };
+  }
+  if (action === "mcp") {
+    const server = trimText(parsed.server || parsed.args?.server || "");
+    const tool = trimText(parsed.tool || parsed.name || parsed.args?.tool || "");
+    if (!server || !tool) return { action: "none", args: {}, confidence: 0.2, source };
+    const toolArgs =
+      parsed.args && typeof parsed.args === "object" && !Array.isArray(parsed.args)
+        ? parsed.args
+        : {};
+    const out = {
+      action: "mcp",
+      type: "mcp",
+      server,
+      tool,
+      args: toolArgs,
+      confidence,
+      source,
+    };
+    if (parsed.annotations && typeof parsed.annotations === "object") {
+      out.annotations = parsed.annotations;
+    }
+    if (parsed.inputSchema && typeof parsed.inputSchema === "object") {
+      out.inputSchema = parsed.inputSchema;
+    }
+    return out;
   }
   return { action, args, confidence, source };
 }
@@ -576,7 +627,7 @@ function repairMissingSearch(text, intent) {
   };
 }
 
-async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false, skills, learned } = {}) {
+async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false, skills, learned, mcpTools } = {}) {
   let current = cleanIntentSearchUrls(text, repairMissingSearch(text, intent));
   const expected = expectedStepCount(text);
   const actual = intentStepsOf(current).length;
@@ -586,7 +637,7 @@ async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked 
       system: commandSkillSystemPrompt(),
       user:
         "The previous plan dropped one or more clauses. Output a complete JSON plan that covers every clause. Do not drop search, type, or compose clauses.\n\n" +
-        buildIntentUserMessage(text, { skills, learned }),
+        buildIntentUserMessage(text, { skills, learned, mcpTools }),
     });
     const retry = parseIntentFromLlmResponse(raw);
     const repaired = repairMissingSearch(text, retry);
@@ -607,22 +658,22 @@ function parseIntentFromLlmResponse(raw) {
  * Parse text, using the heuristic first and an optional LLM completer
  * (`async (prompt) => string`) when the guess is weak.
  */
-async function parseIntent(text, { llmComplete, forceLlm = false, skills, learned } = {}) {
+async function parseIntent(text, { llmComplete, forceLlm = false, skills, learned, mcpTools } = {}) {
   const heuristic = parseIntentHeuristic(text, { skills, learned });
-  if (!forceLlm && !shouldUseLlm(heuristic)) {
-    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned });
+  if (!forceLlm && !shouldUseLlm(heuristic, { text, mcpTools })) {
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned, mcpTools });
   }
   if (typeof llmComplete !== "function") {
-    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned });
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned, mcpTools });
   }
   try {
-    const raw = await llmComplete(buildIntentParseMessages(text, { skills, learned }));
+    const raw = await llmComplete(buildIntentParseMessages(text, { skills, learned, mcpTools }));
     const llm = parseIntentFromLlmResponse(raw);
     // Prefer a confident heuristic over a weak LLM "none".
     if (llm.action === "none" && heuristic.action !== "none" && heuristic.confidence >= 0.6) {
-      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true, skills, learned });
+      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true, skills, learned, mcpTools });
     }
-    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false, skills, learned });
+    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false, skills, learned, mcpTools });
   } catch (error) {
     const errorCode =
       error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR";
@@ -635,7 +686,7 @@ async function parseIntent(text, { llmComplete, forceLlm = false, skills, learne
       errorMessage: String(error?.message || "parse failed"),
     };
     if (heuristic.action !== "none" && heuristic.confidence >= 0.6) return heuristic;
-    return applyClausePostCheck(text, failed, { alreadyReasked: true, skills, learned });
+    return applyClausePostCheck(text, failed, { alreadyReasked: true, skills, learned, mcpTools });
   }
 }
 

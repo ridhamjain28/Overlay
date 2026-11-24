@@ -374,6 +374,7 @@ function createOrchestrator(deps = {}) {
   const recent = new Map();
   const inFlight = new Set();
   const parseIntent = deps.parseIntent;
+  const decideRoute = deps.decideRoute;
   const perform = deps.perform;
   const listWindows = deps.listWindows;
   const focusWindow = deps.focusWindow;
@@ -558,18 +559,33 @@ function createOrchestrator(deps = {}) {
     if (isMetaIntent(text)) {
       return { steps: [], intent: { action: "none", metaIntent: true }, source: "meta", metaIntent: true };
     }
-    if (typeof parseIntent !== "function") {
-      return { steps: [], intent: null, source: "none" };
+    let route;
+    if (typeof decideRoute === "function") {
+      try {
+        route = await decideRoute(text, { mcpTools: options.mcpTools });
+      } catch {
+        route = undefined;
+      }
+      if (route && route.lane === "chat" && Number(route.confidence) >= 0.8) {
+        return { steps: [], intent: { action: "none" }, source: "decision-router", route };
+      }
     }
-    const intent = await parseIntent(text, options);
+    if (typeof parseIntent !== "function") {
+      return { steps: [], intent: null, source: "none", ...(route ? { route } : {}) };
+    }
+    const parseOptions =
+      route && route.lane === "mcp_tool" && Number(route.confidence) >= 0.55
+        ? { ...options, forceLlm: true }
+        : options;
+    const intent = await parseIntent(text, parseOptions);
     if (intent?.metaIntent || isMetaIntent(text)) {
-      return { steps: [], intent, source: "meta", metaIntent: true };
+      return { steps: [], intent, source: "meta", metaIntent: true, ...(route ? { route } : {}) };
     }
     const rawSteps = intentSteps(intent);
     const cleaned = sanitizePlan(text, rawSteps);
     const autoSaveCreatedItems = options.autoSaveCreatedItems !== false;
     const steps = attachFinishSteps(text, cleaned, { autoSaveCreatedItems });
-    return { steps, intent, source: intent?.source || "none" };
+    return { steps, intent, source: intent?.source || "none", ...(route ? { route } : {}) };
   }
 
   function storeLast(outcome) {
@@ -618,12 +634,13 @@ function createOrchestrator(deps = {}) {
     inFlight.add(key);
     try {
       const planned = await plan(text, options);
+      const routeMeta = planned.route ? { route: planned.route } : {};
       if (planned.metaIntent) {
         const message = formatMetaExplanation(text, lastOutcome);
         return { handled: true, success: true, explanation: true, steps: [], message, source: "meta" };
       }
       if (!planned.steps.length) {
-        return { handled: false, success: false, steps: [], source: planned.source, message: "" };
+        return { handled: false, success: false, steps: [], source: planned.source, message: "", ...routeMeta };
       }
       const results = [];
       for (let i = 0; i < planned.steps.length; i++) {
@@ -660,6 +677,7 @@ function createOrchestrator(deps = {}) {
             results: results.concat(result),
             message,
             source: planned.source,
+            ...routeMeta,
           });
         }
         results.push(result);
@@ -674,6 +692,7 @@ function createOrchestrator(deps = {}) {
               results,
               message: result.message || formatFindOutcome(result),
               source: planned.source,
+              ...routeMeta,
             });
           }
           const next = planned.steps[planned.steps.indexOf(step) + 1];
@@ -696,6 +715,7 @@ function createOrchestrator(deps = {}) {
         results,
         message: formatOutcome(text, planned.steps, results),
         source: planned.source,
+        ...routeMeta,
       });
     } finally {
       inFlight.delete(key);
