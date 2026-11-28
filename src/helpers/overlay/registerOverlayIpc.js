@@ -751,7 +751,11 @@ function registerOverlayIpc({
     );
   }
 
+  const { performSystemAction, scheduleReminder } = require("./systemActions");
+
   const commandDispatcher = createCommandDispatcher({
+    runSystemAction: (req, opts) => performSystemAction(req, opts),
+    scheduleReminder: (req) => scheduleReminder(req),
     execFile: execFileAsync,
     openPath: (p) => shell.openPath(p),
     openExternal: (url) => openExternalSoon(url),

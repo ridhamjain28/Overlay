@@ -202,7 +202,8 @@
     "managedConfigAmbiguous": "Your organization's managed setup is inconsistent. Contact your administrator.",
     "managedPolicyConflict": "Managed access is blocked by your workspace policy. Contact your administrator.",
     "resizePanel": "Resize panel",
-    "dontAskAgain": "Don't ask me again"
+    "dontAskAgain": "Don't ask me again",
+    "validate": "Validate"
   },
   "onboarding": {
     "rehaul": {
@@ -1871,7 +1872,13 @@
         "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
-        "testFailed": "Couldn't speak the test line. Check the API key and try again."
+        "testFailed": "Couldn't speak the test line. Check the API key and try again.",
+        "providerSystem": "Built-in OS Voice (Offline, Free)",
+        "voiceLabel": "Voice",
+        "voiceRate": "Speed",
+        "voiceRateDescription": "Speech rate (0.6 = slow, 1.8 = fast)",
+        "systemVoiceDefault": "Default voice",
+        "testButton": "Test voice"
       },
       "commandMode": {
         "title": "Command mode",
@@ -1890,6 +1897,12 @@
         "idleMinutesDescription": "When you open the assistant again within this many minutes, Overlay continues the same chat. The New chat button always starts a new one.",
         "askBeforeEveryAction": "Ask before every action",
         "askBeforeEveryActionDescription": "Prompt for confirmation before Overlay performs desktop actions. When off, harmless actions run automatically."
+      },
+      "troubleshooting": {
+        "title": "Troubleshooting",
+        "diagnosticsTitle": "Diagnostics",
+        "diagnosticsDescription": "Copy a scrubbed diagnostic report for support",
+        "copyReport": "Copy diagnostic report"
       }
     },
     "permissions": {
@@ -3112,6 +3125,11 @@
       "cleanupFailed": {
         "title": "Cleanup failed",
         "description": "Original dictation pasted without AI cleanup."
+      },
+      "audioDeviceFallback": {
+        "title": "Audio device changed",
+        "mutedDescription": "Microphone is muted",
+        "description": "Switched to default audio input device"
       }
     },
     "mic": {
@@ -3280,8 +3298,17 @@
       "suggestions": {
         "summarizeNotes": "Summarize my recent notes",
         "calendar": "What is on my calendar?",
-        "draft": "Help me draft something"
-      }
+        "draft": "Help me draft something",
+        "screenshot": "Take a screenshot",
+        "volume": "Turn volume up",
+        "timer": "Set a 5 minute timer"
+      },
+      "speak": "Read aloud",
+      "stopSpeaking": "Stop speaking",
+      "commandStep": "Step {{current}} of {{total}}",
+      "runningCommand": "Running...",
+      "writing": "Writing...",
+      "cancelWriting": "Cancel writing"
     },
     "toolActivity": {
       "verbs": {
@@ -4243,7 +4270,8 @@
       "serverUrlDescription": "The OpenAI-compatible base URL, usually ending in /v1.",
       "apiKeyOptional": "API key (optional)",
       "apiKeyDescription": "Stored securely on this PC and never shown again.",
-      "oneModelNote": "This model is used for every language task. There are no per-feature model settings."
+      "oneModelNote": "This model is used for every language task. There are no per-feature model settings.",
+      "ollamaUnreachable": "Ollama is not reachable"
     },
     "stt": {
       "title": "Speech-to-text",
@@ -4261,6 +4289,11 @@
       "forgetChats": "Forget assistant memory",
       "forgetChatsDescription": "The assistant stops recalling things from past chats. The chats stay in Home.",
       "forgetButton": "Forget"
+    },
+    "soundEffects": {
+      "title": "Sound Effects",
+      "dictationSounds": "Dictation sounds",
+      "dictationSoundsDescription": "Play subtle audio cues when dictation starts and stops"
     }
   },
   "appSkills": {
@@ -4412,6 +4445,20 @@
       "disconnected": "Disconnected",
       "needsAuth": "Needs Auth",
       "error": "Error"
-    }
+    },
+    "revokeFailed": "Failed to revoke permission",
+    "permissionRevoked": "Permission revoked",
+    "disconnectFailed": "Failed to disconnect",
+    "testingConnection": "Testing connection...",
+    "toolToggleFailed": "Failed to toggle tool",
+    "hideTools": "Hide tools",
+    "showTools": "Show tools",
+    "removeServer": "Remove server",
+    "toggleTool": "Toggle tool",
+    "permissionsTitle": "Permissions",
+    "permissionsDescription": "Manage tool permissions for connected servers",
+    "noPermissions": "No permissions granted yet",
+    "revoke": "Revoke",
+    "envVariables": "Environment variables"
   }
 }

@@ -15,6 +15,7 @@ const { parseCalendarEvent, parseWebAppOpen, parseGmailCompose } = require("./we
 const { parseAppSkillIntent, buildDynamicIntentContext } = require("./appSkillMatcher");
 const { parseFindPath } = require("./findPath");
 const { isMetaIntent } = require("./metaIntent");
+const { parseSystemCommand } = require("./systemIntentParser");
 
 const COMMAND_ACTIONS = [
   "open_app",
@@ -28,6 +29,19 @@ const COMMAND_ACTIONS = [
   "mcp",
   "find_path",
   "open_path",
+  "volume_up",
+  "volume_down",
+  "volume_mute",
+  "volume_set",
+  "media_play_pause",
+  "media_next",
+  "media_previous",
+  "brightness_set",
+  "screenshot",
+  "show_time",
+  "lock_screen",
+  "timer",
+  "reminder",
 ];
 
 const URL_PROTOCOL = /^(https?:\/\/)/i;
@@ -294,6 +308,7 @@ function parseIntentHeuristic(text, options = {}) {
   }
   const candidates = t === original ? [t] : [t, original];
   const commandHit =
+    firstMatch(candidates, parseSystemCommand) ||
     firstMatch(candidates, (s) => parseCalendarEvent(s, options)) ||
     firstMatch(candidates, parseFindPath) ||
     firstMatch(candidates, parseBrowserSearch) ||

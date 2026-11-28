@@ -202,7 +202,8 @@
     "managedConfigAmbiguous": "組織のマネージド設定に矛盾があります。管理者にお問い合わせください。",
     "managedPolicyConflict": "ワークスペースのポリシーによりマネージド アクセスがブロックされています。管理者にお問い合わせください。",
     "resizePanel": "パネルのサイズを変更",
-    "dontAskAgain": "今後確認しない"
+    "dontAskAgain": "今後確認しない",
+    "validate": "Validate"
   },
   "onboarding": {
     "rehaul": {
@@ -1871,7 +1872,13 @@
         "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
-        "testFailed": "Couldn't speak the test line. Check the API key and try again."
+        "testFailed": "Couldn't speak the test line. Check the API key and try again.",
+        "providerSystem": "Built-in OS Voice (Offline, Free)",
+        "voiceLabel": "Voice",
+        "voiceRate": "Speed",
+        "voiceRateDescription": "Speech rate (0.6 = slow, 1.8 = fast)",
+        "systemVoiceDefault": "Default voice",
+        "testButton": "Test voice"
       },
       "commandMode": {
         "title": "コマンドモード",
@@ -1890,6 +1897,12 @@
         "idleMinutesDescription": "この分数以内にアシスタントを開き直すと、同じチャットを続けます。「新しいチャット」ボタンは常に新しい会話を開始します。",
         "askBeforeEveryAction": "操作ごとに確認する",
         "askBeforeEveryActionDescription": "デスクトップ操作を実行する前に確認ダイアログを表示します。オフの場合、安全な操作は自動実行されます。"
+      },
+      "troubleshooting": {
+        "title": "Troubleshooting",
+        "diagnosticsTitle": "Diagnostics",
+        "diagnosticsDescription": "Copy a scrubbed diagnostic report for support",
+        "copyReport": "Copy diagnostic report"
       }
     },
     "permissions": {
@@ -3112,6 +3125,11 @@
       "cleanupFailed": {
         "title": "クリーンアップに失敗しました",
         "description": "ディクテーションは AI クリーンアップなしで貼り付けられました。"
+      },
+      "audioDeviceFallback": {
+        "title": "Audio device changed",
+        "mutedDescription": "Microphone is muted",
+        "description": "Switched to default audio input device"
       }
     },
     "mic": {
@@ -3280,8 +3298,17 @@
       "suggestions": {
         "summarizeNotes": "最近のノートを要約して",
         "calendar": "カレンダーの予定を教えて",
-        "draft": "文章の下書きを手伝って"
-      }
+        "draft": "文章の下書きを手伝って",
+        "screenshot": "Take a screenshot",
+        "volume": "Turn volume up",
+        "timer": "Set a 5 minute timer"
+      },
+      "speak": "Read aloud",
+      "stopSpeaking": "Stop speaking",
+      "commandStep": "Step {{current}} of {{total}}",
+      "runningCommand": "Running...",
+      "writing": "Writing...",
+      "cancelWriting": "Cancel writing"
     },
     "toolActivity": {
       "verbs": {
@@ -4243,7 +4270,8 @@
       "serverUrlDescription": "OpenAI 互換のベース URL。通常は /v1 で終わります。",
       "apiKeyOptional": "API キー（任意）",
       "apiKeyDescription": "この PC に安全に保存され、再表示されません。",
-      "oneModelNote": "このモデルがすべての言語タスクに使われます。機能ごとのモデル設定はありません。"
+      "oneModelNote": "このモデルがすべての言語タスクに使われます。機能ごとのモデル設定はありません。",
+      "ollamaUnreachable": "Ollama is not reachable"
     },
     "stt": {
       "title": "音声認識",
@@ -4261,6 +4289,11 @@
       "forgetChats": "アシスタントの記憶を消去",
       "forgetChatsDescription": "アシスタントは過去のチャットを思い出さなくなります。チャットはホームに残ります。",
       "forgetButton": "消去する"
+    },
+    "soundEffects": {
+      "title": "Sound Effects",
+      "dictationSounds": "Dictation sounds",
+      "dictationSoundsDescription": "Play subtle audio cues when dictation starts and stops"
     }
   },
   "appSkills": {
@@ -4412,6 +4445,20 @@
       "disconnected": "切断",
       "needsAuth": "認証が必要",
       "error": "エラー"
-    }
+    },
+    "revokeFailed": "Failed to revoke permission",
+    "permissionRevoked": "Permission revoked",
+    "disconnectFailed": "Failed to disconnect",
+    "testingConnection": "Testing connection...",
+    "toolToggleFailed": "Failed to toggle tool",
+    "hideTools": "Hide tools",
+    "showTools": "Show tools",
+    "removeServer": "Remove server",
+    "toggleTool": "Toggle tool",
+    "permissionsTitle": "Permissions",
+    "permissionsDescription": "Manage tool permissions for connected servers",
+    "noPermissions": "No permissions granted yet",
+    "revoke": "Revoke",
+    "envVariables": "Environment variables"
   }
 }

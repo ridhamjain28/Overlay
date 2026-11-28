@@ -1025,7 +1025,9 @@ export interface SettingsState
   overlayModelAutoSelect: boolean;
   setOverlayModelAutoSelect: (enabled: boolean) => void;
   startMinimized: boolean;
-  assistantTtsProvider: "off" | "inworld";
+  assistantTtsProvider: "off" | "system" | "inworld";
+  systemTtsVoice: string;
+  systemTtsRate: number;
   inworldVoiceId: string;
   gcalAccounts: CalendarAccount[];
   gcalConnected: boolean;
@@ -1370,7 +1372,9 @@ export interface SettingsState
   setChatMemoryEnabled: (enabled: boolean) => void;
   setChatContextLength: (value: ChatContextLength) => void;
   setStartMinimized: (enabled: boolean) => void;
-  setAssistantTtsProvider: (provider: "off" | "inworld") => void;
+  setAssistantTtsProvider: (provider: "off" | "system" | "inworld") => void;
+  setSystemTtsVoice: (voice: string) => void;
+  setSystemTtsRate: (rate: number) => void;
   setInworldVoiceId: (voiceId: string) => void;
   setGcalAccounts: (accounts: CalendarAccount[]) => void;
   setMcalAccounts: (accounts: MicrosoftCalendarAccount[]) => void;
@@ -1846,7 +1850,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   // the model they already chose unless the user turns this on.
   overlayModelAutoSelect: readBoolean("overlayModelAutoSelect", true),
   startMinimized: readBoolean("startMinimized", false),
-  assistantTtsProvider: readString("assistantTtsProvider", "off") === "inworld" ? "inworld" : "off",
+  assistantTtsProvider: (() => {
+    const raw = readString("assistantTtsProvider", "off");
+    return raw === "inworld" || raw === "system" ? raw : "off";
+  })(),
+  systemTtsVoice: readString("systemTtsVoice", ""),
+  systemTtsRate: (() => {
+    const raw = Number(readString("systemTtsRate", "1"));
+    return Number.isFinite(raw) && raw >= 0.6 && raw <= 1.8 ? raw : 1;
+  })(),
   inworldVoiceId: readString("inworldVoiceId", "Ashley") || "Ashley",
   notificationsEnabled: readBoolean("notificationsEnabled", true),
   notifyMeetingDetection: readBoolean("notifyMeetingDetection", true),
@@ -2761,11 +2773,24 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     }
   },
 
-  setAssistantTtsProvider: (provider: "off" | "inworld") => {
-    const next = provider === "inworld" ? "inworld" : "off";
+  setAssistantTtsProvider: (provider: "off" | "system" | "inworld") => {
+    const next = provider === "inworld" || provider === "system" ? provider : "off";
     if (get().assistantTtsProvider === next) return;
     if (isBrowser) localStorage.setItem("assistantTtsProvider", next);
     set({ assistantTtsProvider: next });
+  },
+  setSystemTtsVoice: (voice: string) => {
+    const next = String(voice || "");
+    if (get().systemTtsVoice === next) return;
+    if (isBrowser) localStorage.setItem("systemTtsVoice", next);
+    set({ systemTtsVoice: next });
+  },
+  setSystemTtsRate: (rate: number) => {
+    const clamped = Math.min(1.8, Math.max(0.6, Math.round(Number(rate) * 10) / 10));
+    const next = Number.isFinite(clamped) ? clamped : 1;
+    if (get().systemTtsRate === next) return;
+    if (isBrowser) localStorage.setItem("systemTtsRate", String(next));
+    set({ systemTtsRate: next });
   },
 
   setInworldVoiceId: (voiceId: string) => {

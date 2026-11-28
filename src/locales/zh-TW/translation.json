@@ -202,7 +202,8 @@
     "managedConfigAmbiguous": "您組織的託管設定不一致。請聯絡管理員。",
     "managedPolicyConflict": "託管存取已被您工作區的政策封鎖。請聯絡管理員。",
     "resizePanel": "調整面板大小",
-    "dontAskAgain": "不再詢問"
+    "dontAskAgain": "不再詢問",
+    "validate": "Validate"
   },
   "onboarding": {
     "rehaul": {
@@ -1871,7 +1872,13 @@
         "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
-        "testFailed": "Couldn't speak the test line. Check the API key and try again."
+        "testFailed": "Couldn't speak the test line. Check the API key and try again.",
+        "providerSystem": "Built-in OS Voice (Offline, Free)",
+        "voiceLabel": "Voice",
+        "voiceRate": "Speed",
+        "voiceRateDescription": "Speech rate (0.6 = slow, 1.8 = fast)",
+        "systemVoiceDefault": "Default voice",
+        "testButton": "Test voice"
       },
       "commandMode": {
         "title": "命令模式",
@@ -1890,6 +1897,12 @@
         "idleMinutesDescription": "在這段時間內再次打開助手時，Overlay 會繼續同一段對話。「新對話」按鈕一律會開始新的對話。",
         "askBeforeEveryAction": "每次操作前提示",
         "askBeforeEveryActionDescription": "在執行桌面操作前提示確認。關閉後，無害操作將自動執行。"
+      },
+      "troubleshooting": {
+        "title": "Troubleshooting",
+        "diagnosticsTitle": "Diagnostics",
+        "diagnosticsDescription": "Copy a scrubbed diagnostic report for support",
+        "copyReport": "Copy diagnostic report"
       }
     },
     "permissions": {
@@ -3112,6 +3125,11 @@
       "cleanupFailed": {
         "title": "清理失敗",
         "description": "你的聽寫已直接貼上，未經 AI 清理。"
+      },
+      "audioDeviceFallback": {
+        "title": "Audio device changed",
+        "mutedDescription": "Microphone is muted",
+        "description": "Switched to default audio input device"
       }
     },
     "mic": {
@@ -3280,8 +3298,17 @@
       "suggestions": {
         "summarizeNotes": "摘要我最近的筆記",
         "calendar": "我的行事曆上有哪些安排？",
-        "draft": "幫我起草一些內容"
-      }
+        "draft": "幫我起草一些內容",
+        "screenshot": "Take a screenshot",
+        "volume": "Turn volume up",
+        "timer": "Set a 5 minute timer"
+      },
+      "speak": "Read aloud",
+      "stopSpeaking": "Stop speaking",
+      "commandStep": "Step {{current}} of {{total}}",
+      "runningCommand": "Running...",
+      "writing": "Writing...",
+      "cancelWriting": "Cancel writing"
     },
     "toolActivity": {
       "verbs": {
@@ -4243,7 +4270,8 @@
       "serverUrlDescription": "相容 OpenAI 的基礎 URL，通常以 /v1 結尾。",
       "apiKeyOptional": "API 金鑰（選填）",
       "apiKeyDescription": "安全地儲存在這台電腦上，不會再次顯示。",
-      "oneModelNote": "所有語言任務都使用這個模型，沒有依功能區分的模型設定。"
+      "oneModelNote": "所有語言任務都使用這個模型，沒有依功能區分的模型設定。",
+      "ollamaUnreachable": "Ollama is not reachable"
     },
     "stt": {
       "title": "語音轉文字",
@@ -4261,6 +4289,11 @@
       "forgetChats": "清除助理記憶",
       "forgetChatsDescription": "助理將不再記得過去的聊天。聊天仍保留在首頁。",
       "forgetButton": "清除"
+    },
+    "soundEffects": {
+      "title": "Sound Effects",
+      "dictationSounds": "Dictation sounds",
+      "dictationSoundsDescription": "Play subtle audio cues when dictation starts and stops"
     }
   },
   "appSkills": {
@@ -4412,6 +4445,20 @@
       "disconnected": "已中斷",
       "needsAuth": "需要授權",
       "error": "錯誤"
-    }
+    },
+    "revokeFailed": "Failed to revoke permission",
+    "permissionRevoked": "Permission revoked",
+    "disconnectFailed": "Failed to disconnect",
+    "testingConnection": "Testing connection...",
+    "toolToggleFailed": "Failed to toggle tool",
+    "hideTools": "Hide tools",
+    "showTools": "Show tools",
+    "removeServer": "Remove server",
+    "toggleTool": "Toggle tool",
+    "permissionsTitle": "Permissions",
+    "permissionsDescription": "Manage tool permissions for connected servers",
+    "noPermissions": "No permissions granted yet",
+    "revoke": "Revoke",
+    "envVariables": "Environment variables"
   }
 }

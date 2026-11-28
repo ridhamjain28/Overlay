@@ -750,6 +750,33 @@ function createCommandDispatcher(deps = {}) {
           }
           return { success: false, error: "Opening paths is not available", code: "UNSUPPORTED" };
         }
+        case "volume_up":
+        case "volume_down":
+        case "volume_mute":
+        case "volume_set":
+        case "media_play_pause":
+        case "media_next":
+        case "media_previous":
+        case "brightness_set":
+        case "screenshot":
+        case "show_time":
+        case "lock_screen": {
+          if (action === "lock_screen" && options.confirmed !== true) {
+            const allowed = typeof confirm === "function" ? await confirm("Lock the screen?") : false;
+            if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+          }
+          if (typeof deps.runSystemAction !== "function") {
+            return { success: false, error: "System actions not configured", code: "UNSUPPORTED" };
+          }
+          return await deps.runSystemAction({ action, args }, { confirmed: true });
+        }
+        case "timer":
+        case "reminder": {
+          if (typeof deps.scheduleReminder !== "function") {
+            return { success: false, error: "Timers not configured", code: "UNSUPPORTED" };
+          }
+          return await deps.scheduleReminder({ action, args });
+        }
         default:
           return { success: false, error: "Not allowed", code: "NOT_ALLOWED" };
       }

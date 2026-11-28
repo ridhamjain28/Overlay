@@ -1,4 +1,10 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
+import {
+  getTtsSpeakingState,
+  speakAssistantText,
+  stopAssistantTts,
+  subscribeTtsSpeaking,
+} from "../../helpers/assistantTtsPlayback";
 import { useTranslation } from "react-i18next";
 import {
   Copy,
@@ -204,6 +210,9 @@ export const ChatMessage = memo(function ChatMessage({
 }: ChatMessageProps) {
   const { t, i18n } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const [ttsState, setTtsState] = useState(() => getTtsSpeakingState());
+  useEffect(() => subscribeTtsSpeaking(setTtsState), []);
+  const isSpeakingThis = ttsState.speaking && ttsState.messageId === content.slice(0, 32);
 
   const helpEvidence = role === "assistant" ? extractHelpEvidence(toolCalls) : null;
 
@@ -270,6 +279,39 @@ export const ChatMessage = memo(function ChatMessage({
             {visibleToolCalls.map((tc) => (
               <ToolCallItem key={tc.id} messageId={messageId} toolCall={tc} />
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                if (isSpeakingThis) {
+                  stopAssistantTts();
+                } else {
+                  void speakAssistantText(content, { messageId: content.slice(0, 32) });
+                }
+              }}
+              aria-label={t(isSpeakingThis ? "assistant.panel.stopSpeaking" : "assistant.panel.speak", {
+                defaultValue: isSpeakingThis ? "Stop speaking" : "Read aloud",
+              })}
+              title={t(isSpeakingThis ? "assistant.panel.stopSpeaking" : "assistant.panel.speak", {
+                defaultValue: isSpeakingThis ? "Stop speaking" : "Read aloud",
+              })}
+              className={cn(
+                plain
+                  ? "flex size-7 items-center justify-center rounded-full text-foreground/45 hover:bg-foreground/[0.07] hover:text-foreground dark:hover:bg-white/[0.08] transition-colors duration-150"
+                  : "p-1 rounded-sm text-muted-foreground/70 hover:text-foreground hover:bg-foreground/8 opacity-0 group-hover/msg:opacity-100 transition-all duration-150",
+                "focus:outline-none focus-visible:ring-1 focus-visible:ring-ring/30"
+              )}
+            >
+              {isSpeakingThis ? (
+                <svg width={plain ? 13 : 11} height={plain ? 13 : 11} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <rect x="3" y="3" width="10" height="10" rx="1.5" />
+                </svg>
+              ) : (
+                <svg width={plain ? 15 : 12} height={plain ? 15 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              )}
+            </button>
           </div>
         )}
 
@@ -316,6 +358,39 @@ export const ChatMessage = memo(function ChatMessage({
                 onOpenNote={onOpenNote}
               />
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                if (isSpeakingThis) {
+                  stopAssistantTts();
+                } else {
+                  void speakAssistantText(content, { messageId: content.slice(0, 32) });
+                }
+              }}
+              aria-label={t(isSpeakingThis ? "assistant.panel.stopSpeaking" : "assistant.panel.speak", {
+                defaultValue: isSpeakingThis ? "Stop speaking" : "Read aloud",
+              })}
+              title={t(isSpeakingThis ? "assistant.panel.stopSpeaking" : "assistant.panel.speak", {
+                defaultValue: isSpeakingThis ? "Stop speaking" : "Read aloud",
+              })}
+              className={cn(
+                plain
+                  ? "flex size-7 items-center justify-center rounded-full text-foreground/45 hover:bg-foreground/[0.07] hover:text-foreground dark:hover:bg-white/[0.08] transition-colors duration-150"
+                  : "p-1 rounded-sm text-muted-foreground/70 hover:text-foreground hover:bg-foreground/8 opacity-0 group-hover/msg:opacity-100 transition-all duration-150",
+                "focus:outline-none focus-visible:ring-1 focus-visible:ring-ring/30"
+              )}
+            >
+              {isSpeakingThis ? (
+                <svg width={plain ? 13 : 11} height={plain ? 13 : 11} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <rect x="3" y="3" width="10" height="10" rx="1.5" />
+                </svg>
+              ) : (
+                <svg width={plain ? 15 : 12} height={plain ? 15 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              )}
+            </button>
           </div>
         )}
 
@@ -340,6 +415,39 @@ export const ChatMessage = memo(function ChatMessage({
                 <CopyRounded size={15} />
               ) : (
                 <Copy size={12} />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (isSpeakingThis) {
+                  stopAssistantTts();
+                } else {
+                  void speakAssistantText(content, { messageId: content.slice(0, 32) });
+                }
+              }}
+              aria-label={t(isSpeakingThis ? "assistant.panel.stopSpeaking" : "assistant.panel.speak", {
+                defaultValue: isSpeakingThis ? "Stop speaking" : "Read aloud",
+              })}
+              title={t(isSpeakingThis ? "assistant.panel.stopSpeaking" : "assistant.panel.speak", {
+                defaultValue: isSpeakingThis ? "Stop speaking" : "Read aloud",
+              })}
+              className={cn(
+                plain
+                  ? "flex size-7 items-center justify-center rounded-full text-foreground/45 hover:bg-foreground/[0.07] hover:text-foreground dark:hover:bg-white/[0.08] transition-colors duration-150"
+                  : "p-1 rounded-sm text-muted-foreground/70 hover:text-foreground hover:bg-foreground/8 opacity-0 group-hover/msg:opacity-100 transition-all duration-150",
+                "focus:outline-none focus-visible:ring-1 focus-visible:ring-ring/30"
+              )}
+            >
+              {isSpeakingThis ? (
+                <svg width={plain ? 13 : 11} height={plain ? 13 : 11} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <rect x="3" y="3" width="10" height="10" rx="1.5" />
+                </svg>
+              ) : (
+                <svg width={plain ? 15 : 12} height={plain ? 15 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
               )}
             </button>
           </div>

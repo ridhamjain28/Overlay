@@ -161,9 +161,35 @@ export function ChatInput({
     [setInputText]
   );
 
+  const [promptHistory, setPromptHistory] = useState<string[]>(() => {
+    if (typeof localStorage === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("overlayPromptHistory");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string").slice(0, 30) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [draftBuffer, setDraftBuffer] = useState("");
+
   const handleSubmit = useCallback(() => {
     const text = inputText.trim();
     if (!text || !onTextSubmit || isBusy) return;
+    setPromptHistory((prev) => {
+      const next = prev[0] === text ? prev : [text, ...prev].slice(0, 30);
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.setItem("overlayPromptHistory", JSON.stringify(next));
+        } catch {
+          // ignore storage quota errors
+        }
+      }
+      return next;
+    });
+    setHistoryIndex(-1);
+    setDraftBuffer("");
     // Cleared first, so a host that can't send yet can write the draft back.
     setInputText("");
     onTextSubmit(text);
@@ -213,9 +239,52 @@ export function ChatInput({
       if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
         e.preventDefault();
         handleSubmit();
+        return;
+      }
+      if (!isSlashMenuOpen && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !e.nativeEvent.isComposing) {
+        if (e.key === "ArrowUp" && promptHistory.length > 0) {
+          const target = e.currentTarget;
+          const atStart = target.selectionStart === 0 && target.selectionEnd === 0;
+          if (historyIndex === -1 && (inputText.length === 0 || atStart)) {
+            e.preventDefault();
+            setDraftBuffer(inputText);
+            setHistoryIndex(0);
+            setInputText(promptHistory[0]);
+            return;
+          }
+          if (historyIndex > -1 && historyIndex < promptHistory.length - 1) {
+            e.preventDefault();
+            const nextIdx = historyIndex + 1;
+            setHistoryIndex(nextIdx);
+            setInputText(promptHistory[nextIdx]);
+            return;
+          }
+        }
+        if (e.key === "ArrowDown" && historyIndex > -1) {
+          e.preventDefault();
+          if (historyIndex === 0) {
+            setHistoryIndex(-1);
+            setInputText(draftBuffer);
+          } else {
+            const nextIdx = historyIndex - 1;
+            setHistoryIndex(nextIdx);
+            setInputText(promptHistory[nextIdx]);
+          }
+        }
       }
     },
-    [handleSubmit, isSlashMenuOpen, slashMatches, activeSlashIndex, runSlashCommand, setInputText]
+    [
+      handleSubmit,
+      isSlashMenuOpen,
+      slashMatches,
+      activeSlashIndex,
+      runSlashCommand,
+      setInputText,
+      promptHistory,
+      historyIndex,
+      draftBuffer,
+      inputText,
+    ]
   );
 
   useLayoutEffect(() => {

@@ -1622,6 +1622,11 @@
       "cleanupFailed": {
         "title": "فشل التنقيح",
         "description": "تم لصق الإملاء الأصلي دون تنقيح بالذكاء الاصطناعي."
+      },
+      "audioDeviceFallback": {
+        "title": "Audio device changed",
+        "mutedDescription": "Microphone is muted",
+        "description": "Switched to default audio input device"
       }
     },
     "mic": {
@@ -3075,7 +3080,13 @@
         "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
-        "testFailed": "Couldn't speak the test line. Check the API key and try again."
+        "testFailed": "Couldn't speak the test line. Check the API key and try again.",
+        "providerSystem": "Built-in OS Voice (Offline, Free)",
+        "voiceLabel": "Voice",
+        "voiceRate": "Speed",
+        "voiceRateDescription": "Speech rate (0.6 = slow, 1.8 = fast)",
+        "systemVoiceDefault": "Default voice",
+        "testButton": "Test voice"
       },
       "commandMode": {
         "title": "وضع الأوامر",
@@ -3094,6 +3105,12 @@
         "idleMinutesDescription": "عند فتح المساعد مرة أخرى خلال هذه الدقائق، يواصل Overlay نفس المحادثة. زر المحادثة الجديدة يبدأ دائماً محادثة جديدة.",
         "askBeforeEveryAction": "السؤال قبل كل إجراء",
         "askBeforeEveryActionDescription": "طلب التأكيد قبل تنفيذ إجراءات سطح المكتب. عند التعطيل، يتم تشغيل الإجراءات الآمنة تلقائيًا."
+      },
+      "troubleshooting": {
+        "title": "Troubleshooting",
+        "diagnosticsTitle": "Diagnostics",
+        "diagnosticsDescription": "Copy a scrubbed diagnostic report for support",
+        "copyReport": "Copy diagnostic report"
       }
     },
     "permissions": {
@@ -3329,6 +3346,29 @@
       "endpointUrl": "عنوان URL لنقطة النهاية",
       "serverUrl": "عنوان URL للخادم",
       "apiKeyOptional": "مفتاح API (اختياري)"
+    },
+    "workspace": {
+      "members": {
+        "description_zero": "{{count}} أعضاء",
+        "description_few": "{{count}} أعضاء",
+        "description_many": "{{count}} عضوًا",
+        "description_one": "عضو واحد ({{count}})",
+        "description_two": "عضوان ({{count}})",
+        "description_other": "{{count}} عضوًا"
+      },
+      "teams": {
+        "memberCount_zero": "{{count}} أعضاء",
+        "memberCount_one": "عضو واحد ({{count}})",
+        "memberCount_two": "عضوان ({{count}})",
+        "memberCount_few": "{{count}} أعضاء",
+        "memberCount_many": "{{count}} عضوًا",
+        "memberCount_other": "{{count}} عضوًا"
+      }
+    },
+    "account": {
+      "planDescriptions": {
+        "trial": "عدد الأيام المتبقية: {{days}} - تفريغ غير محدود"
+      }
     }
   },
   "settings": {
@@ -3534,7 +3574,8 @@
     "managedConfigAmbiguous": "إعداد مؤسستك المُدار غير متسق. اتصل بالمسؤول.",
     "managedPolicyConflict": "الوصول المُدار محظور بموجب سياسة مساحة العمل الخاصة بك. اتصل بالمسؤول.",
     "resizePanel": "تغيير حجم اللوحة",
-    "dontAskAgain": "لا تسألني مرة أخرى"
+    "dontAskAgain": "لا تسألني مرة أخرى",
+    "validate": "Validate"
   },
   "streaming": {
     "errors": {
@@ -3905,8 +3946,17 @@
       "suggestions": {
         "summarizeNotes": "لخّص ملاحظاتي الأخيرة",
         "calendar": "ما هي المواعيد في التقويم الخاص بي؟",
-        "draft": "ساعدني في صياغة شيء ما"
-      }
+        "draft": "ساعدني في صياغة شيء ما",
+        "screenshot": "Take a screenshot",
+        "volume": "Turn volume up",
+        "timer": "Set a 5 minute timer"
+      },
+      "speak": "Read aloud",
+      "stopSpeaking": "Stop speaking",
+      "commandStep": "Step {{current}} of {{total}}",
+      "runningCommand": "Running...",
+      "writing": "Writing...",
+      "cancelWriting": "Cancel writing"
     },
     "toolActivity": {
       "verbs": {
@@ -4291,7 +4341,8 @@
       "serverUrlDescription": "العنوان الأساسي المتوافق مع OpenAI، وينتهي عادةً بـ /v1.",
       "apiKeyOptional": "مفتاح API (اختياري)",
       "apiKeyDescription": "يُخزَّن بأمان على هذا الكمبيوتر ولا يُعرض مرة أخرى.",
-      "oneModelNote": "يُستخدم هذا النموذج لكل المهام اللغوية. لا توجد إعدادات نموذج لكل ميزة."
+      "oneModelNote": "يُستخدم هذا النموذج لكل المهام اللغوية. لا توجد إعدادات نموذج لكل ميزة.",
+      "ollamaUnreachable": "Ollama is not reachable"
     },
     "stt": {
       "title": "تحويل الكلام إلى نص",
@@ -4309,6 +4360,11 @@
       "forgetChats": "نسيان ذاكرة المساعد",
       "forgetChatsDescription": "يتوقف المساعد عن تذكر المحادثات السابقة. تبقى المحادثات في الرئيسية.",
       "forgetButton": "نسيان"
+    },
+    "soundEffects": {
+      "title": "Sound Effects",
+      "dictationSounds": "Dictation sounds",
+      "dictationSoundsDescription": "Play subtle audio cues when dictation starts and stops"
     }
   },
   "appSkills": {
@@ -4460,6 +4516,25 @@
       "disconnected": "غير متصل",
       "needsAuth": "يتطلب المصادقة",
       "error": "خطأ"
+    },
+    "revokeFailed": "Failed to revoke permission",
+    "permissionRevoked": "Permission revoked",
+    "disconnectFailed": "Failed to disconnect",
+    "testingConnection": "Testing connection...",
+    "toolToggleFailed": "Failed to toggle tool",
+    "hideTools": "Hide tools",
+    "showTools": "Show tools",
+    "removeServer": "Remove server",
+    "toggleTool": "Toggle tool",
+    "permissionsTitle": "Permissions",
+    "permissionsDescription": "Manage tool permissions for connected servers",
+    "noPermissions": "No permissions granted yet",
+    "revoke": "Revoke",
+    "envVariables": "Environment variables"
+  },
+  "workspaces": {
+    "invite": {
+      "seatUsage": "المقاعد المستخدمة: {{used}} من أصل {{seats}}"
     }
   }
 }

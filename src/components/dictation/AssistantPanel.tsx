@@ -1,6 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Plus, X } from "../icons";
+import {
+  getTtsSpeakingState,
+  playEarcon,
+  speakAssistantText,
+  stopAssistantTts,
+  subscribeTtsSpeaking,
+} from "../../helpers/assistantTtsPlayback";
 import { BrandMarkIcon } from "./BrandMarkIcon";
 import { HelpEvidence } from "../chat/GroundedHelpEvidence";
 import { extractHelpEvidence } from "../chat/helpEvidence";
@@ -238,8 +245,14 @@ export function AssistantPanel({
       try {
         const outcome = await runCommandOrchestrator(text, commandSettings);
         if (!outcome.handled) return false;
+        playEarcon("success");
         await recordCommandTurn(text, outcome.message, outcome.promptMessage);
         return true;
+      } catch (err) {
+        if ((err as { name?: string })?.name !== "AbortError") {
+          playEarcon("error");
+        }
+        throw err;
       } finally {
         setCommandInFlight(false);
         setCommandProgress(null);
@@ -263,6 +276,11 @@ export function AssistantPanel({
   const { copied, copyText, confirmCopied } = useCopyFeedback(responseContent, {
     resetMs: MANUAL_COPY_FEEDBACK_MS,
   });
+
+  const [ttsSpeaking, setTtsSpeaking] = useState(() => getTtsSpeakingState().speaking);
+  useEffect(() => {
+    return subscribeTtsSpeaking((state) => setTtsSpeaking(state.speaking));
+  }, []);
   const handleCopy = useCallback(async () => {
     const responseCopyText = helpAnswerPlainText(
       displayedResponse,
@@ -760,6 +778,7 @@ export function AssistantPanel({
             {showEmptyState && (
               <AssistantEmptyState
                 disabled={isBusy || submissionInFlight}
+                commandModeEnabled={commandModeEnabled}
                 onSelectSuggestion={handleTextSubmit}
               />
             )}
@@ -871,6 +890,41 @@ export function AssistantPanel({
               <X aria-hidden="true" />
               {t("common.close")}
             </Button>
+            {responseContent && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="px-3"
+                onClick={() => {
+                  if (ttsSpeaking) {
+                    stopAssistantTts();
+                  } else {
+                    void speakAssistantText(helpAnswerPlainText(responseContent, helpEvidence, t, i18n?.resolvedLanguage));
+                  }
+                }}
+                aria-label={
+                  ttsSpeaking
+                    ? t("assistant.panel.stopSpeaking", { defaultValue: "Stop speaking" })
+                    : t("assistant.panel.speak", { defaultValue: "Read aloud" })
+                }
+                tabIndex={footerPhase === "actions" ? 0 : -1}
+              >
+                {ttsSpeaking ? (
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <rect x="3" y="3" width="10" height="10" rx="1.5" />
+                  </svg>
+                ) : (
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  </svg>
+                )}
+                {ttsSpeaking
+                  ? t("assistant.panel.stopSpeaking", { defaultValue: "Stop speaking" })
+                  : t("assistant.panel.speak", { defaultValue: "Read aloud" })}
+              </Button>
+            )}
             <Button
               type="button"
               size="sm"

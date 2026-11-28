@@ -202,7 +202,8 @@
     "managedConfigAmbiguous": "La configuration gérée de votre organisation est incohérente. Contactez votre administrateur.",
     "managedPolicyConflict": "L'accès géré est bloqué par la politique de votre espace de travail. Contactez votre administrateur.",
     "resizePanel": "Redimensionner le panneau",
-    "dontAskAgain": "Ne plus me demander"
+    "dontAskAgain": "Ne plus me demander",
+    "validate": "Validate"
   },
   "onboarding": {
     "rehaul": {
@@ -1871,7 +1872,13 @@
         "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
-        "testFailed": "Couldn't speak the test line. Check the API key and try again."
+        "testFailed": "Couldn't speak the test line. Check the API key and try again.",
+        "providerSystem": "Built-in OS Voice (Offline, Free)",
+        "voiceLabel": "Voice",
+        "voiceRate": "Speed",
+        "voiceRateDescription": "Speech rate (0.6 = slow, 1.8 = fast)",
+        "systemVoiceDefault": "Default voice",
+        "testButton": "Test voice"
       },
       "commandMode": {
         "title": "Mode commande",
@@ -1890,6 +1897,12 @@
         "idleMinutesDescription": "Si vous rouvrez l’assistant dans ce délai, Overlay reprend le même chat. Le bouton Nouveau chat en démarre toujours un nouveau.",
         "askBeforeEveryAction": "Demander avant chaque action",
         "askBeforeEveryActionDescription": "Demander une confirmation avant d'exécuter des actions de bureau. Si désactivé, les actions sûres s'exécutent automatiquement."
+      },
+      "troubleshooting": {
+        "title": "Troubleshooting",
+        "diagnosticsTitle": "Diagnostics",
+        "diagnosticsDescription": "Copy a scrubbed diagnostic report for support",
+        "copyReport": "Copy diagnostic report"
       }
     },
     "permissions": {
@@ -3112,6 +3125,11 @@
       "cleanupFailed": {
         "title": "Échec du nettoyage",
         "description": "Votre dictée a été collée sans nettoyage par IA."
+      },
+      "audioDeviceFallback": {
+        "title": "Audio device changed",
+        "mutedDescription": "Microphone is muted",
+        "description": "Switched to default audio input device"
       }
     },
     "mic": {
@@ -3280,8 +3298,17 @@
       "suggestions": {
         "summarizeNotes": "Résumer mes notes récentes",
         "calendar": "Qu’y a-t-il dans mon calendrier ?",
-        "draft": "Aidez-moi à rédiger quelque chose"
-      }
+        "draft": "Aidez-moi à rédiger quelque chose",
+        "screenshot": "Take a screenshot",
+        "volume": "Turn volume up",
+        "timer": "Set a 5 minute timer"
+      },
+      "speak": "Read aloud",
+      "stopSpeaking": "Stop speaking",
+      "commandStep": "Step {{current}} of {{total}}",
+      "runningCommand": "Running...",
+      "writing": "Writing...",
+      "cancelWriting": "Cancel writing"
     },
     "toolActivity": {
       "verbs": {
@@ -4243,7 +4270,8 @@
       "serverUrlDescription": "L’URL de base compatible OpenAI, finissant en général par /v1.",
       "apiKeyOptional": "Clé d’API (facultative)",
       "apiKeyDescription": "Stockée en sécurité sur ce PC et jamais réaffichée.",
-      "oneModelNote": "Ce modèle sert à toutes les tâches de langage. Il n’y a pas de réglage de modèle par fonction."
+      "oneModelNote": "Ce modèle sert à toutes les tâches de langage. Il n’y a pas de réglage de modèle par fonction.",
+      "ollamaUnreachable": "Ollama is not reachable"
     },
     "stt": {
       "title": "Reconnaissance vocale",
@@ -4261,6 +4289,11 @@
       "forgetChats": "Oublier la mémoire de l’assistant",
       "forgetChatsDescription": "L’assistant ne se souviendra plus des discussions passées. Elles restent dans Accueil.",
       "forgetButton": "Oublier"
+    },
+    "soundEffects": {
+      "title": "Sound Effects",
+      "dictationSounds": "Dictation sounds",
+      "dictationSoundsDescription": "Play subtle audio cues when dictation starts and stops"
     }
   },
   "appSkills": {
@@ -4412,6 +4445,20 @@
       "disconnected": "Déconnecté",
       "needsAuth": "Auth requise",
       "error": "Erreur"
-    }
+    },
+    "revokeFailed": "Failed to revoke permission",
+    "permissionRevoked": "Permission revoked",
+    "disconnectFailed": "Failed to disconnect",
+    "testingConnection": "Testing connection...",
+    "toolToggleFailed": "Failed to toggle tool",
+    "hideTools": "Hide tools",
+    "showTools": "Show tools",
+    "removeServer": "Remove server",
+    "toggleTool": "Toggle tool",
+    "permissionsTitle": "Permissions",
+    "permissionsDescription": "Manage tool permissions for connected servers",
+    "noPermissions": "No permissions granted yet",
+    "revoke": "Revoke",
+    "envVariables": "Environment variables"
   }
 }

@@ -202,7 +202,8 @@
     "managedConfigAmbiguous": "Управляемая настройка вашей организации противоречива. Обратитесь к администратору.",
     "managedPolicyConflict": "Управляемый доступ заблокирован политикой вашего рабочего пространства. Обратитесь к администратору.",
     "resizePanel": "Изменить размер панели",
-    "dontAskAgain": "Больше не спрашивать"
+    "dontAskAgain": "Больше не спрашивать",
+    "validate": "Validate"
   },
   "onboarding": {
     "rehaul": {
@@ -1871,7 +1872,13 @@
         "apiKeyHelp": "You can also set INWORLD_API_KEY in the Overlay .env in your app data folder (%APPDATA%\\\\Overlay or Overlay-development when running from source).",
         "test": "Test voice",
         "testPhrase": "Hello, this is Overlay.",
-        "testFailed": "Couldn't speak the test line. Check the API key and try again."
+        "testFailed": "Couldn't speak the test line. Check the API key and try again.",
+        "providerSystem": "Built-in OS Voice (Offline, Free)",
+        "voiceLabel": "Voice",
+        "voiceRate": "Speed",
+        "voiceRateDescription": "Speech rate (0.6 = slow, 1.8 = fast)",
+        "systemVoiceDefault": "Default voice",
+        "testButton": "Test voice"
       },
       "commandMode": {
         "title": "Режим команд",
@@ -1890,6 +1897,12 @@
         "idleMinutesDescription": "Если открыть ассистента снова в течение этого времени, Overlay продолжит тот же чат. Кнопка «Новый чат» всегда начинает новый.",
         "askBeforeEveryAction": "Спрашивать перед каждым действием",
         "askBeforeEveryActionDescription": "Запрашивать подтверждение перед действиями на компьютере. Если выключено, безопасные действия выполняются автоматически."
+      },
+      "troubleshooting": {
+        "title": "Troubleshooting",
+        "diagnosticsTitle": "Diagnostics",
+        "diagnosticsDescription": "Copy a scrubbed diagnostic report for support",
+        "copyReport": "Copy diagnostic report"
       }
     },
     "permissions": {
@@ -3124,6 +3137,11 @@
       "cleanupFailed": {
         "title": "Не удалось выполнить очистку",
         "description": "Диктовка вставлена без ИИ-очистки."
+      },
+      "audioDeviceFallback": {
+        "title": "Audio device changed",
+        "mutedDescription": "Microphone is muted",
+        "description": "Switched to default audio input device"
       }
     },
     "mic": {
@@ -3292,8 +3310,17 @@
       "suggestions": {
         "summarizeNotes": "Подведи итог моих последних заметок",
         "calendar": "Что у меня в календаре?",
-        "draft": "Помоги мне составить текст"
-      }
+        "draft": "Помоги мне составить текст",
+        "screenshot": "Take a screenshot",
+        "volume": "Turn volume up",
+        "timer": "Set a 5 minute timer"
+      },
+      "speak": "Read aloud",
+      "stopSpeaking": "Stop speaking",
+      "commandStep": "Step {{current}} of {{total}}",
+      "runningCommand": "Running...",
+      "writing": "Writing...",
+      "cancelWriting": "Cancel writing"
     },
     "toolActivity": {
       "verbs": {
@@ -4255,7 +4282,8 @@
       "serverUrlDescription": "Базовый URL, совместимый с OpenAI, обычно оканчивается на /v1.",
       "apiKeyOptional": "Ключ API (необязательно)",
       "apiKeyDescription": "Надёжно хранится на этом ПК и больше не показывается.",
-      "oneModelNote": "Эта модель используется для всех языковых задач. Отдельных настроек модели для функций нет."
+      "oneModelNote": "Эта модель используется для всех языковых задач. Отдельных настроек модели для функций нет.",
+      "ollamaUnreachable": "Ollama is not reachable"
     },
     "stt": {
       "title": "Распознавание речи",
@@ -4273,6 +4301,11 @@
       "forgetChats": "Забыть память ассистента",
       "forgetChatsDescription": "Ассистент перестанет помнить прошлые чаты. Чаты останутся на главной.",
       "forgetButton": "Забыть"
+    },
+    "soundEffects": {
+      "title": "Sound Effects",
+      "dictationSounds": "Dictation sounds",
+      "dictationSoundsDescription": "Play subtle audio cues when dictation starts and stops"
     }
   },
   "appSkills": {
@@ -4424,6 +4457,20 @@
       "disconnected": "Отключено",
       "needsAuth": "Требуется авторизация",
       "error": "Ошибка"
-    }
+    },
+    "revokeFailed": "Failed to revoke permission",
+    "permissionRevoked": "Permission revoked",
+    "disconnectFailed": "Failed to disconnect",
+    "testingConnection": "Testing connection...",
+    "toolToggleFailed": "Failed to toggle tool",
+    "hideTools": "Hide tools",
+    "showTools": "Show tools",
+    "removeServer": "Remove server",
+    "toggleTool": "Toggle tool",
+    "permissionsTitle": "Permissions",
+    "permissionsDescription": "Manage tool permissions for connected servers",
+    "noPermissions": "No permissions granted yet",
+    "revoke": "Revoke",
+    "envVariables": "Environment variables"
   }
 }

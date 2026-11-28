@@ -399,3 +399,68 @@ module.exports = {
   isBlockedApp,
   createSystemActions,
 };
+const activeTimers = new Map();
+
+function formatCurrentTime(now = new Date()) {
+  const timeStr = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const dateStr = now.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  return `It's ${timeStr} on ${dateStr}`;
+}
+
+async function performSystemAction(req, opts = {}) {
+  const action = req?.action;
+  const platform = opts.platform || process.platform;
+  const { execFile } = require("child_process");
+  const { promisify } = require("util");
+  const runExec = opts.execFileImpl || promisify(execFile);
+
+  if (action === "show_time") {
+    return { success: true, message: formatCurrentTime() };
+  }
+  if (action === "lock_screen") {
+    if (opts.confirmed !== true) {
+      return { success: false, error: "Lock screen requires confirmation", code: "CONFIRM_REQUIRED" };
+    }
+    if (platform === "win32") {
+      await runExec("rundll32.exe", ["user32.dll,LockWorkStation"], { windowsHide: true, timeout: 4000 });
+      return { success: true, message: "Locked screen" };
+    }
+    if (platform === "darwin") {
+      await runExec("pmset", ["displaysleepnow"], { timeout: 4000 });
+      return { success: true, message: "Locked screen" };
+    }
+    return { success: false, error: "Lock screen is not supported on this platform", code: "UNSUPPORTED" };
+  }
+  return { success: true, message: `Executed ${action}` };
+}
+
+function scheduleReminder(req, opts = {}) {
+  const args = req?.args || {};
+  const durationMs = Math.max(1000, Number(args.durationMs || 60000));
+  const label = String(args.message || args.label || "Timer done").trim();
+  const id = `timer_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const handle = setTimeout(() => {
+    activeTimers.delete(id);
+    try {
+      if (typeof opts.notify === "function") opts.notify("Overlay", label);
+      else {
+        const { Notification } = require("electron");
+        if (Notification?.isSupported?.()) new Notification({ title: "Overlay", body: label }).show();
+      }
+    } catch {}
+  }, durationMs);
+  if (typeof handle.unref === "function") handle.unref();
+  activeTimers.set(id, handle);
+  const mins = Math.round(durationMs / 60000);
+  const when = mins >= 1 ? `${mins} minute${mins === 1 ? "" : "s"}` : `${Math.round(durationMs / 1000)} seconds`;
+  return {
+    success: true,
+    id,
+    message: req?.action === "reminder" ? `Reminder set for ${when}: ${label}` : `Timer set for ${when}`,
+  };
+}
+
+module.exports.performSystemAction = performSystemAction;
+module.exports.scheduleReminder = scheduleReminder;
+module.exports.formatCurrentTime = formatCurrentTime;
+module.exports.activeTimers = activeTimers;
