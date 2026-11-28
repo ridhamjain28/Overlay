@@ -7,6 +7,8 @@ const {
   validate,
   extractIntent,
   intentBaseUrl,
+  DEFAULT_INTENT_MODEL,
+  FALLBACK_INTENT_MODEL,
 } = require("../../src/helpers/intents/intentExtractor.js");
 const { buildIcs } = require("../../src/helpers/intents/icsWriter.js");
 const intentTime = require("../../src/helpers/intents/intentTime.js");
@@ -191,9 +193,52 @@ test("extractIntent: asks Ollama to skip thinking so it answers inside the timeo
   await extractIntent({ text: "meeting tomorrow at 5pm", fetchImpl: fakeFetch });
   assert.ok(sent);
   assert.equal(sent.url, "http://localhost:11434/v1/chat/completions");
+  assert.equal(sent.body.model, DEFAULT_INTENT_MODEL);
+  assert.equal(DEFAULT_INTENT_MODEL, "qwen3:4b-instruct");
+  assert.equal(FALLBACK_INTENT_MODEL, "qwen3:8b");
   assert.equal(sent.body.reasoning_effort, "none");
   assert.equal(sent.body.options, undefined);
   assert.equal(sent.body.stream, false);
+});
+
+test("extractIntent: falls back to qwen3:8b when qwen3:4b-instruct returns 404", async () => {
+  const modelsTried = [];
+  const nowMs = new Date("2026-10-29T10:00:00.000Z").getTime();
+  const fakeFetch = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    modelsTried.push(body.model);
+    if (body.model === DEFAULT_INTENT_MODEL) {
+      return { ok: false, status: 404 };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                type: "reminder",
+                title: "Standup",
+                start: "2026-10-30T10:00:00.000Z",
+                confidence: 0.9,
+              }),
+            },
+          },
+        ],
+      }),
+    };
+  };
+
+  const result = await extractIntent({
+    text: "remind me about standup tomorrow at 10am",
+    fetchImpl: fakeFetch,
+    nowMs,
+    tz: "UTC",
+  });
+  assert.deepEqual(modelsTried, ["qwen3:4b-instruct", "qwen3:8b"]);
+  assert.ok(result);
+  assert.equal(result.title, "Standup");
 });
 
 // Thursday 29 Oct 2026, 7:15:20 PM in India.

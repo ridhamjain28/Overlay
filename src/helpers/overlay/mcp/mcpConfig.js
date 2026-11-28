@@ -123,7 +123,8 @@ function validateConfig(configOrText) {
       const env = server.env && typeof server.env === "object" && !Array.isArray(server.env) ? { ...server.env } : undefined;
 
       // No unpinned npx -y: require exact versions
-      if (server.command.trim() === "npx") {
+      const cmdBase = path.basename(server.command.trim()).replace(/\.(cmd|exe|bat)$/i, "").toLowerCase();
+      if (cmdBase === "npx") {
         for (const arg of args) {
           if (arg.startsWith("-")) continue;
           if (arg.startsWith("@") || /^[a-z0-9_-]+/i.test(arg)) {
@@ -322,7 +323,9 @@ class McpConfigStore {
           const current = this.read();
           this.notify(current.servers);
         }, 200);
+        this._debounceTimer?.unref?.();
       });
+      this.watcher?.unref?.();
       if (this.watcher && typeof this.watcher.on === "function") {
         this.watcher.on("error", () => {});
       }
@@ -339,6 +342,7 @@ class McpConfigStore {
       this.watcher = null;
     }
     clearTimeout(this._debounceTimer);
+    this._debounceTimer = null;
   }
 
   onChange(callback) {

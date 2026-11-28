@@ -322,15 +322,20 @@ export function useChatStreaming({
   // how sendToAI tells a user's cancel from an unmount mid-stream.
   const explicitCancelGenerationRef = useRef(0);
   const toolScopeRef = useRef<ToolExecutionScope | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
   const cancelStream = useCallback(() => {
     sendGenerationRef.current += 1;
     if (mountedRef.current) {
       explicitCancelGenerationRef.current = sendGenerationRef.current;
     }
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
     toolScopeRef.current?.abort();
     toolScopeRef.current = null;
     ReasoningService.cancelActiveStream();
-    setAgentState("idle");
+    if (mountedRef.current) {
+      setAgentState("idle");
+    }
     clearToolActivity();
   }, [clearToolActivity]);
 
@@ -352,8 +357,11 @@ export function useChatStreaming({
     async (userText: string, allMessages: Message[], options?: SendToAIOptions) => {
       const sendGeneration = ++sendGenerationRef.current;
       const cancelled = () => sendGeneration !== sendGenerationRef.current;
-      // This send supersedes any still running, so that turn's tools are
-      // released now rather than when (or if) they settle.
+      // This send supersedes any still running, so that turn's tools and remote
+      // streams are released now rather than when (or if) they settle.
+      streamAbortRef.current?.abort();
+      const streamAbortController = new AbortController();
+      streamAbortRef.current = streamAbortController;
       toolScopeRef.current?.abort();
       const toolScope = createToolExecutionScope({
         onApprovalRequested: options?.onApprovalRequested,
@@ -368,6 +376,8 @@ export function useChatStreaming({
       try {
         await runSend();
       } finally {
+        streamAbortController.abort();
+        if (streamAbortRef.current === streamAbortController) streamAbortRef.current = null;
         toolScope.abort();
         if (toolScopeRef.current === toolScope) toolScopeRef.current = null;
       }
@@ -627,6 +637,7 @@ export function useChatStreaming({
               conversationUserRef.current = `overlay-${crypto.randomUUID()}`;
             }
             overlayPlan = planAnswerSources(sourceSetting, intent, await getAnswerSourcesStatus());
+            if (cancelled() || !mountedRef.current) return;
           }
           if (
             intent === "web" &&
@@ -815,14 +826,21 @@ export function useChatStreaming({
                   create:
                     source === "local"
                       ? () => localStream
-                      : () => remoteAnswerStream(source, remoteMessages, user),
+                      : () =>
+                          remoteAnswerStream(
+                            source,
+                            remoteMessages,
+                            user,
+                            streamAbortController.signal
+                          ),
                 })),
                 (source, error) =>
                   logger.warn(
                     "Answer source failed, trying next",
                     { source, error: error.message },
                     "overlay"
-                  )
+                  ),
+                streamAbortController.signal
               );
             }
           }
@@ -830,7 +848,7 @@ export function useChatStreaming({
           if (overlaySources.length) stream = appendSources(stream, overlaySources);
 
           for await (const chunk of stream) {
-            if (!mountedRef.current) {
+            if (cancelled() || !mountedRef.current) {
               ReasoningService.cancelActiveStream();
               break;
             }
@@ -950,53 +968,55 @@ export function useChatStreaming({
             });
           }
         } catch (error) {
-          if (cancelled()) {
+          if (cancelled() || !mountedRef.current) {
             flushContentNow();
             setMessages((prev) =>
               prev.map((message) =>
                 message.id === assistantId ? { ...message, isStreaming: false } : message
               )
             );
-          } else {
-            cancelContentFlush();
-            logger.error(
-              "Assistant request failed",
-              {
-                scope: llmConfig.scope,
-                mode: llmMode,
-                provider: llmConfig.provider,
-                model: llmConfig.model,
-                attachScreenContext,
-                error: (error as Error).message,
-              },
-              "reasoning"
-            );
-            announceResponse();
-            const failure = describeProviderError(error, t);
-            const messageError =
-              failure.technicalDetails || failure.settingsTarget
-                ? {
-                    technicalDetails: failure.technicalDetails,
-                    settingsTarget: failure.settingsTarget,
-                  }
-                : undefined;
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId
-                  ? {
-                      ...m,
-                      content: `${t("agentMode.chat.errorPrefix")}: ${failure.description}`,
-                      isStreaming: false,
-                      ...(messageError ? { error: messageError } : {}),
-                    }
-                  : m
-              )
-            );
+            return;
           }
+          cancelContentFlush();
+          logger.error(
+            "Assistant request failed",
+            {
+              scope: llmConfig.scope,
+              mode: llmMode,
+              provider: llmConfig.provider,
+              model: llmConfig.model,
+              attachScreenContext,
+              error: (error as Error).message,
+            },
+            "reasoning"
+          );
+          announceResponse();
+          const failure = describeProviderError(error, t);
+          const messageError =
+            failure.technicalDetails || failure.settingsTarget
+              ? {
+                  technicalDetails: failure.technicalDetails,
+                  settingsTarget: failure.settingsTarget,
+                }
+              : undefined;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content: `${t("agentMode.chat.errorPrefix")}: ${failure.description}`,
+                    isStreaming: false,
+                    ...(messageError ? { error: messageError } : {}),
+                  }
+                : m
+            )
+          );
         }
 
-        setAgentState("idle");
-        completeToolActivity();
+        if (!cancelled() && mountedRef.current) {
+          setAgentState("idle");
+          completeToolActivity();
+        }
       }
     },
     [

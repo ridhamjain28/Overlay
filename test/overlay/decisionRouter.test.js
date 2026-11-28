@@ -213,3 +213,149 @@ test("orchestrator fast heuristic skips decideRoute latency for clear local comm
   assert.equal(routerCalls, 1, "low-confidence heuristic falls through to decision router");
   assert.equal(routedPlan.source, "decision-router");
 });
+
+test("createDecisionRouter fast-fails strands-decider during cooldown after connection or timeout failure and recovers after cooldown", async () => {
+  let clock = 1000;
+  let strandsCalls = 0;
+  let ollamaCalls = 0;
+  let strandsOnline = false;
+
+  const decideRoute = createDecisionRouter({
+    strandsCooldownMs: 30000,
+    now: () => clock,
+    fetchImpl: async (url) => {
+      if (url.includes(":8000")) {
+        strandsCalls += 1;
+        if (!strandsOnline) {
+          const err = new Error("connect ECONNREFUSED 127.0.0.1:8000");
+          err.code = "ECONNREFUSED";
+          throw err;
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ answers: { route: { choice: "chat", confidence: 0.91 } } }),
+        };
+      }
+      ollamaCalls += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          message: { content: JSON.stringify({ lane: "web_search", confidence: 0.85 }) },
+        }),
+      };
+    },
+  });
+
+  // First call probes strands (fails -> enters cooldown) and falls back to Ollama.
+  const first = await decideRoute("search latest ai news");
+  assert.equal(first.source, "ollama");
+  assert.equal(strandsCalls, 1);
+  assert.equal(ollamaCalls, 1);
+
+  // Subsequent calls within cooldown skip strands completely and go straight to Ollama.
+  clock += 10000;
+  const second = await decideRoute("check weather today");
+  assert.equal(second.source, "ollama");
+  assert.equal(strandsCalls, 1, "redundant strands-decider probe must be skipped during cooldown");
+  assert.equal(ollamaCalls, 2);
+
+  // Once cooldown expires, strands is probed again and recovers.
+  strandsOnline = true;
+  clock += 20001;
+  const third = await decideRoute("explain TCP congestion control");
+  assert.equal(third.source, "strands-decider");
+  assert.equal(third.lane, "chat");
+  assert.equal(strandsCalls, 2, "strands-decider should be probed again after cooldown expires");
+  assert.equal(ollamaCalls, 2);
+});
+
+test("createDecisionRouter triggers cooldown on timeout and clears immediately on reset()", async () => {
+  let clock = 5000;
+  let strandsCalls = 0;
+  let strandsShouldTimeout = true;
+
+  const decideRoute = createDecisionRouter({
+    strandsTimeoutMs: 50,
+    strandsCooldownMs: 30000,
+    now: () => clock,
+    fetchImpl: async (url, init) => {
+      if (url.includes(":8000")) {
+        strandsCalls += 1;
+        if (strandsShouldTimeout) {
+          const err = new Error("The operation was aborted");
+          err.name = "AbortError";
+          throw err;
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ answers: { route: { choice: "mcp_tool", confidence: 0.9 } } }),
+        };
+      }
+      assert.equal(init.method, "POST");
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          message: { content: JSON.stringify({ lane: "chat", confidence: 0.8 }) },
+        }),
+      };
+    },
+  });
+
+  await decideRoute("list github issues");
+  assert.equal(strandsCalls, 1);
+
+  clock += 1000;
+  await decideRoute("list github prs");
+  assert.equal(strandsCalls, 1, "should skip strands during timeout cooldown");
+
+  // Explicit reset() clears cooldown before expiry.
+  strandsShouldTimeout = false;
+  decideRoute.reset();
+  const res = await decideRoute("list github issues");
+  assert.equal(strandsCalls, 2);
+  assert.equal(res.source, "strands-decider");
+  assert.equal(res.lane, "mcp_tool");
+});
+
+test("createDecisionRouter does not trigger cooldown on HTTP error or unknown lane, and respects caller abort", async () => {
+  let clock = 1000;
+  let strandsCalls = 0;
+  let ollamaCalls = 0;
+
+  const decideRoute = createDecisionRouter({
+    strandsCooldownMs: 30000,
+    now: () => clock,
+    fetchImpl: async (url) => {
+      if (url.includes(":8000")) {
+        strandsCalls += 1;
+        return { ok: false, status: 500, json: async () => ({}) };
+      }
+      ollamaCalls += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          message: { content: JSON.stringify({ lane: "chat", confidence: 0.88 }) },
+        }),
+      };
+    },
+  });
+
+  await decideRoute("first utterance");
+  clock += 1000;
+  await decideRoute("second utterance");
+  assert.equal(strandsCalls, 2, "HTTP 500 is not a connection/timeout failure and must not engage cooldown");
+  assert.equal(ollamaCalls, 2);
+
+  // External abort returns unknown immediately without calling strands or ollama.
+  const ac = new AbortController();
+  ac.abort();
+  const aborted = await decideRoute("cancelled utterance", { signal: ac.signal });
+  assert.deepEqual(aborted, { lane: "unknown", confidence: 0, source: "none" });
+  assert.equal(strandsCalls, 2);
+  assert.equal(ollamaCalls, 2);
+});

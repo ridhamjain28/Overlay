@@ -5,7 +5,7 @@
 
 const { URL } = require("url");
 const { isMetaIntent, formatMetaExplanation } = require("./metaIntent");
-const { formatFindOutcome, isExecutablePath } = require("./findPath");
+const { formatFindOutcome } = require("./findPath");
 const riskPolicy = require("./riskPolicy");
 
 const DEDUPE_MS = 2500;
@@ -427,21 +427,27 @@ function createOrchestrator(deps = {}) {
     return { unsupported: false, windows: Array.isArray(listed) ? listed : [] };
   }
 
-  async function waitForWindow(spec, timeoutMs) {
+  async function waitForWindow(spec, timeoutMs, signal) {
+    if (signal?.aborted) return { ok: false, cancelled: true, error: "Cancelled." };
     const first = await readWindows();
     if (first.unsupported) return { ok: true, skipped: true };
     const deadline = now() + timeoutMs;
     let windows = first.windows;
     while (true) {
+      if (signal?.aborted) return { ok: false, cancelled: true, error: "Cancelled." };
       const hit = windows.find((win) => windowMatches(win, spec));
       if (hit) return { ok: true, window: hit };
       if (now() > deadline) return { ok: false, error: "Timed out waiting for the page to open." };
       await sleep(200);
+      if (signal?.aborted) return { ok: false, cancelled: true, error: "Cancelled." };
       windows = (await readWindows()).windows;
     }
   }
 
-  async function verifyStep(step, result) {
+  async function verifyStep(step, result, signal) {
+    if (result?.code === "CANCELLED" || signal?.aborted) {
+      return { ok: false, cancelled: true, message: result?.error || "You cancelled this command" };
+    }
     if (result?.success === false) {
       return { ok: false, message: result.message || result.error || "The step failed." };
     }
@@ -453,17 +459,21 @@ function createOrchestrator(deps = {}) {
       const title = step.args?.path
         ? String(step.args.path).split(/[\\/]/).filter(Boolean).pop()
         : "File Explorer";
-      const waited = await waitForWindow({ matchTitle: title }, 4000);
+      const waited = await waitForWindow({ matchTitle: title }, 4000, signal);
+      if (waited.cancelled) return { ok: false, cancelled: true, message: "Cancelled." };
       if (!waited.ok && !waited.skipped) {
-        const fallback = await waitForWindow({ matchTitle: "File Explorer" }, 1500);
+        const fallback = await waitForWindow({ matchTitle: "File Explorer" }, 1500, signal);
+        if (fallback.cancelled) return { ok: false, cancelled: true, message: "Cancelled." };
         if (!fallback.ok && !fallback.skipped) return { ok: true, soft: true };
       }
     }
     if (step.action === "open_url" && isCalendarPrefillStep(step) && typeof listWindows === "function") {
       const waited = await waitForWindow(
         { matchTitle: "Calendar", matchUrl: "eventedit" },
-        8000
+        8000,
+        signal
       );
+      if (waited.cancelled) return { ok: false, cancelled: true, message: "Cancelled." };
       if (!waited.ok && !waited.skipped) {
         // Best-effort: the template may still have opened in a tab whose title is lagging.
         return { ok: true, soft: true };
@@ -472,25 +482,36 @@ function createOrchestrator(deps = {}) {
     return { ok: true };
   }
 
-  async function executeSubmitPage(step) {
+  async function executeSubmitPage(step, callOptions = {}) {
+    const signal = callOptions.signal;
+    if (signal?.aborted) {
+      return { success: false, action: "submit_page", code: "CANCELLED", message: "You cancelled this command" };
+    }
     const spec = step.args || {};
     const timeoutMs = Number(spec.timeoutMs) || DEFAULT_SUBMIT_TIMEOUT_MS;
     const waited = await waitForWindow(
       { matchTitle: spec.matchTitle, matchUrl: spec.matchUrl || "eventedit" },
-      timeoutMs
+      timeoutMs,
+      signal
     );
+    if (waited.cancelled || signal?.aborted) {
+      return { success: false, action: "submit_page", code: "CANCELLED", message: "You cancelled this command" };
+    }
     if (!waited.ok && !waited.skipped) {
       return { success: false, action: "submit_page", message: "Opened the event but could not find the Calendar editor." };
     }
     if (waited.window && typeof focusWindow === "function") {
       await focusWindow(waited.window);
     }
+    if (signal?.aborted) {
+      return { success: false, action: "submit_page", code: "CANCELLED", message: "You cancelled this command" };
+    }
     if (typeof sendKeys !== "function") {
       return { success: false, action: "submit_page", message: "Opened the event but could not send the save shortcut." };
     }
     try {
       await sendKeys(spec.keys || "control+s");
-    } catch (error) {
+    } catch {
       return {
         success: false,
         action: "submit_page",
@@ -501,6 +522,9 @@ function createOrchestrator(deps = {}) {
     if (!listed.unsupported) {
       const deadline = now() + Math.min(timeoutMs, 6000);
       while (now() <= deadline) {
+        if (signal?.aborted) {
+          return { success: false, action: "submit_page", code: "CANCELLED", message: "You cancelled this command" };
+        }
         const windows = (await readWindows()).windows;
         const stillEditing = windows.some((win) => {
           const url = String(win.url || "");
@@ -522,6 +546,9 @@ function createOrchestrator(deps = {}) {
   let lastOutcome = null;
 
   async function executeMcpStep(step, callOptions = {}) {
+    if (callOptions.signal?.aborted) {
+      return { success: false, action: "mcp", error: "You cancelled this command", code: "CANCELLED" };
+    }
     const activeRiskPolicy = deps.riskPolicy || riskPolicy;
     const resolvedUserDataDir =
       callOptions.userDataDir ||
@@ -540,9 +567,12 @@ function createOrchestrator(deps = {}) {
     if (risk === "confirm" && !callOptions.confirmed) {
       const detail = activeRiskPolicy.formatRiskConfirmDetail(step);
       const allowed = typeof deps.confirm === "function" ? await deps.confirm(detail, { step }) : false;
-      if (!allowed) {
+      if (!allowed || callOptions.signal?.aborted) {
         return { success: false, action: "mcp", error: "You cancelled this command", code: "CANCELLED" };
       }
+    }
+    if (callOptions.signal?.aborted) {
+      return { success: false, action: "mcp", error: "You cancelled this command", code: "CANCELLED" };
     }
     const schema =
       step.inputSchema ||
@@ -592,6 +622,9 @@ function createOrchestrator(deps = {}) {
   }
 
   async function plan(text, options = {}) {
+    if (options.signal?.aborted) {
+      return { steps: [], intent: { action: "none" }, source: "cancelled", cancelled: true };
+    }
     if (isMetaIntent(text)) {
       return { steps: [], intent: { action: "none", metaIntent: true }, source: "meta", metaIntent: true };
     }
@@ -618,12 +651,19 @@ function createOrchestrator(deps = {}) {
       }
     }
 
+    if (options.signal?.aborted) {
+      return { steps: [], intent: { action: "none" }, source: "cancelled", cancelled: true };
+    }
+
     let route;
     if (typeof decideRoute === "function") {
       try {
-        route = await decideRoute(text, { mcpTools: options.mcpTools });
+        route = await decideRoute(text, { mcpTools: options.mcpTools, signal: options.signal });
       } catch {
         route = undefined;
+      }
+      if (options.signal?.aborted) {
+        return { steps: [], intent: { action: "none" }, source: "cancelled", cancelled: true, ...(route ? { route } : {}) };
       }
       // Only let a high-confidence chat verdict bypass the command parser when
       // local heuristics found no action.
@@ -644,6 +684,15 @@ function createOrchestrator(deps = {}) {
         ? { ...options, forceLlm: true }
         : options;
     const intent = await parseIntent(text, parseOptions);
+    if (options.signal?.aborted || intent?.errorCode === "CANCELLED") {
+      return {
+        steps: [],
+        intent: intent || { action: "none" },
+        source: "cancelled",
+        cancelled: true,
+        ...(route ? { route } : {}),
+      };
+    }
     if (intent?.metaIntent || isMetaIntent(text)) {
       return { steps: [], intent, source: "meta", metaIntent: true, ...(route ? { route } : {}) };
     }
@@ -697,10 +746,25 @@ function createOrchestrator(deps = {}) {
         message: "Already handling that command.",
       };
     }
+    if (options.signal?.aborted) {
+      return { handled: true, success: false, cancelled: true, steps: [], results: [], message: "Cancelled.", source: "cancelled" };
+    }
     inFlight.add(key);
     try {
       const planned = await plan(text, options);
       const routeMeta = planned.route ? { route: planned.route } : {};
+      if (planned.cancelled || options.signal?.aborted) {
+        return {
+          handled: true,
+          success: false,
+          cancelled: true,
+          steps: [],
+          results: [],
+          source: "cancelled",
+          message: "Cancelled.",
+          ...routeMeta,
+        };
+      }
       if (planned.metaIntent) {
         const message = formatMetaExplanation(text, lastOutcome);
         return { handled: true, success: true, explanation: true, steps: [], message, source: "meta" };
@@ -710,6 +774,18 @@ function createOrchestrator(deps = {}) {
       }
       const results = [];
       for (let i = 0; i < planned.steps.length; i++) {
+        if (options.signal?.aborted) {
+          return storeLast({
+            handled: true,
+            success: false,
+            cancelled: true,
+            steps: planned.steps.slice(0, results.length),
+            results,
+            message: "Cancelled.",
+            source: planned.source,
+            ...routeMeta,
+          });
+        }
         const step = planned.steps[i];
         if (typeof options.onProgress === "function") {
           options.onProgress({
@@ -721,7 +797,7 @@ function createOrchestrator(deps = {}) {
         }
         let result;
         if (step.action === "submit_page") {
-          result = await executeSubmitPage(step);
+          result = await executeSubmitPage(step, options);
         } else if (step.type === "mcp" || step.action === "mcp") {
           result = await executeMcpStep(step, options);
         } else if (typeof perform === "function") {
@@ -736,19 +812,22 @@ function createOrchestrator(deps = {}) {
               confirmed: options.confirmed,
               userDataDir: resolvedUserDataDir,
               permissions: resolvedPermissions,
+              signal: options.signal,
             }
           );
         } else {
           result = { success: false, error: "No executor is available", action: step.action };
         }
         result = { action: step.action, ...result };
-        const verified = await verifyStep(step, result);
+        const verified = await verifyStep(step, result, options.signal);
         if (!verified.ok) {
-          const message = verified.message || result.rawMessage || result.message || result.error || "The command failed.";
+          const isCancelled = verified.cancelled === true || result.code === "CANCELLED" || options.signal?.aborted === true;
+          const message = verified.message || result.rawMessage || result.message || result.error || (isCancelled ? "Cancelled." : "The command failed.");
           const promptMessage = formatOutcomeForPrompt(text, planned.steps, results.concat(result));
           return storeLast({
             handled: true,
             success: false,
+            ...(isCancelled ? { cancelled: true } : {}),
             steps: planned.steps,
             results: results.concat(result),
             message,
@@ -772,9 +851,9 @@ function createOrchestrator(deps = {}) {
               ...routeMeta,
             });
           }
-          const next = planned.steps[planned.steps.indexOf(step) + 1];
+          const next = planned.steps[i + 1];
           if (!next || next.action !== "open_path") {
-            planned.steps.splice(planned.steps.indexOf(step) + 1, 0, {
+            planned.steps.splice(i + 1, 0, {
               action: "open_path",
               args: { path: matches[0].path },
               source: "find_path",

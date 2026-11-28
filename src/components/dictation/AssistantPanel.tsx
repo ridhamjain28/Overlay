@@ -203,29 +203,46 @@ export function AssistantPanel({
     },
     [createConversation, persistence]
   );
-  const [commandWriting, setCommandWriting] = useState(false);
+  const [commandInFlight, setCommandInFlight] = useState(false);
+  const [commandProgress, setCommandProgress] = useState<{
+    phase?: string;
+    current?: number;
+    total?: number;
+    text?: string;
+  } | null>(null);
   useEffect(() => {
     const unsub = window.electronAPI?.onOverlayCommandProgress?.((payload) => {
       const phase = payload?.phase;
-      if (phase === "writing") setCommandWriting(true);
-      else if (phase === "pasting" || phase === "done") setCommandWriting(false);
+      if (!phase || phase === "pasting" || phase === "done") {
+        setCommandProgress(null);
+        return;
+      }
+      setCommandProgress({
+        phase,
+        current: payload.current,
+        total: payload.total,
+        text: payload.text,
+      });
     });
     return () => {
       unsub?.();
     };
   }, []);
-  const cancelCommandWriting = useCallback(() => {
+  const cancelCommandMode = useCallback(() => {
+    setCommandProgress(null);
     void window.electronAPI?.overlayCommandCancel?.();
   }, []);
   const tryCommandMode = useCallback(
     async (text: string): Promise<boolean> => {
+      setCommandInFlight(true);
       try {
         const outcome = await runCommandOrchestrator(text, commandSettings);
         if (!outcome.handled) return false;
         await recordCommandTurn(text, outcome.message, outcome.promptMessage);
         return true;
       } finally {
-        setCommandWriting(false);
+        setCommandInFlight(false);
+        setCommandProgress(null);
       }
     },
     [commandSettings, recordCommandTurn]
@@ -417,7 +434,29 @@ export function AssistantPanel({
     activeToolName: streaming.activeToolName,
     submissionInFlight,
   });
-  const showContentFlourish = thinking || isToolExecuting;
+  const showCommandProgress = Boolean(commandProgress) || commandInFlight;
+  const commandProgressLabel = useMemo(() => {
+    if (commandProgress?.text) return commandProgress.text;
+    if (commandProgress?.phase === "writing") {
+      return t("assistant.panel.writing", { defaultValue: "Writing…" });
+    }
+    if (
+      commandProgress?.phase === "step" &&
+      commandProgress.current != null &&
+      commandProgress.total != null
+    ) {
+      return t("assistant.panel.commandStep", {
+        defaultValue: "Working… step {{current}}/{{total}}",
+        current: commandProgress.current,
+        total: commandProgress.total,
+      });
+    }
+    if (commandProgress?.phase || commandInFlight) {
+      return t("assistant.panel.runningCommand", { defaultValue: "Working…" });
+    }
+    return "";
+  }, [commandInFlight, commandProgress, t]);
+  const showContentFlourish = thinking || isToolExecuting || showCommandProgress;
   const [toolVerbIndex, setToolVerbIndex] = useState(0);
   const footerPresentation = resolveAssistantFooterPresentation(footerPhase);
 
@@ -539,6 +578,13 @@ export function AssistantPanel({
     onResponseReadyChange(isResponseReady);
   }, [isResponseReady, onResponseReadyChange]);
 
+  const handleCancelActive = useCallback(() => {
+    if (submissionInFlight) {
+      cancelCommandMode();
+    }
+    streaming.cancelStream();
+  }, [cancelCommandMode, streaming, submissionInFlight]);
+
   // Esc cancels a running response or closes the panel. The screenshot's
   // compact `C` hint is also a keyboard shortcut once a response is final.
   useEffect(() => {
@@ -546,7 +592,7 @@ export function AssistantPanel({
       if (e.key === "Escape") {
         if (voiceState === "listening") return;
         if (isBusy) {
-          streaming.cancelStream();
+          handleCancelActive();
           // A hidden panel means the compact Beam circle owns the thinking
           // state; cancelling it must also dismiss that otherwise-idle shell.
           if (!open) onClose();
@@ -581,7 +627,7 @@ export function AssistantPanel({
   }, [
     voiceState,
     isBusy,
-    streaming,
+    handleCancelActive,
     open,
     onClose,
     isResponseReady,
@@ -601,8 +647,10 @@ export function AssistantPanel({
         {messages.length > 0 && (
           <button
             type="button"
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+            disabled={isBusy || submissionInFlight}
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
             aria-label={t("assistant.panel.newConversation")}
+            title={t("assistant.panel.newConversation")}
             onPointerDown={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -612,7 +660,7 @@ export function AssistantPanel({
               handleNewConversation();
             }}
           >
-            <Plus size={15} strokeWidth={2} />
+            <Plus size={15} strokeWidth={2} aria-hidden="true" />
           </button>
         )}
 
@@ -676,6 +724,7 @@ export function AssistantPanel({
                   />
                   {latestAssistantMessage?.isStreaming && (
                     <span
+                      aria-hidden="true"
                       className="ms-0.5 inline-block h-4 w-0.5 align-middle bg-foreground/70"
                       style={{ animation: "agent-cursor-blink 1s ease-in-out infinite" }}
                     />
@@ -721,11 +770,7 @@ export function AssistantPanel({
           agentState={historyReady && !submissionInFlight ? streaming.agentState : "thinking"}
           partialTranscript=""
           onTextSubmit={handleTextSubmit}
-          onCancel={
-            historyReady && (!submissionInFlight || streaming.agentState !== "idle")
-              ? streaming.cancelStream
-              : undefined
-          }
+          onCancel={historyReady ? handleCancelActive : undefined}
           autoFocus={historyReady && open && messages.length === 0}
           className="px-3 pb-3"
         />
@@ -736,22 +781,29 @@ export function AssistantPanel({
             aria-hidden="true"
           />
         )}
-        {commandWriting && (
+        {showCommandProgress && (
           <div
             className="pointer-events-auto absolute inset-x-0 bottom-[4.5rem] z-30 flex justify-center px-6"
             role="status"
             aria-live="polite"
             aria-atomic="true"
+            data-command-progress-phase={commandProgress?.phase ?? "working"}
           >
             <div className="inline-flex max-w-full items-center gap-2.5 rounded-xl border border-border/60 bg-surface-raised/80 px-4 py-2.5 shadow-[var(--shadow-card)] backdrop-blur-md">
-              <span className="assistant-tool-invocation-pulse relative flex size-2 shrink-0 rounded-full bg-agent-brand" />
-              <span className="text-sm font-medium text-foreground">{t("assistant.panel.writing")}</span>
+              <span
+                className="assistant-tool-invocation-pulse relative flex size-2 shrink-0 rounded-full bg-agent-brand"
+                aria-hidden="true"
+              />
+              <span className="truncate text-sm font-medium text-foreground">
+                {commandProgressLabel}
+              </span>
               <button
                 type="button"
-                className="ms-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
-                onClick={cancelCommandWriting}
+                className="ms-1 shrink-0 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                aria-label={t("assistant.panel.cancelWriting", { defaultValue: t("common.cancel") })}
+                onClick={cancelCommandMode}
               >
-                {t("assistant.panel.cancelWriting")}
+                {t("assistant.panel.cancelWriting", { defaultValue: t("common.cancel") })}
               </button>
             </div>
           </div>

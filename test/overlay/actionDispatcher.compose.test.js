@@ -3,7 +3,6 @@ const assert = require("node:assert/strict");
 const {
   createCommandDispatcher,
   validateCommandRequest,
-  PLAN_STEP_DELAY_MS,
 } = require("../../src/helpers/overlay/commandMode/actionDispatcher");
 
 const LETTER = "Dear Mother,\n\nPlease let me come home for a holiday.\n\nLove";

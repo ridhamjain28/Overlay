@@ -76,7 +76,8 @@ function createChatMemoryStore(db, { now = () => Date.now() } = {}) {
        ON CONFLICT(fact_key) DO UPDATE SET fact = excluded.fact, updated_at = excluded.updated_at`
     );
     let saved = 0;
-    const stamp = now();
+    const rawNow = Number(now());
+    const stamp = Number.isFinite(rawNow) ? rawNow : Date.now();
     for (const item of facts) {
       const key = clip(item?.key, 80);
       const fact = clip(item?.fact, MAX_FACT_CHARS);
@@ -102,12 +103,14 @@ function createChatMemoryStore(db, { now = () => Date.now() } = {}) {
   function saveSummary(conversationKey, summary, covered) {
     const text = clip(summary, MAX_SUMMARY_CHARS);
     if (!conversationKey || !text) return false;
+    const rawNow = Number(now());
+    const stamp = Number.isFinite(rawNow) ? rawNow : Date.now();
     db.prepare(
       `INSERT INTO overlay_chat_memory (conversation_key, summary, covered, updated_at)
        VALUES (?, ?, ?, ?)
        ON CONFLICT(conversation_key) DO UPDATE SET summary = excluded.summary,
          covered = excluded.covered, updated_at = excluded.updated_at`
-    ).run(String(conversationKey), text, Math.max(0, Math.floor(Number(covered) || 0)), now());
+    ).run(String(conversationKey), text, Math.max(0, Math.floor(Number(covered) || 0)), stamp);
     db.prepare(
       `DELETE FROM overlay_chat_memory WHERE conversation_key NOT IN (
          SELECT conversation_key FROM overlay_chat_memory ORDER BY updated_at DESC LIMIT ?)`
@@ -119,17 +122,20 @@ function createChatMemoryStore(db, { now = () => Date.now() } = {}) {
   function searchSummaries(query, { excludeKey = null, limit = 2 } = {}) {
     const queryWords = keywords(query);
     if (!queryWords.length) return [];
+    const excluded = excludeKey != null ? String(excludeKey) : null;
+    const maxLimit = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : 2;
+    if (maxLimit === 0) return [];
     const rows = db
       .prepare(
         "SELECT conversation_key, summary FROM overlay_chat_memory ORDER BY updated_at DESC LIMIT ?"
       )
       .all(MAX_SUMMARIES);
     return rows
-      .filter((row) => row.conversation_key !== excludeKey)
+      .filter((row) => row.conversation_key !== excluded)
       .map((row) => ({ summary: row.summary, score: relevance(queryWords, row.summary) }))
       .filter((row) => row.score >= 2)
       .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
+      .slice(0, maxLimit)
       .map((row) => row.summary);
   }
 
@@ -141,7 +147,8 @@ function createChatMemoryStore(db, { now = () => Date.now() } = {}) {
     };
   }
 
-  function remember(conversationKey, { facts, summary, covered } = {}) {
+  function remember(conversationKey, payload = {}) {
+    const { facts, summary, covered } = payload || {};
     const savedFacts = addFacts(facts);
     const savedSummary = summary ? saveSummary(conversationKey, summary, covered) : false;
     return { savedFacts, savedSummary };

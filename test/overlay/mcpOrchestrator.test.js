@@ -7,7 +7,6 @@ const os = require("node:os");
 const { createOrchestrator } = require("../../src/helpers/overlay/commandMode/orchestrator");
 const { McpManager } = require("../../src/helpers/overlay/mcp/mcpManager");
 const { McpConfigStore } = require("../../src/helpers/overlay/mcp/mcpConfig");
-const { parseIntent } = require("../../src/helpers/overlay/commandMode/intentParser");
 const riskPolicy = require("../../src/helpers/overlay/commandMode/riskPolicy");
 
 test("Filesystem server scoped to temp folder runs 'list files in my test folder' through orchestrator", async () => {

@@ -214,3 +214,69 @@ test("formatOutcome for Edge youtube search", () => {
   assert.match(message, /search for youtube/i);
   assert.match(message, /edge/i);
 });
+
+test("orchestrator stops mid-plan on AbortSignal without emitting stale progress or running remaining steps", async () => {
+  const ac = new AbortController();
+  const performed = [];
+  const progressEvents = [];
+  let parseCalled = 0;
+
+  const orch = createOrchestrator({
+    decideRoute: async () => ({ lane: "os_app", confidence: 0.9 }),
+    parseIntent: async () => {
+      parseCalled += 1;
+      return {
+        action: "plan",
+        steps: [
+          { action: "open_app", args: { app: "notepad" } },
+          { action: "type_text", args: { text: "hello world" } },
+        ],
+        confidence: 0.95,
+        source: "llm",
+      };
+    },
+    perform: async (req, opts) => {
+      performed.push({ action: req.action, hasSignal: Boolean(opts?.signal) });
+      // Abort during the first step; step 2 must never start or emit progress.
+      ac.abort();
+      return { success: true, action: req.action, message: "Opened notepad" };
+    },
+  });
+
+  const outcome = await orch.orchestrate("open notepad and type hello world", {
+    signal: ac.signal,
+    onProgress: (p) => progressEvents.push(p),
+  });
+
+  assert.equal(parseCalled, 1);
+  assert.equal(performed.length, 1);
+  assert.equal(performed[0].hasSignal, true);
+  assert.equal(progressEvents.length, 1, "stale step 2 progress must not fire after abort");
+  assert.equal(progressEvents[0].current, 1);
+  assert.equal(outcome.handled, true);
+  assert.equal(outcome.success, false);
+  assert.equal(outcome.cancelled, true);
+});
+
+test("orchestrator skips parseIntent when AbortSignal aborts during decideRoute", async () => {
+  const ac = new AbortController();
+  let parseCalled = 0;
+
+  const orch = createOrchestrator({
+    decideRoute: async (_text, { signal }) => {
+      assert.equal(signal, ac.signal);
+      ac.abort();
+      return { lane: "mcp_tool", confidence: 0.9 };
+    },
+    parseIntent: async () => {
+      parseCalled += 1;
+      return { action: "open_app", args: { app: "notepad" } };
+    },
+  });
+
+  const outcome = await orch.orchestrate("check my tasks", { signal: ac.signal });
+  assert.equal(parseCalled, 0, "parseIntent must not run after abort during route decision");
+  assert.equal(outcome.handled, true);
+  assert.equal(outcome.success, false);
+  assert.equal(outcome.cancelled, true);
+});

@@ -44,7 +44,7 @@ You can also double-click `setup.bat` instead of running `npm run setup`.
 2. Installs the packages (`npm ci`). It skips this when they are already installed.
 3. Downloads the local Whisper engine (`npm run download:whisper-cpp`).
 4. Builds the UI so that `npm start` works.
-5. Checks that Ollama is running, and starts it if it is installed but stopped. It then pulls `qwen3.5:4b-q4_K_M` (about 3.3 GB) and the fallback `qwen3:4b-instruct` (about 2.5 GB), but only if they are missing.
+5. Checks that Ollama is running, and starts it if it is installed but stopped. It then pulls `qwen3:8b` (about 5.2 GB) and the fast command parser / fallback `qwen3:4b-instruct` (about 2.5 GB), but only if they are missing.
 6. Creates your settings files from `.env.example`: `%APPDATA%\Overlay-development\.env` (used when you run from source with `npm start` or `npm run dev`) and `%APPDATA%\Overlay\.env` (used by an installed build). Every key is left blank and commented out. An existing file is never touched.
 
 It is safe to run again. If something needs your action, it is listed at the end. Options:
@@ -117,9 +117,9 @@ Free tiers and quotas change often. **Check current limits** on each provider's 
 
 ### 1. Local Ollama (default answers)
 
-- **Setup:** install Ollama, `ollama pull qwen3.5:4b-q4_K_M`, keep Ollama running. Nothing else.
+- **Setup:** install Ollama, `ollama pull qwen3:8b` and `ollama pull qwen3:4b-instruct`, keep Ollama running. Nothing else.
 - **Pros:** private, free, works offline, supports tool calls (PC actions).
-- **Cons:** a 4B model is less knowledgeable than big cloud models; it uses ~3–4 GB of VRAM while loaded.
+- **Cons:** local 4B–8B models are less knowledgeable than big cloud models; they use ~3–6 GB of VRAM while loaded.
 
 ### 2. OpenClaw gateway (optional agent)
 

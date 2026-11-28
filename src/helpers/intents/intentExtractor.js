@@ -15,7 +15,9 @@ const {
 } = require("./intentTime");
 
 const OLLAMA_BASE = "http://localhost:11434/v1";
-const MODEL = process.env.OVERLAY_INTENT_MODEL || "qwen3.5:4b-q4_K_M";
+const DEFAULT_INTENT_MODEL = "qwen3:4b-instruct";
+const FALLBACK_INTENT_MODEL = "qwen3:8b";
+const MODEL = process.env.OVERLAY_INTENT_MODEL || DEFAULT_INTENT_MODEL;
 // A cold model load can take a few seconds; this runs after paste, so it never delays it.
 const TIMEOUT_MS = 6000;
 const MIN_CONFIDENCE = 0.6;
@@ -131,6 +133,23 @@ function validate(raw, nowMs, { text, tz } = {}) {
   return { type, title, start, end, confidence };
 }
 
+async function postIntentCompletion(fetchImpl, ollamaBase, model, prompt, signal) {
+  return fetchImpl(`${ollamaBase}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      stream: false,
+      temperature: 0.1,
+      // Ollama's OpenAI-compatible endpoint ignores options.think; this is the
+      // field it honours to skip the thinking pass (qwen3 thinking models think by default).
+      reasoning_effort: "none",
+    }),
+    signal,
+  });
+}
+
 /**
  * Extract calendar intent from `text`.
  *
@@ -158,20 +177,26 @@ async function extractIntent({
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetchImpl(`${ollamaBase}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [{ role: "user", content: prompt }],
-        stream: false,
-        temperature: 0.1,
-        // Ollama's OpenAI-compatible endpoint ignores options.think; this is the
-        // field it honours to skip the thinking pass (qwen3.5 thinks by default).
-        reasoning_effort: "none",
-      }),
-      signal: controller.signal,
-    });
+    let response = await postIntentCompletion(
+      fetchImpl,
+      ollamaBase,
+      MODEL,
+      prompt,
+      controller.signal
+    );
+    if (
+      response.status === 404 &&
+      !process.env.OVERLAY_INTENT_MODEL &&
+      MODEL !== FALLBACK_INTENT_MODEL
+    ) {
+      response = await postIntentCompletion(
+        fetchImpl,
+        ollamaBase,
+        FALLBACK_INTENT_MODEL,
+        prompt,
+        controller.signal
+      );
+    }
     if (!response.ok) return null;
     const body = await response.json();
     const content = body?.choices?.[0]?.message?.content;
@@ -192,4 +217,11 @@ async function extractIntent({
   }
 }
 
-module.exports = { extractIntent, buildPrompt, validate, intentBaseUrl };
+module.exports = {
+  extractIntent,
+  buildPrompt,
+  validate,
+  intentBaseUrl,
+  DEFAULT_INTENT_MODEL,
+  FALLBACK_INTENT_MODEL,
+};

@@ -20,7 +20,7 @@ const { spawn, spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
 const OLLAMA_URL = (process.env.OLLAMA_HOST_URL || "http://localhost:11434").replace(/\/+$/, "");
-const DEFAULT_MODEL = "qwen3.5:4b-q4_K_M";
+const DEFAULT_MODEL = "qwen3:8b";
 const FALLBACK_MODEL = "qwen3:4b-instruct";
 const KEY_NAME = /^[A-Z][A-Z0-9_]*(KEY|TOKEN|SECRET|PASSWORD)$/;
 
@@ -292,6 +292,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  DEFAULT_MODEL,
+  FALLBACK_MODEL,
   parseArgs,
   nodeMajor,
   needsInstall,

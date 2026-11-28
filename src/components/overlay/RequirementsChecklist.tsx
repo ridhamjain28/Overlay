@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, X } from "../icons";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { OVERLAY_DEFAULT_MODEL, useSettingsStore } from "../../stores/settingsStore";
 import { Button } from "../ui/button";
 
 // Overlay: "what this PC still needs" checklist. Used as the last onboarding
@@ -19,7 +19,7 @@ export interface RequirementItem {
 }
 
 const HINGLISH_CHOICE_KEY = "overlayHinglishChoice";
-const DEFAULT_ANSWER_MODEL = "qwen3.5:4b-q4_K_M";
+const DEFAULT_ANSWER_MODEL = OVERLAY_DEFAULT_MODEL;
 const HINGLISH_ORDER = ["python", "hinglish-libs", "hinglish-model"];
 const MAX_LOG_LINES = 300;
 

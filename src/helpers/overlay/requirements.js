@@ -260,7 +260,7 @@ function createRequirements(deps = {}) {
       detail: modelReady
         ? "Downloaded"
         : running
-          ? "Not downloaded yet (about 3 GB)"
+          ? "Not downloaded yet"
           : "Needs Ollama running first",
       command: modelReady ? null : `ollama pull ${answerModel}`,
       actionLabel: modelReady ? null : "Download",

@@ -8,7 +8,36 @@ const DEFAULT_STRANDS_DECIDER_URL = "http://127.0.0.1:8000/v1/systemone";
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
 const DEFAULT_OLLAMA_MODEL = "qwen3:4b-instruct";
 const DEFAULT_STRANDS_TIMEOUT_MS = 1500;
+const DEFAULT_STRANDS_COOLDOWN_MS = 30000;
 const DEFAULT_OLLAMA_TIMEOUT_MS = 2500;
+
+const TRANSPORT_ERROR_CODES = new Set([
+  "TIMEOUT",
+  "ETIMEDOUT",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EPIPE",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_BODY_TIMEOUT",
+  "UND_ERR_SOCKET",
+]);
+
+function isStrandsTransportFailure(error) {
+  if (!error) return false;
+  if (error.name === "AbortError" || error.name === "TimeoutError") return true;
+  const code = error.code || error.cause?.code;
+  if (typeof code === "string" && TRANSPORT_ERROR_CODES.has(code)) return true;
+  if (error instanceof TypeError) return true;
+  const msg = String(error.message || "");
+  return /ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH|fetch failed|network|timed?\s*out|aborted|socket hang up/i.test(
+    msg
+  );
+}
 
 const ROUTE_LANES = [
   "os_app",
@@ -123,17 +152,26 @@ function parseStrandsRouteResponse(json) {
 }
 
 async function fetchWithTimeout(fetchImpl, url, init, timeoutMs) {
+  const externalSignal = init?.signal;
   const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const onExternalAbort = () => controller?.abort();
+  if (externalSignal && controller) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener?.("abort", onExternalAbort, { once: true });
+  }
   const timer = controller && Number.isFinite(timeoutMs) && timeoutMs > 0
     ? setTimeout(() => controller.abort(), timeoutMs)
     : null;
   try {
     return await fetchImpl(url, {
       ...init,
-      signal: controller ? controller.signal : init?.signal,
+      signal: controller ? controller.signal : externalSignal,
     });
   } finally {
     if (timer) clearTimeout(timer);
+    if (externalSignal && controller) {
+      externalSignal.removeEventListener?.("abort", onExternalAbort);
+    }
   }
 }
 
@@ -143,6 +181,7 @@ async function decideWithStrandsDecider(text, options = {}) {
     mcpTools,
     fetchImpl = fetch,
     timeoutMs = DEFAULT_STRANDS_TIMEOUT_MS,
+    signal,
   } = options;
 
   if (!isLoopbackUrl(url)) {
@@ -171,6 +210,7 @@ async function decideWithStrandsDecider(text, options = {}) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal,
     },
     timeoutMs
   );
@@ -190,6 +230,7 @@ async function decideWithOllama(text, options = {}) {
     mcpTools,
     fetchImpl = fetch,
     timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
+    signal,
   } = options;
 
   const cleanBase = normalizeOllamaBaseUrl(baseUrl, DEFAULT_OLLAMA_BASE_URL);
@@ -210,6 +251,7 @@ async function decideWithOllama(text, options = {}) {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal,
       body: JSON.stringify({
         model,
         stream: false,
@@ -248,34 +290,53 @@ function createDecisionRouter(options = {}) {
     strandsUrl = DEFAULT_STRANDS_DECIDER_URL,
     strandsEnabled = true,
     strandsTimeoutMs = DEFAULT_STRANDS_TIMEOUT_MS,
+    strandsCooldownMs = DEFAULT_STRANDS_COOLDOWN_MS,
     ollamaBaseUrl = DEFAULT_OLLAMA_BASE_URL,
     ollamaModel = DEFAULT_OLLAMA_MODEL,
     ollamaEnabled = true,
     ollamaTimeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
     fetchImpl = fetch,
+    now = Date.now,
   } = options;
 
+  const cooldownMs = Number.isFinite(Number(strandsCooldownMs))
+    ? Math.max(0, Number(strandsCooldownMs))
+    : DEFAULT_STRANDS_COOLDOWN_MS;
+  let strandsBlockedUntil = 0;
+
   async function decideRoute(text, context = {}) {
-    if (!String(text || "").trim()) {
+    if (!String(text || "").trim() || context?.signal?.aborted) {
       return { lane: "unknown", confidence: 0, source: "none" };
     }
 
     const mcpTools = context?.mcpTools ?? options.mcpTools;
+    const signal = context?.signal;
+    const currentTime = Number(now());
+    const strandsCoolingDown = cooldownMs > 0 && currentTime < strandsBlockedUntil;
 
-    if (strandsEnabled && strandsUrl) {
+    if (strandsEnabled && strandsUrl && !strandsCoolingDown) {
       try {
         const result = await decideWithStrandsDecider(text, {
           url: strandsUrl,
           mcpTools,
           fetchImpl,
           timeoutMs: strandsTimeoutMs,
+          signal,
         });
+        strandsBlockedUntil = 0;
         if (result && result.lane !== "unknown") {
           return result;
         }
-      } catch {
+      } catch (error) {
+        if (!signal?.aborted && cooldownMs > 0 && isStrandsTransportFailure(error)) {
+          strandsBlockedUntil = Number(now()) + cooldownMs;
+        }
         // Fall through to Ollama fallback.
       }
+    }
+
+    if (signal?.aborted) {
+      return { lane: "unknown", confidence: 0, source: "none" };
     }
 
     if (ollamaEnabled && ollamaBaseUrl) {
@@ -286,6 +347,7 @@ function createDecisionRouter(options = {}) {
           mcpTools,
           fetchImpl,
           timeoutMs: ollamaTimeoutMs,
+          signal,
         });
         if (result && result.lane !== "unknown") {
           return result;
@@ -298,6 +360,9 @@ function createDecisionRouter(options = {}) {
     return { lane: "unknown", confidence: 0, source: "none" };
   }
   decideRoute.decideRoute = decideRoute;
+  decideRoute.reset = () => {
+    strandsBlockedUntil = 0;
+  };
   return decideRoute;
 }
 
@@ -305,8 +370,10 @@ module.exports = {
   DEFAULT_STRANDS_DECIDER_URL,
   DEFAULT_OLLAMA_BASE_URL,
   DEFAULT_OLLAMA_MODEL,
+  DEFAULT_STRANDS_COOLDOWN_MS,
   ROUTE_LANES,
   ROUTE_JSON_SCHEMA,
+  isStrandsTransportFailure,
   decideWithStrandsDecider,
   decideWithOllama,
   createDecisionRouter,

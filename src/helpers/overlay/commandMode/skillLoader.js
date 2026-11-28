@@ -26,6 +26,7 @@ const INTENT_JSON_SCHEMA = Object.freeze({
         "app_action",
         "find_path",
         "open_path",
+        "mcp",
         "plan",
         "none",
       ],
@@ -50,6 +51,9 @@ const INTENT_JSON_SCHEMA = Object.freeze({
     appId: { type: "string" },
     actionId: { type: "string" },
     params: { type: "object", additionalProperties: true },
+    server: { type: "string" },
+    tool: { type: "string" },
+    args: { type: "object", additionalProperties: true },
     confidence: { type: "number" },
     steps: {
       type: "array",
@@ -59,7 +63,7 @@ const INTENT_JSON_SCHEMA = Object.freeze({
         properties: {
           action: {
             type: "string",
-            enum: ["open_app", "open_url", "run_command", "type_text", "compose_text", "compose_email", "guide", "app_action", "find_path", "open_path"],
+            enum: ["open_app", "open_url", "run_command", "type_text", "compose_text", "compose_email", "guide", "app_action", "find_path", "open_path", "mcp"],
           },
           app: { type: "string" },
           url: { type: "string" },
@@ -81,6 +85,9 @@ const INTENT_JSON_SCHEMA = Object.freeze({
           appId: { type: "string" },
           actionId: { type: "string" },
           params: { type: "object", additionalProperties: true },
+          server: { type: "string" },
+          tool: { type: "string" },
+          args: { type: "object", additionalProperties: true },
         },
         required: ["action"],
       },

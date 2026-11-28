@@ -1,7 +1,5 @@
 import logger from "../../utils/logger";
-
-const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
-const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
+import { OVERLAY_DEFAULT_MODEL, OVERLAY_DEFAULT_OLLAMA_URL } from "../../stores/settingsStore";
 
 export type CommandModeParser = "local" | "cloud";
 
@@ -51,6 +49,15 @@ function api() {
   return typeof window !== "undefined" ? window.electronAPI : undefined;
 }
 
+function buildParserOptions(settings: Partial<CommandModeSettings>) {
+  return {
+    parser: settings.parser === "cloud" ? ("cloud" as const) : ("local" as const),
+    model: settings.model || OVERLAY_DEFAULT_MODEL,
+    localBaseUrl: settings.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
+    cloudProvider: settings.cloudProvider,
+  };
+}
+
 /** Ask main to parse the text. Returns null if Command mode is off or IPC is missing. */
 export async function parseCommandIntent(
   text: string,
@@ -61,10 +68,7 @@ export async function parseCommandIntent(
   if (!fn) return null;
   return fn({
     text,
-    parser: settings.parser === "cloud" ? "cloud" : "local",
-    model: settings.model || OVERLAY_DEFAULT_MODEL,
-    localBaseUrl: settings.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
-    cloudProvider: settings.cloudProvider,
+    ...buildParserOptions(settings),
   });
 }
 
@@ -81,10 +85,7 @@ export async function executeCommandIntent(
     steps: intent.steps,
     confirmed,
     autoRunTrusted: settings.autoRunTrusted,
-    parser: settings.parser === "cloud" ? "cloud" : "local",
-    model: settings.model || OVERLAY_DEFAULT_MODEL,
-    localBaseUrl: settings.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
-    cloudProvider: settings.cloudProvider,
+    ...buildParserOptions(settings),
   });
 }
 
@@ -99,26 +100,26 @@ export async function runCommandOrchestrator(
   if (!fn) return { handled: false };
   const startedAt = Date.now();
   try {
-    const result = await fn({
+    const result = (await fn({
       text,
-      parser: settings.parser === "cloud" ? "cloud" : "local",
-      model: settings.model || OVERLAY_DEFAULT_MODEL,
-      localBaseUrl: settings.localBaseUrl || OVERLAY_DEFAULT_OLLAMA_URL,
-      cloudProvider: settings.cloudProvider,
+      ...buildParserOptions(settings),
       autoRunTrusted: settings.autoRunTrusted,
       autoSaveCreatedItems: settings.autoSaveCreatedItems,
-    });
+    })) as CommandOrchestratorResult | undefined;
     logger.debug(
       "STAGE_TIMING",
       { stage: "command_orchestrated", ms: Date.now() - startedAt, handled: result?.handled },
       "perf"
     );
     if (!result?.handled) return { handled: false };
+    const cancelled = result.cancelled === true;
     return {
       handled: true,
-      success: result.success !== false,
-      cancelled: false,
-      message: result.message || (result.success === false ? "The command failed." : "Done"),
+      success: cancelled ? false : result.success !== false,
+      cancelled,
+      message:
+        result.message ||
+        (cancelled ? "Cancelled." : result.success === false ? "The command failed." : "Done"),
       ...(result.promptMessage ? { promptMessage: result.promptMessage } : {}),
       intent: {
         action: (result.steps && result.steps[0]?.action) || "plan",

@@ -267,7 +267,6 @@ test("cloud completer uses the env key and never puts it in the thrown error", a
 });
 
 test("open_url with browser edge launches Edge with the URL and profile, not Chrome", async () => {
-  const exe = "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe";
   const { dispatcher, calls } = make({
     autoRunTrusted: true,
     env: {

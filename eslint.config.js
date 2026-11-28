@@ -9,6 +9,9 @@ module.exports = [
       "src/dist/**",
       "*.min.js",
       "build/**",
+      ".venv/**",
+      "**/.venv/**",
+      "hinglish-asr/.venv/**",
       "src/**", // src has its own config
     ],
   },
@@ -38,6 +41,17 @@ module.exports = [
       "no-async-promise-executor": "off",
       "prefer-const": "off",
       "no-var": "off",
+    },
+  },
+  // Landing page scripts (browser IIFE)
+  {
+    files: ["web/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "script",
+      globals: {
+        ...globals.browser,
+      },
     },
   },
 ];

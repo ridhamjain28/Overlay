@@ -6,7 +6,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const { McpManager } = require("../../src/helpers/overlay/mcp/mcpManager");
-const { McpAuthStore, ENV_SECRET_REF, MASKED_ENV_VALUE } = require("../../src/helpers/overlay/mcp/mcpAuth");
+const { McpAuthStore, ENV_SECRET_REF, MASKED_ENV_VALUE, performOAuthFlow } = require("../../src/helpers/overlay/mcp/mcpAuth");
 const { McpConfigStore } = require("../../src/helpers/overlay/mcp/mcpConfig");
 const { discoverExternalConfigs, importSelectedServers } = require("../../src/helpers/overlay/mcp/mcpImporter");
 const { registerOverlayIpc, createAssertTrustedSender } = require("../../src/helpers/overlay/registerOverlayIpc");
@@ -585,6 +585,54 @@ test("MCP untrusted fence stays intact on promptMessage feedback and orchestrate
     assert.ok(second.promptMessage.includes("=== UNTRUSTED MCP TOOL RESULT (filesystem.list_test_files) ==="));
   } finally {
     if (manager) await manager.shutdown().catch(() => {});
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("performOAuthFlow closes loopback server if openBrowser fails and deleted env secrets are not injected", async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "overlay-sec-oauth-"));
+  let capturedRedirectUri = null;
+  try {
+    const authStore = new McpAuthStore(tempDir, { safeStorage: createMockSafeStorage(true) });
+    await assert.rejects(
+      () =>
+        performOAuthFlow("notion", "https://mcp.notion.com/mcp", {
+          authStore,
+          openBrowser: async (authUrl) => {
+            capturedRedirectUri = new URL(authUrl).searchParams.get("redirect_uri");
+            throw new Error("browser launch failed");
+          },
+        }),
+      /browser launch failed/
+    );
+    assert.ok(capturedRedirectUri);
+    // Loopback port must be closed so connecting to it fails with ECONNREFUSED
+    await assert.rejects(() => fetch(capturedRedirectUri));
+
+    // Secrets removed from mcp.json env map must NOT be silently injected from authStore
+    authStore.saveEnvSecrets("myserver", { OLD_SECRET: "stale_value_123" });
+    const leakMarker = path.join(tempDir, "leaked.txt");
+    const configStore = new McpConfigStore({
+      appDataDir: tempDir,
+      filePath: path.join(tempDir, "mcp.json"),
+    });
+    configStore.save({
+      mcpServers: {
+        myserver: {
+          command: process.execPath,
+          args: [
+            "-e",
+            `if (process.env.OLD_SECRET) require("fs").writeFileSync(${JSON.stringify(leakMarker)}, "1"); process.exit(1);`,
+          ],
+          env: {},
+        },
+      },
+    });
+    const mgr = new McpManager({ appDataDir: tempDir, userDataDir: tempDir, configStore, authStore });
+    await assert.rejects(() => mgr.connect("myserver"));
+    assert.equal(fs.existsSync(leakMarker), false, "deleted secret must not be injected into stdio env");
+    await mgr.shutdown().catch(() => {});
+  } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });

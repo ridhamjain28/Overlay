@@ -12,6 +12,9 @@
 // Keys are read from process.env (filled from the app's userData .env or the
 // encrypted key store); they are never logged.
 
+const fs = require("fs");
+const path = require("path");
+
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_GEMINI_SEARCH_MODEL = "gemini-2.5-flash";
 const TAVILY_URL = "https://api.tavily.com/search";
@@ -20,19 +23,47 @@ const REQUEST_TIMEOUT_MS = 20000;
 
 const PLACEHOLDER_RE = /^(your_|<|xxx|changeme|replace)/i;
 
+function sanitizeErrorMessage(msg) {
+  return String(msg ?? "")
+    .replace(/(\b(?:bearer|basic)\s+)[a-zA-Z0-9_\-.~+/=]+/gi, "$1[REDACTED]")
+    .replace(/(https?:\/\/)([^:\s/]+):([^@\s/]+)@/gi, "$1$2:[REDACTED]@")
+    .replace(/([?&](?:token|key|api_key|apiKey|password|secret|auth)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/\bsk-ant-[a-zA-Z0-9_-]{10,}\b/g, "sk-ant-[REDACTED]")
+    .replace(/\bsk-[a-zA-Z0-9_-]{16,}\b/g, "sk-[REDACTED]")
+    .replace(/\bAIza[0-9A-Za-z_-]{30,}\b/g, "AIza[REDACTED]")
+    .replace(/\btvly-[a-zA-Z0-9_-]{16,}\b/g, "tvly-[REDACTED]")
+    .replace(/\boc_[a-zA-Z0-9_-]{16,}\b/g, "oc-[REDACTED]")
+    .replace(
+      /(["']?(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret|password|authorization)["']?\s*[:=]\s*["']?)([^"',\s}[\]]+)(["']?)/gi,
+      (match, p1, p2, p3) => (/^\[REDACTED\]$/i.test(p2) ? match : `${p1}[REDACTED]${p3}`)
+    );
+}
+
 function readKey(env, name) {
   const value = (env?.[name] || "").trim();
   if (!value || PLACEHOLDER_RE.test(value)) return "";
   return value;
 }
 
+function normalizeHttpBaseUrl(raw) {
+  const trimmed = String(raw || "").trim().replace(/\/+$/, "");
+  if (!trimmed) return "";
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    return trimmed;
+  } catch {
+    return "";
+  }
+}
+
 function getSearchConfig(env = process.env) {
   return {
     ollamaKey: readKey(env, "OLLAMA_API_KEY"),
     geminiKey: readKey(env, "GEMINI_API_KEY"),
-    geminiModel: (env.OVERLAY_GEMINI_MODEL || "").trim() || DEFAULT_GEMINI_SEARCH_MODEL,
+    geminiModel: (env?.OVERLAY_GEMINI_MODEL || "").trim() || DEFAULT_GEMINI_SEARCH_MODEL,
     tavilyKey: readKey(env, "TAVILY_API_KEY"),
-    searxngUrl: (env.SEARXNG_URL || "").trim().replace(/\/+$/, ""),
+    searxngUrl: normalizeHttpBaseUrl(env?.SEARXNG_URL),
   };
 }
 
@@ -42,8 +73,17 @@ function hasAnySearchProvider(env = process.env) {
 }
 
 async function fetchJson(fetchImpl, url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
+  if (typeof fetchImpl !== "function") {
+    throw new Error("Fetch API unavailable");
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const externalSignal = init?.signal;
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+  }
   try {
     const response = await fetchImpl(url, { ...init, signal: controller.signal });
     const text = await response.text();
@@ -55,13 +95,14 @@ async function fetchJson(fetchImpl, url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
     }
     if (!response.ok) {
       const message = data?.error?.message || data?.detail || `HTTP ${response.status}`;
-      const error = new Error(String(message).slice(0, 300));
+      const error = new Error(sanitizeErrorMessage(String(message)).slice(0, 300));
       error.status = response.status;
       throw error;
     }
     return data;
   } finally {
     clearTimeout(timer);
+    externalSignal?.removeEventListener?.("abort", onExternalAbort);
   }
 }
 
@@ -81,8 +122,8 @@ function parseGeminiGrounded(data, numResults = 5) {
   const snippets = chunks.map(() => []);
   for (const support of supports) {
     const segmentText = support?.segment?.text;
-    if (!segmentText) continue;
-    for (const index of support.groundingChunkIndices || []) {
+    if (!segmentText || !Array.isArray(support.groundingChunkIndices)) continue;
+    for (const index of support.groundingChunkIndices) {
       if (snippets[index] && snippets[index].length < 3) snippets[index].push(segmentText);
     }
   }
@@ -149,7 +190,7 @@ function friendlyError(provider, error) {
   if (error?.status >= 500) return `${name}: the service is having problems (HTTP ${error.status})`;
   if (error?.name === "AbortError") return `${name}: timed out`;
   if (!error?.status) return `${name}: network error (are you online?)`;
-  return `${name}: ${error.message}`;
+  return `${name}: ${sanitizeErrorMessage(error.message)}`;
 }
 
 /**
@@ -160,7 +201,7 @@ function friendlyError(provider, error) {
  */
 function createDailyCounter({
   filePath,
-  fsImpl = require("fs"),
+  fsImpl = fs,
   today = () => new Date().toLocaleDateString("en-CA"),
 } = {}) {
   let memory = { date: today(), count: 0 };
@@ -173,13 +214,25 @@ function createDailyCounter({
         state = memory;
       }
     }
-    if (!state || state.date !== today()) state = { date: today(), count: 0 };
+    const curDay = today();
+    if (!state || state.date !== curDay) {
+      state = { date: curDay, count: 0 };
+    } else {
+      const count = Number(state.count);
+      state = {
+        date: curDay,
+        count: Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0,
+      };
+    }
     return state;
   };
   const write = (state) => {
     memory = state;
     if (!filePath) return;
     try {
+      if (typeof fsImpl.mkdirSync === "function") {
+        fsImpl.mkdirSync(path.dirname(filePath), { recursive: true });
+      }
       fsImpl.writeFileSync(filePath, JSON.stringify(state), "utf8");
     } catch {}
   };
@@ -195,7 +248,7 @@ function createDailyCounter({
 }
 
 function getOllamaDailyCap(env = process.env) {
-  const n = parseInt(env.OVERLAY_OLLAMA_SEARCH_DAILY_CAP || "", 10);
+  const n = parseInt(env?.OVERLAY_OLLAMA_SEARCH_DAILY_CAP || "", 10);
   return Number.isFinite(n) && n >= 0 ? n : DEFAULT_OLLAMA_DAILY_CAP;
 }
 
@@ -267,15 +320,16 @@ const NO_PROVIDER_MESSAGE =
  * next one when a provider fails. Never throws.
  */
 async function runWebSearch(query, numResults = 5, options = {}) {
-  const env = options.env || process.env;
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
-  const logger = options.logger;
+  const opts = options || {};
+  const env = opts.env || process.env;
+  const fetchImpl = opts.fetchImpl || globalThis.fetch;
+  const logger = opts.logger;
   const q = typeof query === "string" ? query.trim() : "";
   if (!q) return { success: false, error: "Empty search query", code: "BAD_REQUEST" };
   const n = Number.isFinite(numResults) ? Math.min(Math.max(Math.round(numResults), 1), 10) : 5;
 
   const config = getSearchConfig(env);
-  const counter = options.counter || defaultCounter;
+  const counter = opts.counter || defaultCounter;
   const cap = getOllamaDailyCap(env);
   const errors = [];
   const attempts = [];
@@ -321,9 +375,12 @@ async function runWebSearch(query, numResults = 5, options = {}) {
       const results = await run();
       return { success: true, provider, results };
     } catch (error) {
-      // Only the provider name and message: never the key or headers.
+      // Only the provider name and sanitized message: never the key or headers.
       errors.push(friendlyError(provider, error));
-      logger?.warn?.("Overlay web search provider failed", { provider, error: error.message });
+      logger?.warn?.("Overlay web search provider failed", {
+        provider,
+        error: sanitizeErrorMessage(error?.message || String(error)),
+      });
     }
   }
   return {
@@ -349,4 +406,5 @@ module.exports = {
   parseGeminiGrounded,
   runWebSearch,
   fetchJson,
+  sanitizeErrorMessage,
 };

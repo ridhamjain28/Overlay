@@ -126,3 +126,33 @@ test("when nothing installed fits, auto returns no model and a tiny pull recomme
   assert.equal(picked.reason, "none-fit");
   assert.equal(picked.recommendedPull, OVERLAY_TINY_MODEL);
 });
+
+test("model size parsing handles MoE, leading/space tags, and sub-billion tags identically to modelSize.ts", async () => {
+  const mod = await import("../../src/utils/modelSize.ts");
+  const { estimateModelSizeB } = mod.estimateModelSizeB ? mod : mod.default;
+
+  for (const [id, expected] of [
+    ["qwen3.5:4b-q4_K_M", 4],
+    ["mixtral:8x7b", 56],
+    ["7b-chat", 7],
+    ["llama3.2 3b", 3],
+    ["gemma3:270m", 0.27],
+  ]) {
+    assert.equal(estimateParamsB(id), expected);
+    assert.equal(estimateModelSizeB(id), expected);
+  }
+
+  assert.equal(modelFits("mixtral:8x7b", ram16), false);
+  assert.equal(modelFits("gemma3:270m", lowRam), true);
+
+  // Manual override when current fits hardware but is not installed reports override-missing
+  const missingOverride = selectLocalModel({
+    installed: [OVERLAY_TINY_MODEL],
+    hardware: ram32Gpu,
+    current: OVERLAY_DEFAULT_MODEL,
+    autoSelect: false,
+  });
+  assert.equal(missingOverride.reason, "override-missing");
+  assert.equal(missingOverride.model, OVERLAY_TINY_MODEL);
+  assert.equal(missingOverride.fits, true);
+});

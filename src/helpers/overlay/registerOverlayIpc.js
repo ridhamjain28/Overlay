@@ -782,7 +782,6 @@ function registerOverlayIpc({
     },
     getAppSkill: (appId) => readSkill(skillsDir, appId),
     userDataDir: app.getPath("userData"),
-    openExternal: (url) => openExternalSoon(url),
     searchIndex:
       process.platform === "win32"
         ? (opts) => queryWindowsSearch(execFileAsync, opts)
@@ -847,6 +846,7 @@ function registerOverlayIpc({
         skills,
         learned,
         mcpTools,
+        signal: options?.signal,
       });
     },
     perform: (request, options = {}) =>
@@ -868,10 +868,11 @@ function registerOverlayIpc({
       localBaseUrl: payload?.localBaseUrl,
       cloudProvider: payload?.cloudProvider,
     });
+    const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
     try {
-      const skills = listLocalSkills(skillsDir).filter((skill) => skill && skill.enabled !== false);
       const learned = searchExamples(skillsDir, text, { k: 3 });
-      const parsed = await parseIntent(text, { llmComplete: completer, skills, learned });
+      const mcpTools = mcpManager.pickTopKTools(text, 8);
+      const parsed = await parseIntent(text, { llmComplete: completer, skills, learned, mcpTools });
       if (parsed?.errorCode) {
         debugLogger?.warn?.("Command mode parse did not finish", {
           errorCode: parsed.errorCode,
@@ -882,7 +883,7 @@ function registerOverlayIpc({
     } catch (error) {
       debugLogger?.warn?.("Command mode parse failed", { error: error?.message });
       return {
-        ...parseIntentHeuristic(text, { skills: listLocalSkills(skillsDir) }),
+        ...parseIntentHeuristic(text, { skills }),
         errorCode: error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR",
         errorMessage: String(error?.message || "parse failed"),
       };
@@ -906,21 +907,24 @@ function registerOverlayIpc({
     if (commandAbort) {
       try { commandAbort.abort(); } catch { /* ignore */ }
     }
-    commandAbort = typeof AbortController === "function" ? new AbortController() : null;
+    const currentAbort = typeof AbortController === "function" ? new AbortController() : null;
+    commandAbort = currentAbort;
     composeRuntime.opts = {
       parser: payload?.parser === "cloud" ? "cloud" : "local",
       model: MODEL_TAG.test(payload?.model || "") ? payload.model : undefined,
       localBaseUrl: payload?.localBaseUrl,
       cloudProvider: payload?.cloudProvider,
     };
-    composeRuntime.onProgress = (progressData) => {
+    const currentProgress = (progressData) => {
       try {
+        if (currentAbort?.signal?.aborted || event.sender.isDestroyed?.()) return;
         const p = typeof progressData === "string" ? { phase: progressData } : progressData;
         event.sender.send("overlay-command-progress", p);
       } catch {
         // ignore
       }
     };
+    composeRuntime.onProgress = currentProgress;
     try {
       const result = await commandOrchestrator.orchestrate(text, {
         parser: composeRuntime.opts.parser,
@@ -933,27 +937,40 @@ function registerOverlayIpc({
             ? payload.autoSaveCreatedItems !== false
             : commandModePrefs.autoSaveCreatedItems !== false,
         confirmed: payload?.confirmed === true,
-        onProgress: composeRuntime.onProgress,
-        signal: commandAbort?.signal,
+        onProgress: currentProgress,
+        signal: currentAbort?.signal,
       });
       debugLogger?.info?.("Overlay command orchestrator", {
         handled: result.handled,
         success: result.success,
+        cancelled: result.cancelled === true,
         deduped: result.deduped === true,
         steps: (result.steps || []).map((step) => step.action),
       });
       try {
-        event.sender.send("overlay-command-progress", {
-          phase: "done",
-          code: result.success ? "OK" : result.handled ? "FAILED" : "NONE",
-        });
+        if (!event.sender.isDestroyed?.()) {
+          event.sender.send("overlay-command-progress", {
+            phase: "done",
+            code: result.cancelled
+              ? "CANCELLED"
+              : result.success
+                ? "OK"
+                : result.handled
+                  ? "FAILED"
+                  : "NONE",
+          });
+        }
       } catch {
         // ignore
       }
       return result;
     } finally {
-      composeRuntime.onProgress = null;
-      commandAbort = null;
+      if (composeRuntime.onProgress === currentProgress) {
+        composeRuntime.onProgress = null;
+      }
+      if (commandAbort === currentAbort) {
+        commandAbort = null;
+      }
     }
   });
 
@@ -961,27 +978,30 @@ function registerOverlayIpc({
     if (commandAbort) {
       try { commandAbort.abort(); } catch { /* ignore */ }
     }
-    commandAbort = typeof AbortController === "function" ? new AbortController() : null;
+    const currentAbort = typeof AbortController === "function" ? new AbortController() : null;
+    commandAbort = currentAbort;
     composeRuntime.opts = {
       parser: request?.parser === "cloud" ? "cloud" : "local",
       model: MODEL_TAG.test(request?.model || "") ? request.model : undefined,
       localBaseUrl: request?.localBaseUrl,
       cloudProvider: request?.cloudProvider,
     };
-    composeRuntime.onProgress = (phase) => {
+    const currentProgress = (phase) => {
       try {
+        if (currentAbort?.signal?.aborted || event.sender.isDestroyed?.()) return;
         event.sender.send("overlay-command-progress", { phase });
       } catch {
         // ignore
       }
     };
+    composeRuntime.onProgress = currentProgress;
     try {
       const result = await commandDispatcher.perform(
         { action: request?.action, args: request?.args || request, steps: request?.steps },
         {
           confirmed: request?.confirmed === true,
           autoRunTrusted: request?.autoRunTrusted === true || commandModePrefs.autoRunTrusted,
-          signal: commandAbort?.signal,
+          signal: currentAbort?.signal,
         }
       );
       debugLogger?.info?.("Overlay command mode", {
@@ -990,14 +1010,20 @@ function registerOverlayIpc({
         code: result.code,
       });
       try {
-        event.sender.send("overlay-command-progress", { phase: "done", code: result.code });
+        if (!event.sender.isDestroyed?.()) {
+          event.sender.send("overlay-command-progress", { phase: "done", code: result.code });
+        }
       } catch {
         // ignore
       }
       return result;
     } finally {
-      composeRuntime.onProgress = null;
-      commandAbort = null;
+      if (composeRuntime.onProgress === currentProgress) {
+        composeRuntime.onProgress = null;
+      }
+      if (commandAbort === currentAbort) {
+        commandAbort = null;
+      }
     }
   });
 

@@ -11,8 +11,15 @@
 // Same rule as src/utils/modelSize.ts, inlined so this file loads in Electron
 // without a TypeScript loader and in the renderer without Node built-ins.
 function estimateModelSizeB(modelId) {
-  const match = String(modelId || "").match(/[-:_/](\d+(?:\.\d+)?)[bB](?![a-zA-Z0-9])/);
-  return match ? parseFloat(match[1]) : 0;
+  const id = String(modelId || "");
+  const moeMatch = id.match(/(?:^|[-:_/\s])(\d+)\s*[xX]\s*(\d+(?:\.\d+)?)[bB](?![a-zA-Z0-9])/);
+  if (moeMatch) {
+    return parseFloat(moeMatch[1]) * parseFloat(moeMatch[2]);
+  }
+  const matchB = id.match(/(?:^|[-:_/\s])(\d+(?:\.\d+)?)[bB](?![a-zA-Z0-9])/);
+  if (matchB) return parseFloat(matchB[1]);
+  const matchM = id.match(/(?:^|[-:_/\s])(\d+(?:\.\d+)?)[mM](?![a-zA-Z0-9])/);
+  return matchM ? parseFloat(matchM[1]) / 1000 : 0;
 }
 
 const GIB = 1024 * 1024 * 1024;
@@ -59,13 +66,13 @@ function installedName(installed, wanted) {
 
 function bitsPerParam(modelId) {
   const tag = String(modelId || "").toLowerCase();
-  if (/\bfp32\b|\bf32\b/.test(tag)) return 32;
-  if (/\bfp16\b|\bf16\b|\bbf16\b/.test(tag)) return 16;
-  if (/\bq8/.test(tag)) return 8.5;
-  if (/\bq6/.test(tag)) return 6.5;
-  if (/\bq5/.test(tag)) return 5.5;
-  if (/\bq3/.test(tag)) return 3.5;
-  if (/\bq2/.test(tag)) return 2.6;
+  if (/(?:^|[^a-z0-9])(fp32|f32)(?![a-z0-9])/.test(tag)) return 32;
+  if (/(?:^|[^a-z0-9])(fp16|f16|bf16)(?![a-z0-9])/.test(tag)) return 16;
+  if (/(?:^|[^a-z0-9])q8/.test(tag)) return 8.5;
+  if (/(?:^|[^a-z0-9])q6/.test(tag)) return 6.5;
+  if (/(?:^|[^a-z0-9])q5/.test(tag)) return 5.5;
+  if (/(?:^|[^a-z0-9])(q3|iq3)/.test(tag)) return 3.5;
+  if (/(?:^|[^a-z0-9])(q2|iq2)/.test(tag)) return 2.6;
   // Ollama's default (and Overlay's shipped 4-bit tags) land around 4.5 bits.
   return 4.5;
 }
@@ -142,7 +149,9 @@ function selectLocalModel({
 } = {}) {
   const usable = usableMemoryBytes(hardware);
   const recommendedPull = recommendPull(hardware, contextTokens);
-  const names = Array.isArray(installed) ? installed.filter(Boolean) : [];
+  const names = Array.isArray(installed)
+    ? installed.filter((n) => typeof n === "string" && n.trim().length > 0)
+    : [];
   const currentInstalled =
     current && hasModel(names, current) ? installedName(names, current) : null;
   const currentFits = currentInstalled
@@ -164,7 +173,11 @@ function selectLocalModel({
     if (currentInstalled && currentFits) {
       return result(currentInstalled, "manual-override", true);
     }
-    if (current && !currentFits) {
+    if (currentInstalled && !currentFits) {
+      if (largest) return result(largest, "override-too-large", true);
+      return result(null, "override-too-large", false);
+    }
+    if (current && !modelFits(current, hardware, contextTokens)) {
       if (largest) return result(largest, "override-too-large", true);
       return result(null, "override-too-large", false);
     }

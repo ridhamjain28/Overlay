@@ -61,7 +61,7 @@ function saveServerCache(serverName, { tools = [], instructions = "" }, options 
         if (fsImpl.existsSync(instructionsPath)) fsImpl.unlinkSync(instructionsPath);
       } catch {}
     }
-  } catch (err) {
+  } catch {
     // Cache write failure should not crash
   }
 }

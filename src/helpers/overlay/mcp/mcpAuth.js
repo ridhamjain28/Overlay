@@ -5,7 +5,6 @@
 // INVARIANT: No AES fallback storing keys beside data.
 
 const http = require("http");
-const url = require("url");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -121,10 +120,16 @@ class McpAuthStore {
 
   saveTokens(serverName, tokenData) {
     const all = this.loadAll();
+    const expiresInSec = tokenData?.expiresIn ?? tokenData?.expires_in;
+    const parsedExpiresIn = Number(expiresInSec);
+    const expiresAt =
+      Number.isFinite(parsedExpiresIn) && parsedExpiresIn > 0
+        ? Date.now() + parsedExpiresIn * 1000
+        : tokenData?.expiresAt;
     all[serverName] = {
       accessToken: tokenData.accessToken || tokenData.access_token,
       refreshToken: tokenData.refreshToken || tokenData.refresh_token,
-      expiresAt: tokenData.expiresIn ? Date.now() + tokenData.expiresIn * 1000 : tokenData.expiresAt,
+      expiresAt,
       tokenType: tokenData.tokenType || tokenData.token_type || "Bearer",
       scope: tokenData.scope,
     };
@@ -132,9 +137,12 @@ class McpAuthStore {
   }
 
   removeTokens(serverName) {
+    if (!this.fsImpl.existsSync(this.filePath)) return;
     const all = this.loadAll();
-    delete all[serverName];
-    this.persistAll(all);
+    if (Object.prototype.hasOwnProperty.call(all, serverName)) {
+      delete all[serverName];
+      this.persistAll(all);
+    }
   }
 
   loadAll() {
@@ -184,12 +192,21 @@ function startLoopbackServer(port = 0) {
         waitForCode: (timeoutMs = 300000) => {
           // 5-minute timeout per requirements
           return new Promise((res, rej) => {
-            const timer = setTimeout(() => {
+            let settled = false;
+            const closeServer = () => {
               try {
+                server.closeAllConnections?.();
                 server.close();
               } catch {}
+            };
+
+            const timer = setTimeout(() => {
+              if (settled) return;
+              settled = true;
+              closeServer();
               rej(new Error("OAuth callback timed out after 5 minutes"));
             }, timeoutMs);
+            timer.unref?.();
 
             server.on("request", (req, resHttp) => {
               const reqUrl = new URL(req.url, `http://127.0.0.1:${actualPort}`);
@@ -198,18 +215,18 @@ function startLoopbackServer(port = 0) {
                 const error = reqUrl.searchParams.get("error");
                 const state = reqUrl.searchParams.get("state");
 
-                resHttp.writeHead(200, { "Content-Type": "text/html" });
+                resHttp.writeHead(200, { "Content-Type": "text/html", Connection: "close" });
                 resHttp.end(
                   "<html><body style='font-family:sans-serif;text-align:center;padding:40px;'>" +
                     "<h2>Authentication complete!</h2><p>You can close this tab and return to Overlay.</p>" +
                     "</body></html>"
                 );
 
+                if (settled) return;
+                settled = true;
                 clearTimeout(timer);
                 // Close after one callback
-                try {
-                  server.close();
-                } catch {}
+                closeServer();
 
                 if (error) {
                   rej(new Error(`OAuth error: ${error}`));
@@ -219,7 +236,7 @@ function startLoopbackServer(port = 0) {
                   rej(new Error("No code received in callback"));
                 }
               } else {
-                resHttp.writeHead(404);
+                resHttp.writeHead(404, { Connection: "close" });
                 resHttp.end();
               }
             });
@@ -231,28 +248,43 @@ function startLoopbackServer(port = 0) {
 }
 
 async function performOAuthFlow(serverName, serverUrl, { authStore, openBrowser }) {
+  const baseUrl = new URL(serverUrl);
+  if (baseUrl.protocol !== "https:" && baseUrl.protocol !== "http:") {
+    throw new Error("OAuth server URL must use http or https");
+  }
+
   const { verifier, challenge } = generatePkce();
   const loopback = await startLoopbackServer();
   // Cryptographically random 32-byte state
   const state = crypto.randomBytes(32).toString("hex");
 
-  // Build OAuth URL (standard OAuth 2.1 authorization endpoint for MCP)
-  const baseUrl = new URL(serverUrl);
-  const authEndpoint = new URL("/oauth/authorize", baseUrl.origin);
-  authEndpoint.searchParams.set("response_type", "code");
-  authEndpoint.searchParams.set("client_id", "overlay-client");
-  authEndpoint.searchParams.set("redirect_uri", loopback.redirectUri);
-  authEndpoint.searchParams.set("code_challenge", challenge);
-  authEndpoint.searchParams.set("code_challenge_method", "S256");
-  authEndpoint.searchParams.set("state", state);
+  let code;
+  try {
+    // Build OAuth URL (standard OAuth 2.1 authorization endpoint for MCP)
+    const authEndpoint = new URL("/oauth/authorize", baseUrl.origin);
+    authEndpoint.searchParams.set("response_type", "code");
+    authEndpoint.searchParams.set("client_id", "overlay-client");
+    authEndpoint.searchParams.set("redirect_uri", loopback.redirectUri);
+    authEndpoint.searchParams.set("code_challenge", challenge);
+    authEndpoint.searchParams.set("code_challenge_method", "S256");
+    authEndpoint.searchParams.set("state", state);
 
-  if (typeof openBrowser === "function") {
-    await openBrowser(authEndpoint.toString());
-  }
+    const codePromise = loopback.waitForCode(300000);
 
-  const { code, state: returnedState } = await loopback.waitForCode(300000);
-  if (!returnedState || returnedState !== state) {
-    throw new Error("OAuth state mismatch; possible CSRF");
+    if (typeof openBrowser === "function") {
+      await openBrowser(authEndpoint.toString());
+    }
+
+    const callbackResult = await codePromise;
+    if (!callbackResult.state || callbackResult.state !== state) {
+      throw new Error("OAuth state mismatch; possible CSRF");
+    }
+    code = callbackResult.code;
+  } finally {
+    try {
+      loopback.server.closeAllConnections?.();
+      loopback.server.close();
+    } catch {}
   }
 
   // Exchange code for token
@@ -265,15 +297,23 @@ async function performOAuthFlow(serverName, serverUrl, { authStore, openBrowser 
     code_verifier: verifier,
   });
 
-  const response = await fetch(tokenEndpoint.toString(), {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: tokenParams.toString(),
-  });
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 20000) : null;
+  let response;
+  try {
+    response = await fetch(tokenEndpoint.toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: tokenParams.toString(),
+      signal: controller?.signal,
+    });
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => "");
-    throw new Error(`Token exchange failed (${response.status}): ${errText}`);
+    throw new Error(`Token exchange failed (${response.status}): ${errText.slice(0, 300)}`);
   }
 
   const tokenJson = await response.json();

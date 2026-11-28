@@ -156,3 +156,16 @@ test("shouldUseLlm returns true for MCP task utterances even when heuristic gues
     false
   );
 });
+
+test("INTENT_JSON_SCHEMA includes mcp action and server/tool/args fields for native structured output", () => {
+  const { INTENT_JSON_SCHEMA } = require("../../src/helpers/overlay/commandMode/skillLoader");
+  assert.ok(INTENT_JSON_SCHEMA.properties.action.enum.includes("mcp"));
+  assert.ok(INTENT_JSON_SCHEMA.properties.server);
+  assert.ok(INTENT_JSON_SCHEMA.properties.tool);
+  assert.ok(INTENT_JSON_SCHEMA.properties.args);
+  const stepProps = INTENT_JSON_SCHEMA.properties.steps.items.properties;
+  assert.ok(stepProps.action.enum.includes("mcp"));
+  assert.ok(stepProps.server);
+  assert.ok(stepProps.tool);
+  assert.ok(stepProps.args);
+});

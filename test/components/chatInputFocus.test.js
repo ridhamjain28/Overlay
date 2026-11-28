@@ -207,3 +207,104 @@ test("cancelling a reply hands focus back to the composer", async (t) => {
     "focus would otherwise fall to the page when the Cancel button unmounts"
   );
 });
+
+test("cancelling a voice draft restores focus to the composer", async (t) => {
+  let root;
+  const originalResizeObserver = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  t.after(async () => {
+    if (root) await React.act(async () => root.unmount());
+    if (originalResizeObserver === undefined) delete globalThis.ResizeObserver;
+    else globalThis.ResizeObserver = originalResizeObserver;
+  });
+  let voiceCancelled = 0;
+  installBrowserGlobals(t);
+  const container = installInteractiveDom(t);
+  globalThis.__voiceDraftState = {
+    status: "recording",
+    elapsed: 3,
+    readLevel: () => 0,
+    streamingOnlyProvider: false,
+    start: () => {},
+    stop: () => {},
+    cancel: () => {
+      voiceCancelled++;
+      globalThis.__voiceDraftState.status = "idle";
+    },
+  };
+  t.after(() => {
+    delete globalThis.__voiceDraftState;
+  });
+  const vite = await createRendererServer(t, {
+    cachePrefix: "openwhispr-chat-voice-cancel-focus-test-",
+    mockModules: {
+      "/ui/useToast": `export const useToast = () => ({ toast: () => {} });`,
+      "/useVoiceDraft": `export const useVoiceDraft = () => globalThis.__voiceDraftState;`,
+      "/stores/meetingRecordingStore": `
+        export const getMicAnalyser = () => null;
+        export const useMeetingRecordingStore = { getState: () => ({ currentMicLevel: 0 }) };
+      `,
+    },
+  });
+  const { ChatInput } = await vite.ssrLoadModule("/components/chat/ChatInput.tsx");
+  root = createRoot(container);
+  const props = {
+    variant: "assistant",
+    agentState: "idle",
+    partialTranscript: "",
+    onTextSubmit: () => {},
+    focusOnIdle: false,
+    voiceDraft: true,
+  };
+
+  await React.act(async () => root.render(React.createElement(ChatInput, props)));
+  const cancelBtn = findElement(
+    container,
+    (element) => element.getAttribute?.("aria-label") === "common.cancel"
+  );
+  assert.ok(cancelBtn);
+  assert.equal(cancelBtn.getAttribute("type"), "button");
+  cancelBtn.focus();
+
+  const queuedFrames = [];
+  globalThis.requestAnimationFrame = (cb) => {
+    queuedFrames.push(cb);
+    return queuedFrames.length;
+  };
+  await React.act(async () => {
+    cancelBtn.dispatchEvent({ type: "click", bubbles: true, button: 0, preventDefault() {} });
+  });
+  await React.act(async () => {
+    root.render(React.createElement(ChatInput, props));
+  });
+  for (const cb of queuedFrames.splice(0)) cb();
+
+  assert.equal(voiceCancelled, 1);
+  assert.equal(container.ownerDocument.activeElement?.tagName, "TEXTAREA");
+});
+
+test("composer textarea exposes accessible label and combobox attributes", async (t) => {
+  const { root, container, ChatInput } = await mountChatInput(t, installInteractiveDom);
+  await React.act(async () =>
+    root.render(
+      React.createElement(ChatInput, {
+        variant: "note",
+        agentState: "idle",
+        partialTranscript: "",
+        draftText: "/",
+        placeholder: "Ask a question",
+        onTextSubmit: () => {},
+        focusOnIdle: false,
+        slashCommands: [{ id: "help", label: "Help", icon: () => null, run: () => {} }],
+      })
+    )
+  );
+  const textarea = findElement(container, (el) => el.tagName === "TEXTAREA");
+  assert.equal(textarea.getAttribute("aria-label"), "Ask a question");
+  assert.equal(textarea.getAttribute("role"), "combobox");
+  assert.equal(textarea.getAttribute("aria-expanded"), "false");
+});

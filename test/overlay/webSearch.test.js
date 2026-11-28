@@ -145,3 +145,45 @@ test("daily counter persists to a file and resets on a new day", () => {
   day = "2026-10-29";
   assert.equal(c.get(), 0);
 });
+
+test("sanitizes upstream secrets in errors, rejects non-http SEARXNG_URL, and handles corrupted counter", async () => {
+  assert.equal(ws.getSearchConfig(null).searxngUrl, "");
+  assert.equal(ws.getSearchConfig({ SEARXNG_URL: "file:///etc/passwd" }).searxngUrl, "");
+  assert.equal(ws.getOllamaDailyCap(null), ws.DEFAULT_OLLAMA_DAILY_CAP);
+
+  const warned = [];
+  const r = await ws.runWebSearch("q", 5, {
+    env: { TAVILY_API_KEY: "tvly-secretkey1234567890" },
+    fetchImpl: async () =>
+      json({ error: { message: "Rejected Bearer tok_123 and tvly-secretkey1234567890" } }, 400),
+    logger: { warn: (_msg, meta) => warned.push(meta.error) },
+    counter: freshCounter(),
+  });
+  assert.equal(r.success, false);
+  assert.doesNotMatch(r.error, /tok_123|secretkey1234567890/);
+  assert.match(r.error, /\[REDACTED\]/);
+  assert.doesNotMatch(warned[0], /tok_123|secretkey1234567890/);
+
+  const parsed = ws.parseGeminiGrounded({
+    candidates: [
+      {
+        content: { parts: [{ text: "ok" }] },
+        groundingMetadata: {
+          groundingChunks: [{ web: { uri: "https://a.example", title: "A" } }],
+          groundingSupports: [{ segment: { text: "ok" }, groundingChunkIndices: "bad" }],
+        },
+      },
+    ],
+  });
+  assert.equal(parsed.sources.length, 1);
+
+  const counter = ws.createDailyCounter({
+    filePath: "/dir/counter.json",
+    fsImpl: {
+      readFileSync: () => JSON.stringify({ date: new Date().toLocaleDateString("en-CA"), count: "bad" }),
+      writeFileSync: () => {},
+    },
+  });
+  assert.equal(counter.get(), 0);
+  assert.equal(counter.increment(), 1);
+});

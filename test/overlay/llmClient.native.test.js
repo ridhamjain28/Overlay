@@ -121,3 +121,27 @@ test("pickCloudModel never sends local Ollama tags to cloud providers and uses c
   assert.equal(sentBody.model, "claude-haiku-4-5-20251001");
   assert.equal(sentHeaders["x-api-key"], "test-anthropic-key");
 });
+
+test("local completer skips /api/tags when model is already non-thinking and honors external AbortSignal", async () => {
+  const seenUrls = [];
+  const complete = createIntentCompleter({
+    parser: "local",
+    localBaseUrl: "http://127.0.0.1:11434/v1",
+    model: "qwen3:4b-instruct",
+    fetchImpl: async (url) => {
+      seenUrls.push(url);
+      return {
+        ok: true,
+        json: async () => ({ message: { content: '{"action":"none"}' } }),
+      };
+    },
+  });
+
+  const out = await complete("hello");
+  assert.equal(out, '{"action":"none"}');
+  assert.deepEqual(seenUrls, ["http://127.0.0.1:11434/api/chat"]);
+
+  const ac = new AbortController();
+  ac.abort();
+  await assert.rejects(() => complete("hello", { signal: ac.signal }), (err) => err.code === "CANCELLED");
+});

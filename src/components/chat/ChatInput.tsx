@@ -176,6 +176,11 @@ export function ChatInput({
     focusAfterFrame();
   }, [onCancel, focusAfterFrame]);
 
+  const handleVoiceCancel = useCallback(() => {
+    voice.cancel();
+    focusAfterFrame();
+  }, [voice, focusAfterFrame]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (isSlashMenuOpen && !e.nativeEvent.isComposing) {
@@ -303,7 +308,7 @@ export function ChatInput({
         )}
       >
         {isListening && (
-          <>
+          <div className="flex items-center gap-2 min-w-0 flex-1" role="status" aria-live="polite">
             <RecordingIndicator />
             <span className="text-[12px] text-foreground/80 truncate flex-1">
               {/* A live transcript's informative part is its tail — show the
@@ -312,16 +317,16 @@ export function ChatInput({
                 ? `…${partialTranscript.slice(-60)}`
                 : partialTranscript || t("agentMode.input.listening")}
             </span>
-          </>
+          </div>
         )}
 
         {isTranscribing && (
-          <>
+          <div className="flex items-center gap-2" role="status" aria-live="polite">
             <ProcessingIndicator />
             <span className="text-[12px] text-muted-foreground select-none">
               {t("agentMode.input.transcribing")}
             </span>
-          </>
+          </div>
         )}
 
         {isVoiceRecording && (
@@ -335,7 +340,8 @@ export function ChatInput({
               {formatMmSs(voice.elapsed)}
             </span>
             <button
-              onClick={voice.cancel}
+              type="button"
+              onClick={handleVoiceCancel}
               aria-label={t("common.cancel")}
               title={t("common.cancel")}
               className={cn(
@@ -345,9 +351,10 @@ export function ChatInput({
                 "transition-colors duration-100"
               )}
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
             <button
+              type="button"
               onClick={voice.stop}
               aria-label={t("notes.editor.stop")}
               title={t("notes.editor.stop")}
@@ -360,18 +367,18 @@ export function ChatInput({
                 "transition-all duration-100"
               )}
             >
-              <Square size={10} fill="currentColor" />
+              <Square size={10} fill="currentColor" aria-hidden="true" />
             </button>
           </div>
         )}
 
         {isVoiceTranscribing && (
-          <>
+          <div className="flex items-center gap-2" role="status" aria-live="polite">
             <ProcessingIndicator />
             <span className="text-[12px] text-muted-foreground select-none">
               {t("agentMode.input.transcribing")}
             </span>
-          </>
+          </div>
         )}
 
         {(isIdle || isBusy) && !isVoiceRecording && !isVoiceTranscribing && (
@@ -398,11 +405,14 @@ export function ChatInput({
                 onFocus?.();
               }}
               onBlur={() => setIsFocused(false)}
+              role={slashCommands ? "combobox" : undefined}
+              aria-expanded={slashCommands ? isSlashMenuOpen : undefined}
               aria-autocomplete={slashCommands ? "list" : undefined}
               aria-controls={isSlashMenuOpen ? slashMenuId : undefined}
               aria-activedescendant={
                 isSlashMenuOpen ? slashOptionId(slashMenuId, activeSlashIndex) : undefined
               }
+              aria-label={placeholder ?? t("agentMode.input.typeMessage")}
               // Read-only, not disabled: disabling would drop focus for the length of every reply.
               readOnly={isBusy}
               autoFocus={autoFocus}
@@ -434,7 +444,7 @@ export function ChatInput({
                   "transition-colors duration-100"
                 )}
               >
-                <Square size={12} className="fill-current" />
+                <Square size={12} className="fill-current" aria-hidden="true" />
               </button>
             ) : isIdle && trailingContent ? (
               trailingContent
@@ -442,9 +452,11 @@ export function ChatInput({
               // Keyed apart from the mic, so each swap mounts a new button and replays its pop-in.
               <button
                 key="send"
+                type="button"
                 onClick={handleSubmit}
                 disabled={!inputText.trim()}
                 aria-label={t("agentMode.input.send")}
+                title={t("agentMode.input.send")}
                 className={cn(
                   "rounded-full shrink-0",
                   rowCenter,
@@ -465,7 +477,7 @@ export function ChatInput({
                       inputText.trim() ? GRADIENT_CIRCLE : "bg-muted text-muted-foreground"
                     )}
                   >
-                    <ArrowRight size={18} className="-rotate-90" />
+                    <ArrowRight size={18} className="-rotate-90" aria-hidden="true" />
                   </span>
                 ) : (
                   <SendIcon size={28} className="block rtl:scale-x-[-1]" />
@@ -474,6 +486,7 @@ export function ChatInput({
             ) : isIdle ? (
               <button
                 key="mic"
+                type="button"
                 onClick={voice.start}
                 disabled={voice.streamingOnlyProvider}
                 aria-label={t("notes.editor.transcribe")}
@@ -495,7 +508,7 @@ export function ChatInput({
                     : "hover:brightness-110 active:scale-95"
                 )}
               >
-                <Mic size={hasRoundSend ? 16 : 14} />
+                <Mic size={hasRoundSend ? 16 : 14} aria-hidden="true" />
               </button>
             ) : null}
           </div>

@@ -258,7 +258,6 @@ for (const phrase of META_PHRASES) {
     const parsed = parseIntentHeuristic(phrase);
     assert.equal(parsed.action, "none", phrase);
     assert.equal(parsed.metaIntent, true);
-    const urls = [];
     const raw = {
       action: "none",
       args: {},

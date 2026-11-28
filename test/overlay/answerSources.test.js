@@ -99,3 +99,135 @@ test("probe: unreachable gateway is reported, not thrown", async () => {
   });
   assert.equal(s.reachable, false);
 });
+
+test("probeOpenClaw caches per URL and token, and rejects non-http URLs", async () => {
+  as._resetProbeCache();
+  assert.equal(as.getOpenClawConfig({ OPENCLAW_TOKEN: "t", OPENCLAW_URL: "ftp://localhost:1234" }).allowed, false);
+
+  let calls = 0;
+  const fetchImpl = async (url) => {
+    calls += 1;
+    return { status: url.includes("18790") ? 503 : 200 };
+  };
+  const s1 = await as.probeOpenClaw({
+    env: { OPENCLAW_TOKEN: "t1", OPENCLAW_URL: "http://127.0.0.1:18789/v1" },
+    fetchImpl,
+  });
+  assert.equal(s1.reachable, true);
+  // Same URL + token hits cache
+  await as.probeOpenClaw({
+    env: { OPENCLAW_TOKEN: "t1", OPENCLAW_URL: "http://127.0.0.1:18789/v1" },
+    fetchImpl,
+  });
+  assert.equal(calls, 1);
+  // Different URL bypasses stale cache
+  const s2 = await as.probeOpenClaw({
+    env: { OPENCLAW_TOKEN: "t1", OPENCLAW_URL: "http://127.0.0.1:18790/v1" },
+    fetchImpl,
+  });
+  assert.equal(s2.reachable, false);
+  assert.equal(calls, 2);
+});
+
+test("readSseData cancels reader on early exit and streamGemini handles mid-stream error & safe source links", async () => {
+  let cancelled = false;
+  const body = new ReadableStream({
+    start(c) {
+      c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n'));
+      c.enqueue(new TextEncoder().encode("data: [DONE]\n"));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const got = [];
+  for await (const text of as.streamOpenClaw({
+    messages: [{ role: "user", content: "hi" }],
+    env: { OPENCLAW_TOKEN: "secret" },
+    fetchImpl: async () => new Response(body, { status: 200 }),
+  })) {
+    got.push(text);
+  }
+  assert.deepEqual(got, ["hi"]);
+  assert.equal(cancelled, true);
+
+  await assert.rejects(async () => {
+    for await (const _ of as.streamGemini({
+      messages: [{ role: "user", content: "hi" }],
+      env: { GEMINI_API_KEY: "AIzaFakeKey1234567890123456789012345678" },
+      fetchImpl: async () =>
+        sse(['data: {"error":{"message":"Invalid key Bearer tok_abc"}}\n\n']),
+    })) {
+      // no-op
+    }
+  }, /Bearer \[REDACTED\]/);
+});
+
+test("remoteAnswerStream handles pre-aborted signals, withFallback stops on abort, and webContext escapes URLs", async () => {
+  const remoteMod = await import("../../src/services/overlay/remoteAnswerStream.ts");
+  const { remoteAnswerStream, withFallback } = remoteMod.remoteAnswerStream ? remoteMod : remoteMod.default;
+  const webCtxMod = await import("../../src/services/overlay/webContext.ts");
+  const { sourcesFrom } = webCtxMod.sourcesFrom ? webCtxMod : webCtxMod.default;
+
+  let started = false;
+  const prevWindow = globalThis.window;
+  globalThis.window = {
+    electronAPI: {
+      overlayAnswerStreamStart: () => {
+        started = true;
+      },
+    },
+  };
+  try {
+    const ac = new AbortController();
+    ac.abort();
+    const chunks = [];
+    for await (const ch of remoteAnswerStream("openclaw", [{ role: "user", content: "hi" }], "u1", ac.signal)) {
+      chunks.push(ch);
+    }
+    assert.equal(started, false);
+    assert.deepEqual(chunks, [{ type: "done" }]);
+
+    const ac2 = new AbortController();
+    let fallbackCalled = false;
+    const out = [];
+    for await (const ch of withFallback(
+      [
+        {
+          source: "openclaw",
+          create: async function* () {
+            if (ac2.signal.aborted) yield { type: "done" };
+            ac2.abort();
+            throw new Error("aborted");
+          },
+        },
+        {
+          source: "local",
+          create: async function* () {
+            fallbackCalled = true;
+            yield { type: "content", text: "should not run" };
+          },
+        },
+      ],
+      undefined,
+      ac2.signal
+    )) {
+      out.push(ch);
+    }
+    assert.equal(fallbackCalled, false);
+    assert.deepEqual(out, []);
+  } finally {
+    globalThis.window = prevWindow;
+  }
+
+  const sources = sourcesFrom({
+    success: true,
+    results: [
+      { title: "Bad [link]", url: "javascript:alert(1)" },
+      { title: "Wiki [page]", url: "https://en.wikipedia.org/wiki/Foo_(bar)" },
+    ],
+  });
+  assert.deepEqual(sources, [
+    { title: "Wiki page", url: "https://en.wikipedia.org/wiki/Foo_%28bar%29" },
+  ]);
+});

@@ -4,7 +4,6 @@ const path = require("path");
 const fs = require("fs");
 const {
   validateCustomSkillsData,
-  validateCustomSkillsText,
   loadCustomSkills,
   getCustomSkills,
   saveCustomSkills,
@@ -16,7 +15,7 @@ function createMockFs(initialFiles = {}) {
   const files = new Map(Object.entries(initialFiles));
   return {
     existsSync: (p) => files.has(path.normalize(p)),
-    readFileSync: (p, encoding) => {
+    readFileSync: (p, _encoding) => {
       const norm = path.normalize(p);
       if (!files.has(norm)) {
         throw new Error(`ENOENT: no such file or directory, open '${p}'`);

@@ -37,10 +37,11 @@ function scrubSensitiveData(text, deps = {}) {
   // 1. Scrub explicit home directory if known or discoverable
   const home = deps.homeDir || (typeof os !== "undefined" && typeof os.homedir === "function" ? os.homedir() : null);
   if (home && home.length > 2) {
+    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const winHome = home.replace(/\//g, "\\");
     const posixHome = home.replace(/\\/g, "/");
-    scrubbed = scrubbed.split(winHome).join("~");
-    scrubbed = scrubbed.split(posixHome).join("~");
+    scrubbed = scrubbed.replace(new RegExp(escapeRe(winHome), "gi"), "~");
+    scrubbed = scrubbed.replace(new RegExp(escapeRe(posixHome), "g"), "~");
   }
 
   // 2. Anonymize personal user paths across platforms
@@ -48,7 +49,7 @@ function scrubSensitiveData(text, deps = {}) {
   scrubbed = scrubbed.replace(/([A-Za-z]:\\[Uu]sers\\)[^\s\\/"':]+/g, "$1***");
   scrubbed = scrubbed.replace(/([A-Za-z]:\/[Uu]sers\/)[^\s\\/"':]+/g, "$1***");
   // macOS / Linux: /Users/<username> or /home/<username>
-  scrubbed = scrubbed.replace(/(\/(?:Users|home)\/)[^\s/]+/g, "$1***");
+  scrubbed = scrubbed.replace(/(\/(?:Users|home)\/)[^\s/\\"':),;\]}]+/g, "$1***");
 
   // 3. Scrub username from environment if present
   const username = deps.username || process.env.USERNAME || process.env.USER;
@@ -66,11 +67,11 @@ function scrubSensitiveData(text, deps = {}) {
 
   // 5. Scrub well-known API keys and tokens
   // Anthropic (check before OpenAI sk- since it starts with sk-ant-)
-  scrubbed = scrubbed.replace(/\bsk-ant-[a-zA-Z0-9_\-]{10,}\b/g, "sk-ant-[REDACTED]");
+  scrubbed = scrubbed.replace(/\bsk-ant-[a-zA-Z0-9_-]{10,}\b/g, "sk-ant-[REDACTED]");
   // OpenAI
-  scrubbed = scrubbed.replace(/\bsk-[a-zA-Z0-9_\-]{16,}\b/g, "sk-[REDACTED]");
+  scrubbed = scrubbed.replace(/\bsk-[a-zA-Z0-9_-]{16,}\b/g, "sk-[REDACTED]");
   // Google / Gemini
-  scrubbed = scrubbed.replace(/\bAIza[0-9A-Za-z_\-]{30,}\b/g, "AIza[REDACTED]");
+  scrubbed = scrubbed.replace(/\bAIza[0-9A-Za-z_-]{30,}\b/g, "AIza[REDACTED]");
   // GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)
   scrubbed = scrubbed.replace(/\bgh[pousr][_-][A-Za-z0-9_]{30,}\b/g, "gh[REDACTED]");
   // HuggingFace tokens
@@ -78,14 +79,14 @@ function scrubSensitiveData(text, deps = {}) {
   // AWS Access Key
   scrubbed = scrubbed.replace(/\bAKIA[0-9A-Z]{16}\b/g, "AKIA[REDACTED]");
   // Tavily
-  scrubbed = scrubbed.replace(/\btvly-[a-zA-Z0-9_\-]{16,}\b/g, "tvly-[REDACTED]");
+  scrubbed = scrubbed.replace(/\btvly-[a-zA-Z0-9_-]{16,}\b/g, "tvly-[REDACTED]");
   // OpenClaw
-  scrubbed = scrubbed.replace(/\boc_[a-zA-Z0-9_\-]{16,}\b/g, "oc-[REDACTED]");
+  scrubbed = scrubbed.replace(/\boc_[a-zA-Z0-9_-]{16,}\b/g, "oc-[REDACTED]");
 
   // 6. Generic secrets in key-value pairs (JSON or plaintext config)
   scrubbed = scrubbed.replace(
-    /(["']?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|secret|password|passwd|client[_-]?secret)["']?\s*[:=]\s*["']?)([^"',\s\\}&;\])]{3,})(["']?)/gi,
-    "$1[REDACTED]$3"
+    /(["']?(?:(?:[a-z0-9_-]+[_-])?token|api[_-]?key|access[_-]?token|refresh[_-]?token|auth[_-]?token|secret|password|passwd|client[_-]?secret)["']?\s*[:=]\s*["']?)([^"',\s\\}&;\])[\]]{3,})(["']?)/gi,
+    (match, p1, p2, p3) => (/^\[REDACTED\]$/i.test(p2) ? match : `${p1}[REDACTED]${p3}`)
   );
 
   // 7. URL credentials (http://user:password@host)
@@ -133,6 +134,7 @@ async function checkOllamaReachability(deps = {}) {
     if (timer) clearTimeout(timer);
 
     if (!res.ok) {
+      res.body?.cancel?.().catch(() => {});
       return {
         reachable: false,
         url,
@@ -155,7 +157,9 @@ async function checkOllamaReachability(deps = {}) {
   } catch (err) {
     if (timer) clearTimeout(timer);
     const isAbort = err?.name === "AbortError";
-    const msg = isAbort ? `Timed out after ${timeoutMs}ms` : (err?.message || String(err));
+    const msg = isAbort
+      ? `Timed out after ${timeoutMs}ms`
+      : scrubSensitiveData(err?.message || String(err), deps);
     return {
       reachable: false,
       url,
@@ -201,7 +205,7 @@ async function getDefaultAudioStatus(deps = {}) {
     };
   } catch (err) {
     return {
-      status: `Error detecting device (${err.message || String(err)})`,
+      status: `Error detecting device (${scrubSensitiveData(err.message || String(err), deps)})`,
       name: null,
     };
   }
@@ -250,7 +254,9 @@ async function getMcpServersStatus(deps = {}) {
  */
 function getRecentLogs(deps = {}) {
   const fsImpl = deps.fsImpl || fs;
-  const maxLines = Number(deps.maxLines) || DEFAULT_LOG_LINE_LIMIT;
+  const parsedMax = Number(deps.maxLines);
+  const maxLines =
+    Number.isFinite(parsedMax) && parsedMax > 0 ? Math.floor(parsedMax) : DEFAULT_LOG_LINE_LIMIT;
 
   let rawLines = [];
 
@@ -318,12 +324,14 @@ function getRecentLogs(deps = {}) {
     }
   }
 
+  const normalizedLines = rawLines.map((line) => String(line ?? ""));
+
   // Remove trailing blank lines
-  while (rawLines.length > 0 && rawLines[rawLines.length - 1].trim() === "") {
-    rawLines.pop();
+  while (normalizedLines.length > 0 && normalizedLines[normalizedLines.length - 1].trim() === "") {
+    normalizedLines.pop();
   }
 
-  const slice = rawLines.slice(-maxLines);
+  const slice = normalizedLines.slice(-maxLines);
   if (slice.length === 0) {
     return ["(No log entries recorded)"];
   }

@@ -41,6 +41,7 @@ async function setupAssistantPanel(
 
   const vite = await createRendererServer(t, {
     cachePrefix: "openwhispr-assistant-panel-test-",
+    noExternal: ["i18next", "react-i18next"],
     mockModules: {
       "/chat/useChatPersistence": `
         export function useChatPersistence() {
@@ -93,8 +94,22 @@ async function setupAssistantPanel(
         }
       `,
       "/stores/settingsStore": `
-        const state = { voiceAgentKey: [] };
+        const state = { voiceAgentKey: [], assistantChatIdleMinutes: 10 };
+        export const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
+        export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
         export function useSettingsStore(selector) { return selector(state); }
+        useSettingsStore.getState = () => state;
+      `,
+      "/stores/aiProvider": `
+        export function useAiProvider() {
+          return { kind: "local", model: "qwen3:8b", cloudProvider: "openrouter", cloudBaseUrl: "", serverUrl: "" };
+        }
+        export function resolveCommandParsing() { return { parser: "local", model: "qwen3:8b" }; }
+      `,
+      "/commandMode/typedClause": `
+        export function commandReferencesSelection(text) {
+          return /\\b(this|selected|selection)\\b/i.test(String(text || ""));
+        }
       `,
       "/utils/hotkeys": `
         export function formatHotkeyListLabel() { return ""; }
@@ -201,6 +216,7 @@ test("starting a new conversation clears the displayed response and parent conte
 
   const vite = await createRendererServer(t, {
     cachePrefix: "openwhispr-assistant-panel-reset-test-",
+    noExternal: ["i18next", "react-i18next"],
     mockModules: {
       "/components/icons": `
         import React from "react";
@@ -279,8 +295,22 @@ test("starting a new conversation clears the displayed response and parent conte
         }
       `,
       "/stores/settingsStore": `
-        const state = { voiceAgentKey: [] };
+        const state = { voiceAgentKey: [], assistantChatIdleMinutes: 10 };
+        export const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
+        export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
         export function useSettingsStore(selector) { return selector(state); }
+        useSettingsStore.getState = () => state;
+      `,
+      "/stores/aiProvider": `
+        export function useAiProvider() {
+          return { kind: "local", model: "qwen3:8b", cloudProvider: "openrouter", cloudBaseUrl: "", serverUrl: "" };
+        }
+        export function resolveCommandParsing() { return { parser: "local", model: "qwen3:8b" }; }
+      `,
+      "/commandMode/typedClause": `
+        export function commandReferencesSelection(text) {
+          return /\\b(this|selected|selection)\\b/i.test(String(text || ""));
+        }
       `,
       "/utils/hotkeys": `
         export function formatHotkeyListLabel() { return ""; }
@@ -475,7 +505,7 @@ test("Assistant selection copy preserves the selected text without claiming Copi
   const writes = [];
   const originalElectronAPI = globalThis.window.electronAPI;
   t.after(() => {
-    globalThis.window.electronAPI = originalElectronAPI;
+    if (globalThis.window) globalThis.window.electronAPI = originalElectronAPI;
   });
   globalThis.window.electronAPI = {
     writeClipboard: async (text) => {
@@ -522,7 +552,7 @@ test("Assistant selection must stay entirely inside the response root", async (t
   };
   const originalGetSelection = globalThis.window.getSelection;
   t.after(() => {
-    globalThis.window.getSelection = originalGetSelection;
+    if (globalThis.window) globalThis.window.getSelection = originalGetSelection;
   });
 
   globalThis.window.getSelection = () => ({
@@ -943,8 +973,22 @@ test("only a plain-text caret delivery asks the model for plain prose", async (t
         export function useWindowDrag() { return { handleMouseDown() {}, handleMouseUp() {} }; }
       `,
       "/stores/settingsStore": `
-        const state = { voiceAgentKey: [] };
+        const state = { voiceAgentKey: [], assistantChatIdleMinutes: 10 };
+        export const OVERLAY_DEFAULT_MODEL = "qwen3:8b";
+        export const OVERLAY_DEFAULT_OLLAMA_URL = "http://localhost:11434/v1";
         export function useSettingsStore(selector) { return selector(state); }
+        useSettingsStore.getState = () => state;
+      `,
+      "/stores/aiProvider": `
+        export function useAiProvider() {
+          return { kind: "local", model: "qwen3:8b", cloudProvider: "openrouter", cloudBaseUrl: "", serverUrl: "" };
+        }
+        export function resolveCommandParsing() { return { parser: "local", model: "qwen3:8b" }; }
+      `,
+      "/commandMode/typedClause": `
+        export function commandReferencesSelection(text) {
+          return /\\b(this|selected|selection)\\b/i.test(String(text || ""));
+        }
       `,
       "/utils/hotkeys": `
         export function formatHotkeyListLabel() { return ""; }

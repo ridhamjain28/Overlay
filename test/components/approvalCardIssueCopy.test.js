@@ -12,6 +12,7 @@ async function loadTranslatedCard(t) {
   installBrowserGlobals(t);
   const vite = await createRendererServer(t, {
     cachePrefix: "openwhispr-approval-card-issue-copy-test-",
+    noExternal: ["i18next", "react-i18next"],
     mockModules: {
       "/ui/button": `
         import React from "react";

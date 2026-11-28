@@ -9,7 +9,6 @@ const {
   isSearchUrl,
   extractSearchQuery,
   namedBrowserInUtterance,
-  googleSearchUrl,
   resolveBrowserAlias,
 } = require("./browserSearch");
 const { parseCalendarEvent, parseWebAppOpen, parseGmailCompose } = require("./webApps");
@@ -55,12 +54,6 @@ const OPEN_APP_PATTERNS = [
 
 const OPEN_URL_PATTERNS = [
   /^(?:please\s+)?(?:open|go to|goto|visit|browse|navigate to|take me to|new tab(?: for)?|open(?: a)?(?: new)? tab(?: (?:to|for|with))?)\s+(.+)$/i,
-];
-
-const TYPE_PATTERNS = [
-  /^(?:please\s+)?(?:type|write|enter|paste|likho|likh do)\s+(?:this\s*)?[:：]\s*(.+)$/i,
-  /^(?:please\s+)?(?:type|write|enter|paste|likho|likh do)\s+(?:the text\s+)?["“](.+)["”]\s*$/i,
-  /^(?:please\s+)?(?:type|write|enter|paste|likho|likh do)\s+(.+)$/i,
 ];
 
 const RUN_PATTERNS = [
@@ -275,6 +268,14 @@ function parseGuide(text) {
   return null;
 }
 
+function firstMatch(candidates, fn) {
+  for (const s of candidates) {
+    const hit = fn(s);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 /**
  * Fast, offline parse. Returns a structured intent or `none`.
  * @param {string} text
@@ -291,23 +292,16 @@ function parseIntentHeuristic(text, options = {}) {
   if (isMetaIntent(original) || isMetaIntent(t)) {
     return { action: "none", args: {}, confidence: 1, source: "heuristic", metaIntent: true };
   }
+  const candidates = t === original ? [t] : [t, original];
   const commandHit =
-    parseCalendarEvent(t, options) ||
-    parseCalendarEvent(original, options) ||
-    parseFindPath(t) ||
-    parseFindPath(original) ||
-    parseBrowserSearch(t) ||
-    parseBrowserSearch(original) ||
-    parseWebAppOpen(t) ||
-    parseWebAppOpen(original) ||
-    parseGmailCompose(t) ||
-    parseGmailCompose(original) ||
-    parseCompoundOpenAndType(t) ||
-    parseCompoundOpenAndType(original) ||
-    parseTypeText(t) ||
-    parseTypeText(original) ||
-    parseAppSkillIntent(t, options) ||
-    parseAppSkillIntent(original, options);
+    firstMatch(candidates, (s) => parseCalendarEvent(s, options)) ||
+    firstMatch(candidates, parseFindPath) ||
+    firstMatch(candidates, parseBrowserSearch) ||
+    firstMatch(candidates, parseWebAppOpen) ||
+    firstMatch(candidates, parseGmailCompose) ||
+    firstMatch(candidates, parseCompoundOpenAndType) ||
+    firstMatch(candidates, parseTypeText) ||
+    firstMatch(candidates, (s) => parseAppSkillIntent(s, options));
   if (commandHit) return { ...commandHit, source: "heuristic" };
   if (looksLikeChat(original) || looksLikeChat(t)) {
     return { action: "none", args: {}, confidence: 0.7, source: "heuristic" };
@@ -633,18 +627,23 @@ function repairMissingSearch(text, intent) {
   };
 }
 
-async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false, skills, learned, mcpTools } = {}) {
+async function applyClausePostCheck(text, intent, { llmComplete, alreadyReasked = false, skills, learned, mcpTools, signal } = {}) {
   let current = cleanIntentSearchUrls(text, repairMissingSearch(text, intent));
+  if (signal?.aborted) return current;
   const expected = expectedStepCount(text);
   const actual = intentStepsOf(current).length;
   if (expected <= actual || alreadyReasked || typeof llmComplete !== "function") return current;
   try {
-    const raw = await llmComplete({
-      system: commandSkillSystemPrompt(),
-      user:
-        "The previous plan dropped one or more clauses. Output a complete JSON plan that covers every clause. Do not drop search, type, or compose clauses.\n\n" +
-        buildIntentUserMessage(text, { skills, learned, mcpTools }),
-    });
+    const raw = await llmComplete(
+      {
+        system: commandSkillSystemPrompt(),
+        user:
+          "The previous plan dropped one or more clauses. Output a complete JSON plan that covers every clause. Do not drop search, type, or compose clauses.\n\n" +
+          buildIntentUserMessage(text, { skills, learned, mcpTools }),
+      },
+      { signal }
+    );
+    if (signal?.aborted) return current;
     const retry = parseIntentFromLlmResponse(raw);
     const repaired = repairMissingSearch(text, retry);
     if (intentStepsOf(repaired).length >= actual) {
@@ -664,23 +663,53 @@ function parseIntentFromLlmResponse(raw) {
  * Parse text, using the heuristic first and an optional LLM completer
  * (`async (prompt) => string`) when the guess is weak.
  */
-async function parseIntent(text, { llmComplete, forceLlm = false, skills, learned, mcpTools } = {}) {
+async function parseIntent(text, { llmComplete, forceLlm = false, skills, learned, mcpTools, signal } = {}) {
+  if (signal?.aborted) {
+    return {
+      action: "none",
+      args: {},
+      confidence: 0,
+      source: "cancelled",
+      errorCode: "CANCELLED",
+      errorMessage: "Cancelled",
+    };
+  }
   const heuristic = parseIntentHeuristic(text, { skills, learned });
   if (!forceLlm && !shouldUseLlm(heuristic, { text, mcpTools })) {
-    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned, mcpTools });
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned, mcpTools, signal });
   }
   if (typeof llmComplete !== "function") {
-    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned, mcpTools });
+    return applyClausePostCheck(text, heuristic, { alreadyReasked: true, skills, learned, mcpTools, signal });
   }
   try {
-    const raw = await llmComplete(buildIntentParseMessages(text, { skills, learned, mcpTools }));
+    const raw = await llmComplete(buildIntentParseMessages(text, { skills, learned, mcpTools }), { signal });
+    if (signal?.aborted) {
+      return {
+        action: "none",
+        args: {},
+        confidence: 0,
+        source: "cancelled",
+        errorCode: "CANCELLED",
+        errorMessage: "Cancelled",
+      };
+    }
     const llm = parseIntentFromLlmResponse(raw);
     // Prefer a confident heuristic over a weak LLM "none".
     if (llm.action === "none" && heuristic.action !== "none" && heuristic.confidence >= 0.6) {
-      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true, skills, learned, mcpTools });
+      return applyClausePostCheck(text, heuristic, { llmComplete, alreadyReasked: true, skills, learned, mcpTools, signal });
     }
-    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false, skills, learned, mcpTools });
+    return applyClausePostCheck(text, llm, { llmComplete, alreadyReasked: false, skills, learned, mcpTools, signal });
   } catch (error) {
+    if (signal?.aborted || error?.code === "CANCELLED") {
+      return {
+        action: "none",
+        args: {},
+        confidence: 0,
+        source: "cancelled",
+        errorCode: "CANCELLED",
+        errorMessage: "Cancelled",
+      };
+    }
     const errorCode =
       error?.code === "TIMEOUT" || error?.name === "AbortError" ? "TIMEOUT" : "PARSE_ERROR";
     const failed = {
@@ -692,7 +721,7 @@ async function parseIntent(text, { llmComplete, forceLlm = false, skills, learne
       errorMessage: String(error?.message || "parse failed"),
     };
     if (heuristic.action !== "none" && heuristic.confidence >= 0.6) return heuristic;
-    return applyClausePostCheck(text, failed, { alreadyReasked: true, skills, learned, mcpTools });
+    return applyClausePostCheck(text, failed, { alreadyReasked: true, skills, learned, mcpTools, signal });
   }
 }
 

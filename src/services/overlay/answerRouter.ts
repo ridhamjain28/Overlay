@@ -33,7 +33,7 @@ export function normalizeAnswerSourceSetting(value: unknown): AnswerSourceSettin
 }
 
 const ACTION_PATTERNS: RegExp[] = [
-  /^(please\s+)?(open|launch|start|close|lock|mute|unmute|play|pause|resume|skip|stop)\b/i,
+  /^(?:(?:can|could|would|will)\s+you\s+)?(?:please\s+)?(?:open(?!\s+(?:source|ended)\b|-source\b)|launch|start(?!\s*-?up\b)|close|lock|mute|unmute|play|pause|resume|skip|stop(?!\s+motion\b))\b/i,
   /\b(volume|brightness|screenshot|screen ?shot|lock (the )?screen|next (song|track)|previous (song|track))\b/i,
   /\b(kholo|khol do|band karo|chalao|bajao|awaaz|aawaz)\b/i,
 ];
@@ -65,7 +65,11 @@ export function planAnswerSources(
   intent: MessageIntent,
   status: AnswerSourcesStatus | null
 ): AnswerSource[] {
-  const openclawUp = !!status?.openclaw?.configured && !!status.openclaw.reachable;
+  const openclawUp =
+    !!status?.openclaw?.configured &&
+    !!status.openclaw.reachable &&
+    status.openclaw.allowed !== false &&
+    !status.openclaw.unauthorized;
   const geminiOk = !!status?.gemini?.configured;
   const plan: AnswerSource[] = [];
   const push = (s: AnswerSource) => {
@@ -100,19 +104,38 @@ export function planAnswerSources(
 }
 
 let statusCache: { at: number; value: AnswerSourcesStatus | null } = { at: 0, value: null };
+let inFlightStatus: Promise<AnswerSourcesStatus | null> | null = null;
 const STATUS_CACHE_MS = 15000;
+
+export function resetAnswerSourcesStatusCache(): void {
+  statusCache = { at: 0, value: null };
+  inFlightStatus = null;
+}
 
 export async function getAnswerSourcesStatus(force = false): Promise<AnswerSourcesStatus | null> {
   const api = typeof window !== "undefined" ? window.electronAPI : undefined;
   if (!api?.overlayAnswerSourcesStatus) return null;
   const now = Date.now();
-  if (!force && statusCache.value && now - statusCache.at < STATUS_CACHE_MS)
+  if (!force && statusCache.value && now - statusCache.at < STATUS_CACHE_MS) {
     return statusCache.value;
-  try {
-    const value = await api.overlayAnswerSourcesStatus();
-    statusCache = { at: now, value };
-    return value;
-  } catch {
-    return null;
   }
+  if (!force && inFlightStatus) {
+    return inFlightStatus;
+  }
+  const request = (async () => {
+    try {
+      const value = await api.overlayAnswerSourcesStatus();
+      statusCache = { at: Date.now(), value: value ?? null };
+      return statusCache.value;
+    } catch {
+      if (force) statusCache = { at: 0, value: null };
+      return null;
+    } finally {
+      if (inFlightStatus === request) {
+        inFlightStatus = null;
+      }
+    }
+  })();
+  inFlightStatus = request;
+  return request;
 }

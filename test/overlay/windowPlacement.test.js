@@ -6,12 +6,9 @@ const {
   SAFE_PADDING,
   clampWindowToDisplayWorkArea,
   convertDpiCoordinates,
-  clampedBounds,
-  centeredBounds,
 } = require("../../src/helpers/onboardingWindowBounds");
 
 const MainWindowPlacementCoordinator = require("../../src/helpers/mainWindowPlacementCoordinator");
-const { WindowPositionUtil } = require("../../src/helpers/windowConfig");
 
 // ---------------------------------------------------------
 // Test Fixtures for Displays

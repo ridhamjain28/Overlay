@@ -9,6 +9,7 @@ const STOP_WORDS = new Set([
 function tokenize(text) {
   if (!text) return [];
   return String(text)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .toLowerCase()
     .replace(/[._/-]+/g, " ")
     .replace(/[^a-z0-9\s]/g, "")
@@ -33,7 +34,7 @@ class ToolIndex {
   }
 
   build(tools) {
-    this.tools = tools || [];
+    this.tools = Array.isArray(tools) ? tools.filter((t) => t && t.name) : [];
     this.N = this.tools.length;
     this.docs = [];
     this.docLengths = [];
@@ -93,8 +94,14 @@ class ToolIndex {
   }
 
   pickTopK(utterance, { k = 8, disabledTools = new Set() } = {}) {
-    const maxK = Math.min(Math.max(1, k), 8);
+    const numericK = Number.isFinite(Number(k)) ? Number(k) : 8;
+    const maxK = Math.min(Math.max(1, Math.floor(numericK)), 8);
     if (!this.tools.length) return [];
+
+    const disabledSet =
+      disabledTools instanceof Set
+        ? disabledTools
+        : new Set(Array.isArray(disabledTools) ? disabledTools : []);
 
     const queryTokens = tokenize(utterance);
     if (!queryTokens.length) return [];
@@ -105,10 +112,10 @@ class ToolIndex {
     for (let i = 0; i < this.tools.length; i++) {
       const tool = this.tools[i];
       const toolKey = `${tool.server}:${tool.name}`;
-      if (disabledTools.has(toolKey)) continue;
+      if (disabledSet.has(toolKey)) continue;
 
       const score = scores[i];
-      if (score > 0.05) {
+      if (score > 0) {
         scored.push({ tool, score });
       }
     }

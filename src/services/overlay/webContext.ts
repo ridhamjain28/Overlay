@@ -52,9 +52,19 @@ export function sourcesFrom(response: SearchResponse | null | undefined): WebSou
   const seen = new Set<string>();
   const out: WebSource[] = [];
   for (const r of response.results || []) {
-    if (!r?.url || seen.has(r.url) || !/^https?:\/\//i.test(r.url)) continue;
-    seen.add(r.url);
-    out.push({ title: (r.title || r.url).replace(/[[\]]/g, ""), url: r.url });
+    if (!r?.url || !/^https?:\/\//i.test(r.url)) continue;
+    let safeUrl: string;
+    try {
+      const parsed = new URL(r.url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") continue;
+      safeUrl = parsed.toString().replace(/\(/g, "%28").replace(/\)/g, "%29");
+    } catch {
+      continue;
+    }
+    if (seen.has(safeUrl)) continue;
+    seen.add(safeUrl);
+    const title = String(r.title || safeUrl).replace(/[[\]]/g, "").trim() || safeUrl;
+    out.push({ title, url: safeUrl });
     if (out.length >= MAX_RESULTS) break;
   }
   return out;

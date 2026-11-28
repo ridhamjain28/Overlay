@@ -203,5 +203,7 @@ test("dirty LLM search URLs are cleaned back to the spoken query", () => {
     confidence: 0.9,
     source: "llm",
   });
-  // applied via applyClausePostCheck in parseIntent; also export clean helper through parseIntent
+  const cleaned = parser.cleanIntentSearchUrls("open edge and search for weather in pune", dirty);
+  assert.equal(cleaned.repaired, true);
+  assert.equal(new URL(cleaned.args.url).searchParams.get("q"), "weather in pune");
 });

@@ -18,7 +18,6 @@ const {
   formatFindOutcome,
   isExecutablePath,
   explorerSearchMsUrl,
-  defaultKnownRoots,
 } = require("./findPath");
 
 const TRUSTED_ACTIONS = new Set(["open_app", "open_url", "type_text", "compose_text", "compose_email", "guide", "app_action", "find_path", "open_path"]);
@@ -332,12 +331,18 @@ function createCommandDispatcher(deps = {}) {
     let lastOpenedLabel = "";
     let focusReady = Promise.resolve();
     for (let i = 0; i < validated.length; i += 1) {
+      if (options.signal?.aborted) {
+        return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+      }
       const step = validated[i];
       const openedBefore = step.action === "compose_text" && lastOpenedLabel;
       // Start composing immediately after opening an app — do not wait on the LLM
       // before the app launches, and do not delay the model call by the focus wait.
       if (i > 0 && delay > 0 && step.action !== "compose_text" && !(step.action === "type_text" && lastOpenedLabel)) {
         await wait(delay);
+        if (options.signal?.aborted) {
+          return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+        }
       }
       const result = await perform(step, {
         ...options,
@@ -385,11 +390,17 @@ function createCommandDispatcher(deps = {}) {
       return { success: false, error: "That command is blocked because it looks destructive or unsafe", code: "BLOCKED" };
     }
     if (riskTier === "confirm" && !alreadyConfirmed) {
+      if (options.signal?.aborted) {
+        return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+      }
       const allowed =
         typeof confirm === "function"
           ? await confirm(confirmMessage(action, args), { step: classifyStep })
           : false;
       if (!allowed) return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+    }
+    if (options.signal?.aborted) {
+      return { success: false, error: "You cancelled this command", code: "CANCELLED" };
     }
 
     try {
@@ -508,8 +519,14 @@ function createCommandDispatcher(deps = {}) {
             return { success: false, error: "Typing into apps is not available", code: "FAILED" };
           }
           if (typeof options.focusReady?.then === "function") await options.focusReady;
+          if (options.signal?.aborted) {
+            return { success: false, error: "You cancelled this command", code: "CANCELLED" };
+          }
           if (options.focusLabel && typeof focusApp === "function") {
             try { await focusApp(options.focusLabel); } catch { /* best-effort */ }
+          }
+          if (options.signal?.aborted) {
+            return { success: false, error: "You cancelled this command", code: "CANCELLED" };
           }
           await pasteText(args.text, { restoreClipboard: true, silentAccessibilityCheck: true });
           return { success: true, message: "Typed into the focused field", action, args };
@@ -644,7 +661,7 @@ function createCommandDispatcher(deps = {}) {
           };
         }
         case "app_action": {
-          const skill = typeof getAppSkill === "function" ? getAppSkill(args.appId) : skillForAction;
+          const skill = typeof getAppSkill === "function" ? getAppSkill(args.appId) : null;
           if (!skill || skill.enabled === false) {
             return { success: false, error: `No skill is enabled for "${args.appId}"`, code: "NOT_FOUND" };
           }
@@ -685,7 +702,7 @@ function createCommandDispatcher(deps = {}) {
             timeoutMs: options.findTimeoutMs,
             roots: options.findRoots,
             drives: options.findDrives,
-            searchIndex: options.searchIndex || (typeof deps.searchIndex === "function" ? deps.searchIndex : undefined),
+            searchIndex: options.searchIndex || (typeof searchIndex === "function" ? searchIndex : undefined),
           });
           const message = formatFindOutcome(found);
           return {

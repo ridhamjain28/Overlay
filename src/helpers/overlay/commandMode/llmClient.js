@@ -96,7 +96,17 @@ function timeoutError() {
   return err;
 }
 
-function wrapAbort(error) {
+function cancelError() {
+  const err = new Error("Intent parser cancelled");
+  err.code = "CANCELLED";
+  err.name = "AbortError";
+  return err;
+}
+
+function wrapAbort(error, externalSignal) {
+  if (externalSignal?.aborted) {
+    return cancelError();
+  }
   if (error && (error.name === "AbortError" || error.code === "TIMEOUT")) {
     return timeoutError();
   }
@@ -329,11 +339,20 @@ function createIntentCompleter(opts = {}) {
     fetchImpl = fetch,
     timeoutMs,
   } = opts;
+  let cachedInstalled = null;
 
-  return async function llmComplete(prompt) {
+  return async function llmComplete(prompt, callOpts = {}) {
+    const externalSignal = callOpts?.signal;
+    if (externalSignal?.aborted) {
+      throw cancelError();
+    }
     const defaultTimeout = parser === "cloud" ? TIMEOUT_MS : LOCAL_TIMEOUT_MS;
     const usedTimeout = Number.isFinite(timeoutMs) ? timeoutMs : defaultTimeout;
     const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const onAbort = () => controller?.abort();
+    if (externalSignal && controller) {
+      externalSignal.addEventListener?.("abort", onAbort, { once: true });
+    }
     const timer = controller ? setTimeout(() => controller.abort(), usedTimeout) : null;
     try {
       if (parser === "cloud") {
@@ -369,8 +388,15 @@ function createIntentCompleter(opts = {}) {
         throw new Error("Local Command mode can only call a model on this computer");
       }
       const nativeBase = nativeOllamaBase(localBaseUrl || base);
-      const installed = await listInstalledModels(fetchImpl, nativeBase, controller?.signal);
-      const chosen = pickLocalParseModel(model || DEFAULT_LOCAL_MODEL, installed);
+      const requestedModel = model || DEFAULT_LOCAL_MODEL;
+      let installed = [];
+      if (isThinkingModel(requestedModel)) {
+        if (!cachedInstalled) {
+          cachedInstalled = await listInstalledModels(fetchImpl, nativeBase, controller?.signal);
+        }
+        installed = cachedInstalled;
+      }
+      const chosen = pickLocalParseModel(requestedModel, installed);
       try {
         return await completeNativeChat({
           url: `${nativeBase}/api/chat`,
@@ -393,9 +419,12 @@ function createIntentCompleter(opts = {}) {
         throw error;
       }
     } catch (error) {
-      throw wrapAbort(error);
+      throw wrapAbort(error, externalSignal);
     } finally {
       if (timer) clearTimeout(timer);
+      if (externalSignal && controller) {
+        externalSignal.removeEventListener?.("abort", onAbort);
+      }
     }
   };
 }

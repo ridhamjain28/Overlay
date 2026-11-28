@@ -5,13 +5,18 @@ const os = require("os");
 const path = require("path");
 const setup = require("../../scripts/setup.js");
 
+test("setup: default and fallback models match qwen3 defaults", () => {
+  assert.equal(setup.DEFAULT_MODEL, "qwen3:8b");
+  assert.equal(setup.FALLBACK_MODEL, "qwen3:4b-instruct");
+});
+
 test("setup: models already pulled are not pulled again (name:latest matches)", () => {
   assert.deepEqual(
     setup.missingModels(
-      ["qwen3.5:4b-q4_K_M", "foo:latest"],
-      ["qwen3.5:4b-q4_K_M", "foo", "qwen3:4b-instruct"]
+      ["qwen3:8b", "foo:latest"],
+      [setup.DEFAULT_MODEL, "foo", setup.FALLBACK_MODEL]
     ),
-    ["qwen3:4b-instruct"]
+    [setup.FALLBACK_MODEL]
   );
   assert.deepEqual(setup.missingModels(null, ["a"]), ["a"]);
 });

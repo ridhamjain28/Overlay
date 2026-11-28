@@ -12,12 +12,21 @@ export function remoteAnswerStream(
   user: string | undefined,
   signal?: AbortSignal
 ): AsyncGenerator<Chunk> {
+  if (signal?.aborted) {
+    return (async function* () {
+      yield { type: "done" } as Chunk;
+    })();
+  }
+
   const api = window.electronAPI;
   const requestId = crypto.randomUUID();
   const queue: Array<
     { kind: "text"; text: string } | { kind: "error"; error: string } | { kind: "end" }
   > = [];
   let wake: (() => void) | null = null;
+  let finished = false;
+  let cleaned = false;
+
   const push = (item: (typeof queue)[number]) => {
     queue.push(item);
     wake?.();
@@ -31,8 +40,18 @@ export function remoteAnswerStream(
   const offEnd = api?.onOverlayAnswerStreamEnd?.((p) => {
     if (p.requestId === requestId) push({ kind: "end" });
   });
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    signal?.removeEventListener("abort", onAbort);
+    offChunk?.();
+    offError?.();
+    offEnd?.();
+  };
   const onAbort = () => {
+    finished = true;
     api?.overlayAnswerStreamCancel?.(requestId);
+    cleanup();
     push({ kind: "end" });
   };
   signal?.addEventListener("abort", onAbort, { once: true });
@@ -48,7 +67,6 @@ export function remoteAnswerStream(
   }
 
   return (async function* () {
-    let finished = false;
     try {
       while (true) {
         if (queue.length === 0) {
@@ -71,10 +89,7 @@ export function remoteAnswerStream(
       }
     } finally {
       if (!finished) api?.overlayAnswerStreamCancel?.(requestId);
-      signal?.removeEventListener("abort", onAbort);
-      offChunk?.();
-      offError?.();
-      offEnd?.();
+      cleanup();
     }
   })();
 }
@@ -86,22 +101,26 @@ export function remoteAnswerStream(
  */
 export async function* withFallback(
   factories: Array<{ source: AnswerSource; create: () => AsyncGenerator<Chunk> }>,
-  onSourceFailed?: (source: AnswerSource, error: Error) => void
+  onSourceFailed?: (source: AnswerSource, error: Error) => void,
+  signal?: AbortSignal
 ): AsyncGenerator<Chunk> {
   let lastError: Error | null = null;
   for (const { source, create } of factories) {
+    if (signal?.aborted) return;
     let produced = false;
     try {
       for await (const chunk of create()) {
         if (chunk.type === "content" || chunk.type === "tool_calls") produced = true;
         yield chunk;
+        if (signal?.aborted) return;
       }
       return;
     } catch (error) {
+      if (signal?.aborted) return;
       if (produced) throw error;
       lastError = error as Error;
       onSourceFailed?.(source, lastError);
     }
   }
-  if (lastError) throw lastError;
+  if (lastError && !signal?.aborted) throw lastError;
 }

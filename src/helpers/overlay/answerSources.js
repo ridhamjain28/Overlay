@@ -8,12 +8,14 @@
 // The local Ollama source is not here: the renderer already streams it through
 // the app's normal self-hosted path (with tools).
 
+const crypto = require("crypto");
 const {
   GEMINI_API_BASE,
   DEFAULT_GEMINI_SEARCH_MODEL,
   getSearchConfig,
   getOllamaDailyCap,
   getDefaultSearchCounter,
+  sanitizeErrorMessage,
 } = require("./webSearch");
 
 const DEFAULT_OPENCLAW_URL = "http://127.0.0.1:18789/v1";
@@ -23,37 +25,56 @@ const PROBE_CACHE_MS = 20000;
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 
 function getOpenClawConfig(env = process.env) {
-  const rawUrl = (env.OPENCLAW_URL || DEFAULT_OPENCLAW_URL).trim().replace(/\/+$/, "");
+  const rawUrl = (env?.OPENCLAW_URL || DEFAULT_OPENCLAW_URL).trim().replace(/\/+$/, "");
   // Accept a full .../chat/completions URL too.
   const baseUrl = rawUrl.replace(/\/chat\/completions$/, "");
   let loopback = false;
+  let validHttp = false;
   try {
-    loopback = LOOPBACK_HOSTS.has(new URL(baseUrl).hostname);
+    const parsed = new URL(baseUrl);
+    validHttp = parsed.protocol === "http:" || parsed.protocol === "https:";
+    loopback = validHttp && LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase());
   } catch {
     loopback = false;
+    validHttp = false;
   }
-  const token = (env.OPENCLAW_TOKEN || "").trim();
+  const token = (env?.OPENCLAW_TOKEN || "").trim();
   return {
     baseUrl,
-    model: (env.OPENCLAW_MODEL || "").trim() || DEFAULT_OPENCLAW_MODEL,
+    model: (env?.OPENCLAW_MODEL || "").trim() || DEFAULT_OPENCLAW_MODEL,
     token,
     loopback,
     // The gateway token is full access to your machine: only talk to it on
     // loopback unless the user explicitly opts in.
-    allowed: loopback || env.OVERLAY_ALLOW_REMOTE_OPENCLAW === "1",
+    allowed: validHttp && (loopback || env?.OVERLAY_ALLOW_REMOTE_OPENCLAW === "1"),
     configured: Boolean(token),
   };
 }
 
 /** Reads Server-Sent Events from a fetch Response body; yields each `data:` payload. */
-async function* readSseData(body) {
+async function* readSseData(body, signal) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let completed = false;
+  const onAbort = () => {
+    reader.cancel().catch(() => {});
+  };
+  if (signal) {
+    if (signal.aborted) {
+      onAbort();
+    } else {
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  }
   try {
     while (true) {
+      if (signal?.aborted) break;
       const { value, done } = await reader.read();
-      if (done) break;
+      if (done) {
+        completed = true;
+        break;
+      }
       buffer += decoder.decode(value, { stream: true });
       let newline;
       while ((newline = buffer.indexOf("\n")) !== -1) {
@@ -62,10 +83,18 @@ async function* readSseData(body) {
         if (line.startsWith("data:")) yield line.slice(5).trimStart();
       }
     }
-    buffer += decoder.decode();
-    const rest = buffer.replace(/\r$/, "");
-    if (rest.startsWith("data:")) yield rest.slice(5).trimStart();
+    if (completed) {
+      buffer += decoder.decode();
+      const rest = buffer.replace(/\r$/, "");
+      if (rest.startsWith("data:")) yield rest.slice(5).trimStart();
+    }
   } finally {
+    signal?.removeEventListener?.("abort", onAbort);
+    if (!completed) {
+      try {
+        await reader.cancel();
+      } catch {}
+    }
     try {
       reader.releaseLock();
     } catch {}
@@ -104,8 +133,9 @@ async function errorFromResponse(response, label) {
       detail = text.slice(0, 200);
     }
   } catch {}
+  const safeDetail = detail ? sanitizeErrorMessage(String(detail)).slice(0, 200) : "";
   const error = new Error(
-    `${label} returned HTTP ${response.status}${detail ? `: ${detail}` : ""}`
+    `${label} returned HTTP ${response.status}${safeDetail ? `: ${safeDetail}` : ""}`
   );
   error.status = response.status;
   return error;
@@ -134,7 +164,7 @@ async function* streamOpenClaw({ messages, user, signal, env = process.env, fetc
   });
   if (!response.ok) throw await errorFromResponse(response, "OpenClaw");
   if (!response.body) throw new Error("OpenClaw returned an empty response.");
-  for await (const data of readSseData(response.body)) {
+  for await (const data of readSseData(response.body, signal)) {
     if (data === "[DONE]") return;
     let json;
     try {
@@ -142,7 +172,9 @@ async function* streamOpenClaw({ messages, user, signal, env = process.env, fetc
     } catch {
       continue;
     }
-    if (json?.error) throw new Error(`OpenClaw: ${json.error.message || "stream error"}`);
+    if (json?.error) {
+      throw new Error(`OpenClaw: ${sanitizeErrorMessage(json.error.message || "stream error")}`);
+    }
     const text = json?.choices?.[0]?.delta?.content ?? json?.choices?.[0]?.message?.content;
     if (typeof text === "string" && text) yield text;
   }
@@ -172,9 +204,18 @@ function formatSources(chunks) {
   const lines = [];
   for (const chunk of chunks || []) {
     const uri = chunk?.web?.uri;
-    if (!uri || seen.has(uri)) continue;
+    if (!uri || seen.has(uri) || !/^https?:\/\//i.test(uri)) continue;
+    let safeUri;
+    try {
+      const parsed = new URL(uri);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") continue;
+      safeUri = parsed.toString().replace(/\(/g, "%28").replace(/\)/g, "%29");
+    } catch {
+      continue;
+    }
     seen.add(uri);
-    lines.push(`- [${chunk.web.title || "source"}](${uri})`);
+    const title = String(chunk.web.title || "source").replace(/[[\]]/g, "").trim() || "source";
+    lines.push(`- [${title}](${safeUri})`);
     if (lines.length >= 5) break;
   }
   return lines.length ? `\n\nSources:\n${lines.join("\n")}` : "";
@@ -196,12 +237,15 @@ async function* streamGemini({ messages, signal, env = process.env, fetchImpl = 
   if (!response.ok) throw await errorFromResponse(response, "Gemini");
   if (!response.body) throw new Error("Gemini returned an empty response.");
   let groundingChunks = [];
-  for await (const data of readSseData(response.body)) {
+  for await (const data of readSseData(response.body, signal)) {
     let json;
     try {
       json = JSON.parse(data);
     } catch {
       continue;
+    }
+    if (json?.error) {
+      throw new Error(`Gemini: ${sanitizeErrorMessage(json.error.message || "stream error")}`);
     }
     const candidate = json?.candidates?.[0];
     const text = (candidate?.content?.parts || [])
@@ -215,7 +259,12 @@ async function* streamGemini({ messages, signal, env = process.env, fetchImpl = 
   if (sources) yield sources;
 }
 
-const probeCache = { at: 0, value: null };
+const probeCache = { at: 0, key: "", value: null };
+
+function probeCacheKey(config) {
+  const tokenHash = crypto.createHash("sha256").update(config.token || "").digest("hex").slice(0, 16);
+  return `${config.baseUrl}\0${tokenHash}`;
+}
 
 /** Whether the OpenClaw gateway answers right now (cached for a few seconds). */
 async function probeOpenClaw({ env = process.env, fetchImpl = fetch, force = false } = {}) {
@@ -224,7 +273,10 @@ async function probeOpenClaw({ env = process.env, fetchImpl = fetch, force = fal
     return { configured: config.configured, allowed: config.allowed, reachable: false };
   }
   const now = Date.now();
-  if (!force && probeCache.value && now - probeCache.at < PROBE_CACHE_MS) return probeCache.value;
+  const key = probeCacheKey(config);
+  if (!force && probeCache.value && probeCache.key === key && now - probeCache.at < PROBE_CACHE_MS) {
+    return probeCache.value;
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   let value;
@@ -249,6 +301,7 @@ async function probeOpenClaw({ env = process.env, fetchImpl = fetch, force = fal
     clearTimeout(timer);
   }
   probeCache.at = now;
+  probeCache.key = key;
   probeCache.value = value;
   return value;
 }
@@ -295,6 +348,7 @@ async function listOllamaModels({
 
 function _resetProbeCache() {
   probeCache.at = 0;
+  probeCache.key = "";
   probeCache.value = null;
 }
 

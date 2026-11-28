@@ -70,13 +70,6 @@ const mic = (deviceId, label = deviceId, groupId = deviceId) => ({
   label,
 });
 
-const speaker = (deviceId, label = deviceId) => ({
-  kind: "audiooutput",
-  deviceId,
-  groupId: deviceId,
-  label,
-});
-
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 test("watchdog and listener detect devicechange and system default mic changes", async () => {

@@ -54,6 +54,20 @@ test("McpConfig validation detects syntax and structure errors", () => {
     })
   );
   assert.equal(rPinned.ok, true);
+
+  // Unpinned npx.cmd package rejected too
+  const rUnpinnedCmd = validateConfig(
+    JSON.stringify({
+      mcpServers: {
+        "unpinned-cmd": {
+          command: "npx.cmd",
+          args: ["-y", "some-mcp-pkg"],
+        },
+      },
+    })
+  );
+  assert.equal(rUnpinnedCmd.ok, false);
+  assert.ok(rUnpinnedCmd.errors[0].includes("unpinned npx package"));
 });
 
 test("McpManager connects to fake stdio MCP server fixture, lists tools, caches on disk, and calls tool", async () => {
@@ -209,6 +223,22 @@ test("BM25 top-k tool selection picks relevant tools up to k <= 8", () => {
   // Top k constraint (never exceeds 8)
   const allHits = index.pickTopK("file directory issue templates pages", { k: 15 });
   assert.ok(allHits.length <= 8);
+
+  // CamelCase tool names match split words and large catalogs sharing a server name still match
+  const largeCatalog = [
+    { server: "github", name: "readFile", description: "Read a file" },
+    ...Array.from({ length: 25 }, (_, i) => ({
+      server: "github",
+      name: `repo_action_${i}`,
+      description: `Perform action ${i}`,
+    })),
+  ];
+  const camelHits = selectTopKTools("read file", largeCatalog, { k: NaN, disabledTools: [] });
+  assert.equal(camelHits.length, 1);
+  assert.equal(camelHits[0].name, "readFile");
+
+  const sharedServerHits = selectTopKTools("github", largeCatalog, { k: 8 });
+  assert.equal(sharedServerHits.length, 8);
 });
 
 test("Risk mapping from MCP tool annotations", () => {
@@ -291,6 +321,126 @@ test("Token storage is encrypted with safeStorage and never written to mcp.json 
     fs.writeFileSync(configPath, JSON.stringify({ mcpServers: { notion: { url: "https://mcp.notion.com/mcp" } } }));
     const rawConfig = fs.readFileSync(configPath, "utf-8");
     assert.ok(!rawConfig.includes("secret_access_token_12345"));
+
+    // Snake_case expires_in is honored
+    authStore.saveTokens("linear", { access_token: "lin_tok", expires_in: 120 });
+    assert.equal(authStore.hasValidToken("linear"), true);
+    assert.ok(authStore.getTokens("linear").expiresAt > Date.now());
+
+    // removeTokens is a safe no-op when no token file exists even without safeStorage
+    const emptyTemp = fs.mkdtempSync(path.join(os.tmpdir(), "overlay-mcp-noauth-"));
+    try {
+      const noStorageStore = new McpAuthStore(emptyTemp);
+      assert.doesNotThrow(() => noStorageStore.removeTokens("notion"));
+    } finally {
+      fs.rmSync(emptyTemp, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("McpManager hardens status updates, config removal, tool timeouts, and shutdown", async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "overlay-mcp-harden-"));
+  try {
+    const configStore = new McpConfigStore({
+      appDataDir: tempDir,
+      filePath: path.join(tempDir, "mcp.json"),
+    });
+    configStore.save({
+      mcpServers: {
+        ghost: { command: process.execPath, args: ["missing.js"] },
+      },
+    });
+
+    const manager = new McpManager({
+      appDataDir: tempDir,
+      userDataDir: tempDir,
+      configStore,
+      toolCallTimeoutMs: 50,
+    });
+
+    // setStatus overwrites stale toolsCount when 0 is passed and sanitizes secrets
+    manager.setStatus("ghost", "connected", null, 5);
+    assert.equal(manager.serverStatuses.get("ghost").toolsCount, 5);
+    manager.setStatus("ghost", "error", "Failed with Bearer secret_tok_999", 0);
+    const errStatus = manager.serverStatuses.get("ghost");
+    assert.equal(errStatus.toolsCount, 0);
+    assert.equal(errStatus.connectedAt, null);
+    assert.ok(!errStatus.error.includes("secret_tok_999"));
+    assert.ok(errStatus.error.includes("Bearer [REDACTED]"));
+
+    // Pending reconnect timer & stale status for disconnected server are cleaned up on removal
+    manager.scheduleReconnect("ghost");
+    assert.equal(manager.reconnectTimers.has("ghost"), true);
+    manager.handleConfigChange({});
+    assert.equal(manager.reconnectTimers.has("ghost"), false);
+    assert.equal(manager.serverStatuses.has("ghost"), false);
+
+    // callTool rejects disabled tools, times out hung calls, and sanitizes errors
+    manager.clients.set("mock", {
+      callTool: async () => new Promise(() => {}),
+    });
+    manager.setToolEnabled("mock", "blocked_tool", false);
+    await assert.rejects(
+      () => manager.callTool("mock", "blocked_tool", {}),
+      /is disabled/
+    );
+    await assert.rejects(
+      () => manager.callTool("mock", "slow_tool", {}),
+      (err) => err.code === "TOOL_TIMEOUT" && /timed out after 50ms/.test(err.message)
+    );
+
+    manager.clients.set("mockErr", {
+      callTool: async () => {
+        throw new Error("Bad key sk-proj-1234567890abcdef1234");
+      },
+    });
+    await assert.rejects(
+      () => manager.callTool("mockErr", "fail_tool", {}),
+      (err) => !err.message.includes("1234567890") && err.message.includes("sk-[REDACTED]")
+    );
+
+    await manager.shutdown();
+    assert.equal(manager.shuttingDown, true);
+    manager.scheduleReconnect("ghost");
+    assert.equal(manager.reconnectTimers.has("ghost"), false);
+    await assert.rejects(() => manager.connect("ghost"), /shutting down/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("McpConfigStore startWatch unrefs watcher and debounce timer so process can exit cleanly", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "overlay-mcp-watch-"));
+  try {
+    let unrefCalled = false;
+    let watchCb = null;
+    const mockFs = {
+      ...fs,
+      watch: (_filePath, cb) => {
+        watchCb = cb;
+        return {
+          unref: () => {
+            unrefCalled = true;
+          },
+          on: () => {},
+          close: () => {},
+        };
+      },
+    };
+    const store = new McpConfigStore({
+      appDataDir: tempDir,
+      filePath: path.join(tempDir, "mcp.json"),
+      fsImpl: mockFs,
+    });
+    store.startWatch();
+    assert.equal(unrefCalled, true);
+    assert.equal(typeof watchCb, "function");
+    watchCb();
+    assert.ok(store._debounceTimer);
+    store.stopWatch();
+    assert.equal(store._debounceTimer, null);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
